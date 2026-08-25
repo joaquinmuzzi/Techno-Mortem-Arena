@@ -66,7 +66,7 @@ La propuesta completa y detallada está en la Wiki del proyecto (ver más abajo)
 La propuesta formal y detallada del videojuego —introducción, objetivo, alcance, descripción de las
 mecánicas y aportes— se mantiene como documento vivo en la Wiki:
 
-**[Propuesta del Proyecto — Techno Mortem Arena](https://github.com/joaquinmuzzi/psr-duelo-libgdx/wiki/Propuesta-del-Proyecto-%E2%80%90-Techno-Mortem-Arena)**
+**[Propuesta del Proyecto](https://github.com/joaquinmuzzi/psr-duelo-libgdx/wiki/Propuesta-del-Proyecto)**
 
 Índice general de la Wiki: <https://github.com/joaquinmuzzi/psr-duelo-libgdx/wiki>
 

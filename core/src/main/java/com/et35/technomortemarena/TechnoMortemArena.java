@@ -1,32 +1,35 @@
 package com.et35.technomortemarena;
 
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.Game;
 
-/** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
-public class TechnoMortemArena extends ApplicationAdapter {
-    private SpriteBatch batch;
-    private Texture image;
+import com.et35.technomortemarena.pantallas.PantallaArena;
+
+/**
+ * Aplicacion compartida por todas las plataformas.
+ *
+ * <p>Extiende {@link Game} en lugar de {@code ApplicationAdapter} porque {@code Game} administra
+ * pantallas: mas adelante van a convivir el menu principal, la seleccion de mapa y la arena, y
+ * cambiar entre ellas se reduce a llamar a {@code setScreen}.
+ */
+public class TechnoMortemArena extends Game {
+
+    private RecursosGraficos recursos;
 
     @Override
     public void create() {
-        batch = new SpriteBatch();
-        image = new Texture("libgdx.png");
-    }
-
-    @Override
-    public void render() {
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        batch.begin();
-        batch.draw(image, 140, 210);
-        batch.end();
+        // Las texturas se cargan una sola vez, aca, y se comparten entre todas las pantallas.
+        recursos = new RecursosGraficos();
+        setScreen(new PantallaArena(recursos));
     }
 
     @Override
     public void dispose() {
-        batch.dispose();
-        image.dispose();
+        // Game.dispose() solo llama a hide() en la pantalla activa: NO la libera. Hay que hacerlo a
+        // mano o el SpriteBatch de la pantalla queda sin liberar.
+        if (getScreen() != null) {
+            getScreen().dispose();
+        }
+        recursos.dispose();
+        super.dispose();
     }
 }

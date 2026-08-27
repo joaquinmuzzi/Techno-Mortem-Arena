@@ -92,9 +92,9 @@ La guardia tiene tres alturas —cadera, pecho y cabeza— y arranca en pecho.
 La propuesta formal y detallada del videojuego —introducción, objetivo, alcance, descripción de las
 mecánicas y aportes— se mantiene como documento vivo en la Wiki:
 
-**[Propuesta del Proyecto](https://github.com/joaquinmuzzi/psr-duelo-libgdx/wiki/Propuesta-del-Proyecto)**
+**[Propuesta del Proyecto](https://github.com/joaquinmuzzi/Techno-Mortem-Arena/wiki/Propuesta-del-Proyecto)**
 
-Índice general de la Wiki: <https://github.com/joaquinmuzzi/psr-duelo-libgdx/wiki>
+Índice general de la Wiki: <https://github.com/joaquinmuzzi/Techno-Mortem-Arena/wiki>
 
 ## Compilación y ejecución
 
@@ -108,8 +108,8 @@ mecánicas y aportes— se mantiene como documento vivo en la Wiki:
 ### Clonar el repositorio
 
 ```bash
-git clone https://github.com/joaquinmuzzi/psr-duelo-libgdx.git
-cd psr-duelo-libgdx
+git clone https://github.com/joaquinmuzzi/Techno-Mortem-Arena.git
+cd Techno-Mortem-Arena
 ```
 
 ### Ejecutar el juego desde la terminal

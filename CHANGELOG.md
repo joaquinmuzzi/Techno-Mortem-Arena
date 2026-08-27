@@ -67,6 +67,6 @@ Primera pre-entrega: configuración inicial del proyecto y del repositorio.
 - Título de la ventana del juego: de `TechnoMortemArena` (nombre técnico del módulo) a
   `Techno Mortem Arena`.
 
-[No publicado]: https://github.com/joaquinmuzzi/psr-duelo-libgdx/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/joaquinmuzzi/psr-duelo-libgdx/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/joaquinmuzzi/psr-duelo-libgdx/releases/tag/v0.1.0
+[No publicado]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/releases/tag/v0.1.0

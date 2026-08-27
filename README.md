@@ -61,6 +61,32 @@ La propuesta completa y detallada está en la Wiki del proyecto (ver más abajo)
   módulo se llamaba `desktop`.
 - `assets/` — recursos del juego (imágenes, sonidos, fuentes).
 
+### Estructura del código
+
+```
+core/src/main/java/com/et35/technomortemarena/
+├── TechnoMortemArena.java     Aplicación (Game): carga assets y abre la pantalla
+├── RecursosGraficos.java      Carga y liberación centralizada de texturas
+├── mundo/Arena.java           Escenario cerrado: medidas y límites laterales
+├── entidades/
+│   ├── Jugador.java           Entidad controlable: física, salto y guardia
+│   └── AlturaEspada.java      Las tres alturas de guardia (cadera, pecho, cabeza)
+├── entrada/Controles.java     Mapeo de teclas de cada duelista
+└── pantallas/PantallaArena.java  Ronda de duelo: bucle de actualización y dibujo
+```
+
+## Controles
+
+| Acción | Jugador 1 | Jugador 2 |
+|---|---|---|
+| Mover izquierda | `A` | `←` |
+| Mover derecha | `D` | `→` |
+| Saltar | `W` | `↑` |
+| Subir guardia | `E` | `O` |
+| Bajar guardia | `Q` | `L` |
+
+La guardia tiene tres alturas —cadera, pecho y cabeza— y arranca en pecho.
+
 ## Propuesta del proyecto (Wiki)
 
 La propuesta formal y detallada del videojuego —introducción, objetivo, alcance, descripción de las
@@ -144,18 +170,31 @@ Las tareas específicas de un módulo se invocan con el prefijo del módulo: por
 
 ## Estado actual del proyecto
 
-**Primera pre-entrega — configuración inicial y estructura del proyecto.**
+**Base jugable local: dos duelistas controlables en una arena cerrada.**
 
 - [x] Proyecto libGDX generado con gdx-liftoff (módulos `core` + `lwjgl3`).
 - [x] Compilable y ejecutable en escritorio.
 - [x] Repositorio Git con `.gitignore` para proyectos libGDX.
 - [x] `README.md` y `CHANGELOG.md`.
 - [x] Wiki activada con la propuesta del proyecto.
-- [ ] Mecánicas de combate (posiciones de espada, estocadas, bloqueos, desarme).
-- [ ] Sistema de movilidad (desplazamiento, salto, rodado).
+- [x] Arena cerrada con piso y límites laterales.
+- [x] Dos entidades controlables por teclado, con gravedad y salto.
+- [x] Guardia en tres alturas (cadera, pecho, cabeza).
+- [ ] Estocadas, bloqueos por altura y desarme.
+- [ ] Lanzamiento de espada y modo cuerpo a cuerpo.
+- [ ] Rodado para esquivar.
 - [ ] Estructura de partida (mejor de 5 rondas, temporizador, muerte súbita).
-- [ ] Arenas y selección de mapas.
+- [ ] Varias arenas y selección de mapa.
 - [ ] Multijugador en red local (host / cliente).
 - [ ] Menú principal, ajustes y personalización del personaje.
+
+### Assets
+
+Los sprites de `assets/sprites/` son **placeholders** generados para poder probar las mecánicas sin
+esperar al arte definitivo. Están dibujados en blanco a propósito: `Jugador` los colorea en tiempo de
+ejecución con `SpriteBatch.setColor()`, así un mismo archivo sirve para los dos duelistas.
+
+Para reemplazarlos por arte propio basta sobrescribir el `.png` respetando el nombre; si cambian las
+medidas, hay que ajustar `Jugador.ANCHO` y `Jugador.ALTO`.
 
 El registro detallado de cambios está en [CHANGELOG.md](CHANGELOG.md).

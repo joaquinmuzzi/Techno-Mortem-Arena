@@ -19,23 +19,25 @@ public class Controles {
     private final int saltar;
     private final int subirEspada;
     private final int bajarEspada;
+    private final int estocada;
 
-    public Controles(int izquierda, int derecha, int saltar, int subirEspada, int bajarEspada) {
+    public Controles(int izquierda, int derecha, int saltar, int subirEspada, int bajarEspada, int estocada) {
         this.izquierda = izquierda;
         this.derecha = derecha;
         this.saltar = saltar;
         this.subirEspada = subirEspada;
         this.bajarEspada = bajarEspada;
+		this.estocada = estocada;
     }
 
     /** Jugador 1: A y D para moverse, W para saltar, E sube la guardia y Q la baja. */
     public static Controles jugadorUno() {
-        return new Controles(Keys.A, Keys.D, Keys.W, Keys.E, Keys.Q);
+        return new Controles(Keys.A, Keys.D, Keys.W, Keys.E, Keys.Q, Keys.F);
     }
 
     /** Jugador 2: flechas para moverse y saltar, O sube la guardia y L la baja. */
     public static Controles jugadorDos() {
-        return new Controles(Keys.LEFT, Keys.RIGHT, Keys.UP, Keys.O, Keys.L);
+        return new Controles(Keys.LEFT, Keys.RIGHT, Keys.UP, Keys.O, Keys.L, Keys.K);
     }
 
     public int getIzquierda() {
@@ -53,8 +55,12 @@ public class Controles {
     public int getSubirEspada() {
         return subirEspada;
     }
-
+    
     public int getBajarEspada() {
         return bajarEspada;
+    }
+    
+    public int getEstocada() {
+    	return estocada;
     }
 }

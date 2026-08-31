@@ -1,5 +1,8 @@
 package com.et35.technomortemarena.pantallas;
 
+import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -40,12 +43,18 @@ public class PantallaArena extends ScreenAdapter {
         // lugar de estirar la imagen. Asi las distancias del duelo son identicas en cualquier
         // resolucion, que es imprescindible para que el enfrentamiento sea justo.
         this.viewport = new FitViewport(arena.getAncho(), arena.getAlto(), new OrthographicCamera());
-        this.jugadorUno = new Jugador(Controles.jugadorUno(), 180f, true, TINTE_UNO);
-        this.jugadorDos = new Jugador(Controles.jugadorDos(), 730f, false, TINTE_DOS);
+        this.jugadorUno = new Jugador(Controles.jugadorUno(), 180f, true, TINTE_UNO, 3);
+        this.jugadorDos = new Jugador(Controles.jugadorDos(), 730f, false, TINTE_DOS, 3);
     }
 
     @Override
     public void render(float delta) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            // Cortar aca todo el fotograma: reiniciar() ya libero el SpriteBatch de esta instancia
+            // (ver dispose() mas abajo), asi que llamar a dibujar() despues crashearia.
+            reiniciar();
+            return;
+        }
         actualizar(delta);
         dibujar();
     }
@@ -55,8 +64,22 @@ public class PantallaArena extends ScreenAdapter {
         // jugadores se teletransporten y atraviesen el piso. Acotarlo degrada la simulacion en lugar
         // de romperla.
         float paso = Math.min(delta, DELTA_MAXIMO);
-        jugadorUno.actualizar(paso, arena);
-        jugadorDos.actualizar(paso, arena);
+        jugadorUno.actualizar(paso, arena, jugadorDos);
+        jugadorDos.actualizar(paso, arena, jugadorUno);
+    }
+
+    /**
+     * Vuelve a armar la ronda desde cero: arma una {@code PantallaArena} nueva (con jugadores en su
+     * posicion inicial, vivos, sin flash) y la reemplaza en el {@link Game}.
+     *
+     * <p>{@code setScreen} no libera la pantalla anterior (solo le llama {@code hide()}), asi que hay
+     * que disponer el {@code SpriteBatch} de esta instancia a mano, o cada reinicio dejaria uno sin
+     * liberar.
+     */
+    private void reiniciar() {
+        Game juego = (Game) Gdx.app.getApplicationListener();
+        juego.setScreen(new PantallaArena(recursos));
+        dispose();
     }
 
     private void dibujar() {

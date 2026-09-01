@@ -29,7 +29,7 @@ public class Jugador {
     /** Alto de la caja de colision, en pixeles. */
     public static final float ALTO = 96f;
 
-    private static final float VELOCIDAD = 320f;
+    private static final float VELOCIDAD = 400f;
     private static final float IMPULSO_SALTO = 780f;
     private static final float GRAVEDAD = -2200f;
 
@@ -98,7 +98,6 @@ public class Jugador {
         boolean derecha = Gdx.input.isKeyPressed(controles.getDerecha());
         estocada = Gdx.input.isKeyPressed(controles.getEstocada());
         
-        velocidad.x = 0f;
         if (izquierda && !derecha) {
             velocidad.x = -VELOCIDAD;
             mirandoDerecha = false;
@@ -129,6 +128,11 @@ public class Jugador {
         velocidad.y += GRAVEDAD * delta;
         posicion.x += velocidad.x * delta;
         posicion.y += velocidad.y * delta;
+        if(velocidad.x > 0f) {
+        	velocidad.x = Math.max(velocidad.x - 100f, 0);
+        }else if(velocidad.x < 0f){
+        	velocidad.x = Math.max(velocidad.x + 100f, 0);
+        }
     }
 
     private void resolverColisiones(Arena arena, Jugador oponente) {
@@ -184,7 +188,7 @@ public class Jugador {
         	}
         }
         if(!(oponente.tiempoRestanteFlash > 0f) && vivo && cajaOponente.overlaps(getCajaEspada())) {
-        	oponente.activarFlash();
+        	oponente.activarFlash(1f, this);
         }
         float piso = arena.getAlturaPiso();
         if (posicion.y <= piso) {
@@ -218,16 +222,21 @@ public class Jugador {
         batch.setColor(Color.WHITE);
     }
     
-    private void activarFlash() {
-        tiempoRestanteFlash = 1.5f; // duración del flash, ajustable
-        recibirImpacto();
+    private void activarFlash(float duracion, Jugador atacante) {
+        tiempoRestanteFlash = duracion; // duración del flash, ajustable
+        recibirImpacto(atacante);
     }
     
     private boolean isVivo() {
     	return vivo;
     }
     
-    private void recibirImpacto() {
+    private void recibirImpacto(Jugador atacante) {
+    	float miCentro = posicion.x + ANCHO / 2f;
+	    float suCentro = atacante.getPosicion().x + ANCHO / 2f;
+	    float direccion = (miCentro < suCentro) ? -1f : 1f;
+	    velocidad.x += direccion * 1200f;
+	    velocidad.y += 400f;
     	if(vida > 1) {
     		vida -= 1;
     	}

@@ -22,12 +22,16 @@ public class RecursosGraficos implements Disposable {
     /** Hoja horizontal, 56x10 px, con la guarda a la izquierda y la punta a la derecha. */
     public final Texture espada;
 
+    /** Antebrazo que sostiene la espada, 24x14 px, mas angosto hacia la muneca. Placeholder. */
+    public final Texture brazo;
+
     /** Baldosa del piso, 64x64 px, disenada para repetirse en horizontal. */
     public final Texture piso;
 
     public RecursosGraficos() {
         jugador = cargar("sprites/jugador.png");
         espada = cargar("sprites/espada.png");
+        brazo = cargar("sprites/brazo.png");
         piso = cargar("sprites/piso.png");
     }
 
@@ -51,6 +55,7 @@ public class RecursosGraficos implements Disposable {
     public void dispose() {
         jugador.dispose();
         espada.dispose();
+        brazo.dispose();
         piso.dispose();
     }
 }

@@ -2,7 +2,7 @@ package com.et35.technomortemarena;
 
 import com.badlogic.gdx.Game;
 
-import com.et35.technomortemarena.pantallas.PantallaArena;
+import com.et35.technomortemarena.pantallas.PantallaMenu;
 
 /**
  * Aplicacion compartida por todas las plataformas.
@@ -19,7 +19,7 @@ public class TechnoMortemArena extends Game {
     public void create() {
         // Las texturas se cargan una sola vez, aca, y se comparten entre todas las pantallas.
         recursos = new RecursosGraficos();
-        setScreen(new PantallaArena(recursos));
+        setScreen(new PantallaMenu(recursos));
     }
 
     @Override

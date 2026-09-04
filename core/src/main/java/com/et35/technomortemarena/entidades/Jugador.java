@@ -29,7 +29,7 @@ public class Jugador {
     /** Alto de la caja de colision, en pixeles. */
     public static final float ALTO = 96f;
 
-    private static final float VELOCIDAD = 400f;
+    private static final float VELOCIDAD = 450f;
     private static final float IMPULSO_SALTO = 780f;
     private static final float GRAVEDAD = -2200f;
 
@@ -45,10 +45,21 @@ public class Jugador {
     private boolean estocada;
     private boolean vivo = true;
     
+    private float anguloEspada = 0f;
+    private float anguloObjetivo = 0f;
+    private float tiempoParaNuevoObjetivo = 0f;
+    
+    private float tiempoParaRecuperarAtaque = 0f;
+
+    private static final float VELOCIDAD_ANGULO = 6f;
+    
     private float tiempoRestanteFlash;
     
     public static final float ANCHO_ESPADA = 56f;
     public static final float ALTO_ESPADA = 10f;
+
+    private static final float ANCHO_BRAZO = 22f;
+    private static final float ALTO_BRAZO = 8f;
     
     /**
      * @param x posicion horizontal inicial, en pixeles desde el borde izquierdo de la arena
@@ -81,6 +92,16 @@ public class Jugador {
         if(tiempoRestanteFlash > 0f) {
         	tiempoRestanteFlash -= delta;
         }
+        
+        if(tiempoParaRecuperarAtaque > 0f) {
+        	tiempoParaRecuperarAtaque -= delta;
+        }
+        tiempoParaNuevoObjetivo -= delta;
+        if (tiempoParaNuevoObjetivo <= 0f) {
+            anguloObjetivo = (float) (Math.random() * 10f - 5f); // nuevo objetivo, por ej. entre -10 y 10 grados
+            tiempoParaNuevoObjetivo = 0.4f; // elige un objetivo nuevo cada 0.3s, no cada fotograma
+        }
+        anguloEspada += (anguloObjetivo - anguloEspada) * VELOCIDAD_ANGULO * delta;
     }
 
     public Rectangle getCajaEspada() {
@@ -99,10 +120,10 @@ public class Jugador {
         estocada = Gdx.input.isKeyPressed(controles.getEstocada());
         
         if (izquierda && !derecha) {
-            velocidad.x = -VELOCIDAD;
+            velocidad.x += -(VELOCIDAD+velocidad.x);
             mirandoDerecha = false;
         } else if (derecha && !izquierda) {
-            velocidad.x = VELOCIDAD;
+            velocidad.x += VELOCIDAD-velocidad.x;
             mirandoDerecha = true;
         }
 
@@ -131,7 +152,7 @@ public class Jugador {
         if(velocidad.x > 0f) {
         	velocidad.x = Math.max(velocidad.x - 100f, 0);
         }else if(velocidad.x < 0f){
-        	velocidad.x = Math.max(velocidad.x + 100f, 0);
+        	velocidad.x = Math.min(velocidad.x + 100f, 0);
         }
     }
 
@@ -185,6 +206,21 @@ public class Jugador {
         	    float direccion = (miCentro < suCentro) ? -1f : 1f;
         	    posicion.x += direccion * (penetracionX / 2f);
         	    posicion.x = arena.limitarX(posicion.x, ANCHO); // por si el empujón te saca por la pared
+        	    velocidad.x += 1200f*direccion;
+        	}
+        }
+        if(cajaEspadaOponente.overlaps(getCajaEspada()) && !(tiempoParaRecuperarAtaque > 0f)) {
+        	Rectangle miEspada = getCajaEspada();
+        	
+        	float miY0 = miEspada.y,             miY1 = miEspada.y + miEspada.height;
+        	float suY0 = cajaEspadaOponente.y, suY1 = cajaEspadaOponente.y + cajaEspadaOponente.height;
+        	float miX0 = miEspada.x,               miX1 = miEspada.x + miEspada.width;
+        	float suX0 = cajaEspadaOponente.x, suX1 = cajaEspadaOponente.x + cajaEspadaOponente.width;
+        	float penetracionX = Math.min(miX1, suX1) - Math.max(miX0, suX0);
+        	if (penetracionX > 0f) {
+        		anguloObjetivo = (float) (Math.random() * 60f - 30f);
+        	    tiempoParaNuevoObjetivo = 0.1f;
+        	    tiempoParaRecuperarAtaque = 0.5f;
         	}
         }
         if(!(oponente.tiempoRestanteFlash > 0f) && vivo && cajaOponente.overlaps(getCajaEspada())) {
@@ -218,6 +254,7 @@ public class Jugador {
     	}
     	batch.setColor(colorActual);
         dibujarSprite(batch, recursos.jugador, posicion.x, posicion.y, ANCHO, ALTO);
+        dibujarBrazo(batch, recursos);
         dibujarEspada(batch, recursos);
         batch.setColor(Color.WHITE);
     }
@@ -245,19 +282,38 @@ public class Jugador {
     	}
     }
 
+    /**
+     * Dibuja el antebrazo que sostiene la espada.
+     *
+     * <p>Usa exactamente la misma formula de posicion horizontal que {@link #dibujarEspada}, con
+     * {@link #ANCHO_BRAZO} en vez del ancho de la espada: nace pegado al mismo borde del cuerpo y
+     * se estira el mismo {@code 24f} durante la estocada, asi que sigue a la espada automaticamente
+     * cuando cambia la altura de guardia o se ataca, sin necesitar sincronizarlo a mano.
+     */
+    private void dibujarBrazo(SpriteBatch batch, RecursosGraficos recursos) {
+        int atacar = estocada ? 1 : 0;
+        float y = posicion.y + alturaEspada.getDesplazamientoY() - (ALTO_BRAZO - ALTO_ESPADA) / 2f;
+        float x = mirandoDerecha
+            ? posicion.x + ANCHO - 14f + (24f * atacar)
+            : posicion.x - ANCHO_BRAZO + 14f - (24f * atacar);
+        dibujarSprite(batch, recursos.brazo, x, y, ANCHO_BRAZO, ALTO_BRAZO);
+    }
+
     private void dibujarEspada(SpriteBatch batch, RecursosGraficos recursos) {
-    	int atacar;
-    	if(estocada) {
-    		atacar = 1;
-    	}else {
-    		atacar = 0;
-    	}
+        int atacar = estocada ? 1 : 0;
         float anchoEspada = recursos.espada.getWidth();
         float altoEspada = recursos.espada.getHeight();
         float y = posicion.y + alturaEspada.getDesplazamientoY();
-        // La espada nace en el borde por el que mira el jugador, solapada unos pixeles con el brazo.
         float x = mirandoDerecha ? posicion.x + ANCHO - 14f + (24f*atacar) : posicion.x - anchoEspada + 14f - (24f*atacar);
-        dibujarSprite(batch, recursos.espada, x, y, anchoEspada, altoEspada);
+
+        // El pivote es el borde pegado al cuerpo: x=0 si mira a la derecha (la guarda
+        // queda ahi), x=anchoEspada si mira a la izquierda (ahi es donde el flip deja la guarda).
+        float originX = mirandoDerecha ? 0f : anchoEspada;
+        float originY = altoEspada / 2f;
+        batch.draw(recursos.espada, x, y, originX, originY, anchoEspada, altoEspada,
+            1f, 1f, anguloEspada,
+            0, 0, recursos.espada.getWidth(), recursos.espada.getHeight(),
+            !mirandoDerecha, false);
     }
 
     /**

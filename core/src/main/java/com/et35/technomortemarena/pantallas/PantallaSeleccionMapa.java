@@ -3,13 +3,10 @@ package com.et35.technomortemarena.pantallas;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -30,21 +27,19 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
 
     private static final float ANCHO_MUNDO = 960f;
     private static final float ALTO_MUNDO = 540f;
-
     private static final Color FONDO = new Color(0.09f, 0.10f, 0.14f, 1f);
-    private static final Color COLOR_BOTON = new Color(0.20f, 0.22f, 0.30f, 1f);
-    private static final Color COLOR_BOTON_RESALTADO = new Color(0.32f, 0.36f, 0.50f, 1f);
 
     private final RecursosGraficos recursos;
     private final SpriteBatch batch = new SpriteBatch();
-    private final BitmapFont fuente = new BitmapFont();
-    private final GlyphLayout layout = new GlyphLayout();
+    private final Ui ui = new Ui();
     private final Viewport viewport = new FitViewport(ANCHO_MUNDO, ALTO_MUNDO, new OrthographicCamera());
-    private final Texture pixel = crearPixelBlanco();
 
-    private final Rectangle botonArenaClasica = new Rectangle(ANCHO_MUNDO / 2f - 150f, 280f, 300f, 60f);
-    private final Rectangle botonArenaAgujero = new Rectangle(ANCHO_MUNDO / 2f - 150f, 200f, 300f, 60f);
-    private final Rectangle botonVolver = new Rectangle(ANCHO_MUNDO / 2f - 150f, 100f, 300f, 60f);
+    private final Rectangle botonArenaClasica = new Rectangle(ANCHO_MUNDO / 2f - 150f, 360f, 300f, 50f);
+    private final Rectangle botonArenaAgujero = new Rectangle(ANCHO_MUNDO / 2f - 150f, 300f, 300f, 50f);
+    private final Rectangle botonArenaPlataformas = new Rectangle(ANCHO_MUNDO / 2f - 150f, 240f, 300f, 50f);
+    private final Rectangle botonArenaTrampolin = new Rectangle(ANCHO_MUNDO / 2f - 150f, 180f, 300f, 50f);
+    private final Rectangle botonArenaCintas = new Rectangle(ANCHO_MUNDO / 2f - 150f, 120f, 300f, 50f);
+    private final Rectangle botonVolver = new Rectangle(ANCHO_MUNDO / 2f - 150f, 40f, 300f, 50f);
 
     public PantallaSeleccionMapa(RecursosGraficos recursos) {
         this.recursos = recursos;
@@ -55,6 +50,9 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
         Vector2 mouse = viewport.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
         boolean sobreClasica = botonArenaClasica.contains(mouse);
         boolean sobreAgujero = botonArenaAgujero.contains(mouse);
+        boolean sobrePlataformas = botonArenaPlataformas.contains(mouse);
+        boolean sobreTrampolin = botonArenaTrampolin.contains(mouse);
+        boolean sobreCintas = botonArenaCintas.contains(mouse);
         boolean sobreVolver = botonVolver.contains(mouse);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || (Gdx.input.justTouched() && sobreClasica)) {
@@ -65,67 +63,54 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
             jugarEn(Arena.conAgujero());
             return;
         }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3) || (Gdx.input.justTouched() && sobrePlataformas)) {
+            jugarEn(Arena.conPlataformas());
+            return;
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_4) || (Gdx.input.justTouched() && sobreTrampolin)) {
+            jugarEn(Arena.conTrampolin());
+            return;
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_5) || (Gdx.input.justTouched() && sobreCintas)) {
+            jugarEn(Arena.conCintasYPinchos());
+            return;
+        }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (Gdx.input.justTouched() && sobreVolver)) {
-            volverAlMenu();
+            cambiarA(new PantallaMenu(recursos));
             return;
         }
 
-        dibujar(sobreClasica, sobreAgujero, sobreVolver);
+        dibujar(sobreClasica, sobreAgujero, sobrePlataformas, sobreTrampolin, sobreCintas, sobreVolver);
     }
 
     private void jugarEn(Arena arena) {
+        cambiarA(new PantallaArena(recursos, arena));
+    }
+
+    /** Igual que en el menu principal: {@code setScreen} no libera esta pantalla, hay que disponerla a mano. */
+    private void cambiarA(Screen siguiente) {
         Game juego = (Game) Gdx.app.getApplicationListener();
-        juego.setScreen(new PantallaArena(recursos, arena));
+        juego.setScreen(siguiente);
         dispose();
     }
 
-    private void volverAlMenu() {
-        Game juego = (Game) Gdx.app.getApplicationListener();
-        juego.setScreen(new PantallaMenu(recursos));
-        dispose();
-    }
-
-    private void dibujar(boolean sobreClasica, boolean sobreAgujero, boolean sobreVolver) {
+    private void dibujar(boolean sobreClasica, boolean sobreAgujero, boolean sobrePlataformas,
+                         boolean sobreTrampolin, boolean sobreCintas, boolean sobreVolver) {
         ScreenUtils.clear(FONDO);
         viewport.apply();
         batch.setProjectionMatrix(viewport.getCamera().combined);
 
         batch.begin();
-        dibujarBoton(botonArenaClasica, sobreClasica, "1 - ARENA CLASICA");
-        dibujarBoton(botonArenaAgujero, sobreAgujero, "2 - ARENA CON AGUJERO");
-        dibujarBoton(botonVolver, sobreVolver, "VOLVER");
-        dibujarTitulo();
+        ui.boton(batch, botonArenaClasica, sobreClasica, "1 - ARENA CLASICA", 1.3f);
+        ui.boton(batch, botonArenaAgujero, sobreAgujero, "2 - ARENA CON AGUJERO", 1.3f);
+        ui.boton(batch, botonArenaPlataformas, sobrePlataformas, "3 - ESCALERA", 1.3f);
+        ui.boton(batch, botonArenaTrampolin, sobreTrampolin, "4 - TRAMPOLIN", 1.3f);
+        ui.boton(batch, botonArenaCintas, sobreCintas, "5 - CINTAS Y PINCHOS", 1.3f);
+        ui.boton(batch, botonVolver, sobreVolver, "VOLVER", 1.3f);
+        String titulo = "ELEGI EL MAPA";
+        float x = (ANCHO_MUNDO - ui.anchoTexto(titulo, 2.2f)) / 2f;
+        ui.texto(batch, titulo, x, ALTO_MUNDO - 100f, 2.2f, Color.WHITE);
         batch.end();
-    }
-
-    private void dibujarBoton(Rectangle boton, boolean resaltado, String texto) {
-        batch.setColor(resaltado ? COLOR_BOTON_RESALTADO : COLOR_BOTON);
-        batch.draw(pixel, boton.x, boton.y, boton.width, boton.height);
-        batch.setColor(Color.WHITE);
-
-        fuente.getData().setScale(1.3f);
-        layout.setText(fuente, texto);
-        float x = boton.x + (boton.width - layout.width) / 2f;
-        float y = boton.y + (boton.height + layout.height) / 2f;
-        fuente.draw(batch, layout, x, y);
-    }
-
-    private void dibujarTitulo() {
-        fuente.getData().setScale(2.2f);
-        layout.setText(fuente, "ELEGI EL MAPA");
-        float x = (ANCHO_MUNDO - layout.width) / 2f;
-        float y = ALTO_MUNDO - 100f;
-        fuente.draw(batch, layout, x, y);
-    }
-
-    /** Textura de 1x1 blanca: estirada y tenida con {@code batch.setColor()}, sirve como rectangulo placeholder. */
-    private static Texture crearPixelBlanco() {
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(Color.WHITE);
-        pixmap.fill();
-        Texture textura = new Texture(pixmap);
-        pixmap.dispose();
-        return textura;
     }
 
     @Override
@@ -136,7 +121,6 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     @Override
     public void dispose() {
         batch.dispose();
-        fuente.dispose();
-        pixel.dispose();
+        ui.dispose();
     }
 }

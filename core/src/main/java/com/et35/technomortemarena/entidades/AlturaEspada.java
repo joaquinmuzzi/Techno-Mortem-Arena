@@ -1,5 +1,7 @@
 package com.et35.technomortemarena.entidades;
 
+import com.et35.technomortemarena.mundo.Arena;
+
 /**
  * Las tres alturas de guardia de la propuesta: cadera, pecho y cabeza.
  *
@@ -17,9 +19,9 @@ package com.et35.technomortemarena.entidades;
  */
 public enum AlturaEspada {
 
-    CADERA(38f),
-    PECHO(56f),
-    CABEZA(74f);
+    CADERA(38f * Arena.ESCALA),
+    PECHO(56f * Arena.ESCALA),
+    CABEZA(74f * Arena.ESCALA);
 
     private final float desplazamientoY;
 

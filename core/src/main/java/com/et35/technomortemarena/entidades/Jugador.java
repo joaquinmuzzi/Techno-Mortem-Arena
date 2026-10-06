@@ -227,10 +227,14 @@ public class Jugador {
         	oponente.activarFlash(1f, this);
         }
         float piso = arena.getAlturaPiso();
-        if (posicion.y <= piso) {
+        boolean sobreAgujero = arena.hayAgujeroEn(posicion.x + ANCHO / 2f);
+        if (posicion.y <= piso && !sobreAgujero) {
             posicion.y = piso;
             velocidad.y = 0f;
             enElPiso = true;
+        }
+        if (posicion.y < -ALTO) {
+            vivo = false;
         }
     }
 

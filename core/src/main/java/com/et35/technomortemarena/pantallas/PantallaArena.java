@@ -31,14 +31,15 @@ public class PantallaArena extends ScreenAdapter {
     private static final Color TINTE_DOS = new Color(1f, 0.48f, 0.42f, 1f);
 
     private final RecursosGraficos recursos;
-    private final Arena arena = Arena.porDefecto();
+    private final Arena arena;
     private final SpriteBatch batch = new SpriteBatch();
     private final Viewport viewport;
     private final Jugador jugadorUno;
     private final Jugador jugadorDos;
 
-    public PantallaArena(RecursosGraficos recursos) {
+    public PantallaArena(RecursosGraficos recursos, Arena arena) {
         this.recursos = recursos;
+        this.arena = arena;
         // FitViewport mantiene la relacion de aspecto agregando bandas negras si hace falta, en
         // lugar de estirar la imagen. Asi las distancias del duelo son identicas en cualquier
         // resolucion, que es imprescindible para que el enfrentamiento sea justo.
@@ -78,7 +79,7 @@ public class PantallaArena extends ScreenAdapter {
      */
     private void reiniciar() {
         Game juego = (Game) Gdx.app.getApplicationListener();
-        juego.setScreen(new PantallaArena(recursos));
+        juego.setScreen(new PantallaArena(recursos, arena));
         dispose();
     }
 
@@ -97,6 +98,9 @@ public class PantallaArena extends ScreenAdapter {
     private void dibujarPiso() {
         float lado = recursos.piso.getWidth();
         for (float x = 0f; x < arena.getAncho(); x += lado) {
+            if (arena.hayAgujeroEn(x + lado / 2f)) {
+                continue;
+            }
             for (float y = arena.getAlturaPiso() - lado; y > -lado; y -= lado) {
                 batch.draw(recursos.piso, x, y, lado, lado);
             }

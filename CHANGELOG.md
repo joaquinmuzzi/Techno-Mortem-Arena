@@ -13,9 +13,57 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Lanzamiento de espada y modo cuerpo a cuerpo (puños y patadas).
 - Rodado para esquivar ataques.
 - Estructura de partida al mejor de 5 rondas, con temporizador y muerte súbita.
-- Varias arenas y selección de mapa (fijo o aleatorio por ronda).
+- Más arenas y selección de mapa aleatorio por ronda.
 - Multijugador en red local: creación de partida (host) y búsqueda / unión (cliente).
-- Menú principal, ajustes de audio y controles, y personalización visual del personaje.
+- Ajustes de audio y controles, y personalización visual del personaje.
+
+## [0.3.0] - 2026-10-06
+
+Primera versión con selección de mapa y una arena con agujero.
+
+### Añadido
+
+- `pantallas.PantallaSeleccionMapa`: menú entre el menú principal y la ronda para elegir el mapa.
+- `mundo.Arena.conAgujero()`: arena con un agujero de 192 px en el piso centrado; los jugadores que
+  caen por él mueren.
+- `mundo.Arena.hayAgujeroEn(x)`: indica si una coordenada horizontal cae sobre el agujero.
+
+### Cambiado
+
+- "Jugar" en el menú principal lleva a la selección de mapa, en vez de entrar directo a la arena.
+- `PantallaArena` recibe la `Arena` por parámetro, y el reinicio con R conserva el mapa elegido.
+- `entidades.Jugador` no aterriza sobre el agujero y queda muerto al caer por debajo de la pantalla.
+
+## [0.2.2] - 2026-09-04
+
+Retroceso físico y menú principal con brazo dedicado.
+
+### Añadido
+
+- `assets/sprites/brazo.png`: antebrazo separado del cuerpo que sigue la altura de guardia y la
+  estocada.
+- Rotación de la espada con un vaivén aleatorio suavizado.
+- `pantallas.PantallaMenu`: menú principal con título y botones Jugar / Salir, en placeholder.
+
+### Cambiado
+
+- Retroceso físico al recibir un golpe: empuja la velocidad del jugador en vez de mover su posición.
+- Corrección de la desaceleración horizontal: la rama de velocidad negativa usaba `Math.max` y no
+  frenaba al jugador.
+- Se quitó el brazo que venía dibujado dentro de `jugador.png`, para no duplicarlo con el nuevo.
+
+## [0.2.1] - 2026-08-31
+
+Primer combate: colisiones entre jugadores, estocada y sistema de vidas.
+
+### Añadido
+
+- Colisión entre jugadores: empuje cuerpo a cuerpo y espada contra cuerpo, que solo se aplica en el
+  eje X para poder saltar sobre el rival.
+- Tecla de estocada (`F` para el jugador uno, `K` para el dos), que extiende el alcance de la espada.
+- Sistema de vidas: tres por jugador, con parpadeo de invulnerabilidad al recibir un golpe. Al llegar
+  a cero, el jugador queda muerto.
+- Reinicio de la ronda con la tecla `R`.
 
 ## [0.2.0] - 2026-08-27
 
@@ -67,6 +115,9 @@ Primera pre-entrega: configuración inicial del proyecto y del repositorio.
 - Título de la ventana del juego: de `TechnoMortemArena` (nombre técnico del módulo) a
   `Techno Mortem Arena`.
 
-[No publicado]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.2.0...HEAD
+[No publicado]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.2.2...v0.3.0
+[0.2.2]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/releases/tag/v0.1.0

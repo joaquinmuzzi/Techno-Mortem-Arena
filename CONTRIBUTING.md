@@ -1,7 +1,6 @@
 # Cómo contribuir a Techno Mortem Arena
 
-Gracias por sumarte al proyecto. Este documento explica cómo subir cambios al repositorio, qué formato
-usar en los commits y cómo declarar el uso de asistentes de IA.
+Este documento explica cómo subir cambios al repositorio, qué formato usar en los commits y cómo declarar el uso de asistentes de IA.
 
 ## Antes de empezar
 
@@ -18,26 +17,6 @@ usar en los commits y cómo declarar el uso de asistentes de IA.
 3. Si el cambio afecta al comportamiento del juego, agregá una línea en `CHANGELOG.md` en la sección
    `[No publicado]`.
 
-## Cuándo usar pull request y cuándo commit directo
-
-**Usá pull request (rama + PR) cuando:**
-
-- Cambia la lógica compartida que afecta a todos: física, colisiones, pantallas, formatos de archivo
-  como `niveles/mapas.txt`.
-- Es una funcionalidad grande o de varios archivos.
-- Otra persona está trabajando en la misma área y necesita ver los cambios antes.
-- Querés que alguien pruebe o apruebe el cambio antes de que llegue a `main`.
-- Es un cambio que se entrega al profesor y conviene dejar registro de la revisión.
-
-**Podés hacer commit directo a `main` cuando:**
-
-- Es un arreglo chico y claro, como un typo, un texto o un valor de configuración.
-- Es documentación sin lógica, como `README.md` o `CHANGELOG.md`.
-- Estás solo en el área, el cambio es acotado y lo probaste.
-- Es un cambio de herramientas de build que no toca el juego.
-
-Ante la duda, usá pull request.
-
 ### Cómo abrir un pull request
 
 1. Creá una rama a partir de `main`: `git checkout -b feature/nombre-corto`.
@@ -49,18 +28,40 @@ Ante la duda, usá pull request.
 
 ## Formato de los commits
 
-El mensaje tiene un título corto con un tipo, seguido de dos puntos:
+Seguimos el estándar de **Conventional Commits**. El mensaje se compone de un encabezado obligatorio y un cuerpo opcional.
 
-- `Feat:` funcionalidad nueva.
-- `Fix:` corrección de un error.
-- `Docs:` documentación.
-- `Chore:` tareas de mantenimiento, build o configuración.
+### 1. Encabezado (Header)
+Formato: `<tipo>: <descripción corta>`
 
-El título va en imperativo y describe el cambio, no el proceso. Por ejemplo:
-`Feat: Seleccion de mapa y arena con agujero`.
+Tipos principales:
+- `feat:` nueva funcionalidad.
+- `fix:` corrección de un error.
+- `docs:` cambios solo en la documentación.
+- `chore:` tareas de mantenimiento, dependencias o configuración sin modificar código de producción.
+- `refactor:` cambio de código que no arregla un bug ni añade una función.
+- `test:` añadir o corregir pruebas.
 
-Si el commit necesita explicación, dejá una línea en blanco y escribí el cuerpo en prosa. Explicá el
-porqué, no lo que ya se ve en el diff.
+Reglas del encabezado:
+- Usa el tipo siempre en **minúsculas**.
+- Escribe la descripción en **imperativo** y en **minúsculas** (ej. `añade`, `corrige`, `permite`, no `añadido` ni `añadiendo`).
+- Máximo 50–72 caracteres.
+- **Ejemplo:** `feat: permite seleccion de mapa y arena con agujero`
+
+### 2. Cuerpo (Body) — Opcional
+Si el commit requiere explicación adicional:
+- Deja **una línea en blanco** después del encabezado.
+- Redacta en prosa explicando el **motivo** del cambio y el contexto (el *porqué*, no el *qué* o el *cómo*, que ya se ven en el diff).
+- Envuelve las líneas a ~72 caracteres para facilitar la lectura en consola (`git log`).
+
+---
+
+### Ejemplo completo:
+
+feat: permite seleccion de mapa y arena con agujero
+
+Se añade la interfaz de seleccion de escenario previa a la partida. 
+Esto permite probar la nueva mecanica de caida en agujeros sin 
+depender de la carga por defecto.
 
 ## Contribuciones asistidas por IA
 

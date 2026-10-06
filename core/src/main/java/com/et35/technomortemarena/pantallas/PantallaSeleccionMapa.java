@@ -18,18 +18,15 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import com.et35.technomortemarena.RecursosGraficos;
+import com.et35.technomortemarena.mundo.Arena;
 
 /**
- * Menu principal: titulo del juego y dos botones placeholder, Jugar y Salir.
+ * Menu de seleccion de mapa, entre el menu principal y la ronda.
  *
- * <p>Usa el mismo mundo de 960x540 que {@link PantallaArena} para que la escala no "salte" al
- * cambiar de pantalla. Los botones son un pixel blanco de 1x1 estirado y tenido (la misma tecnica de
- * sprite blanco + {@code batch.setColor()} que ya usa {@link com.et35.technomortemarena.entidades.Jugador}
- * con sus texturas), y el texto usa la fuente que trae LibGDX incorporada de fabrica
- * ({@code new BitmapFont()}), asi que no hace falta cargar ningun archivo nuevo para tener algo
- * jugable en pantalla.
+ * <p>Cada boton arma una {@link Arena} distinta y se la pasa a {@link PantallaArena}. Para agregar un
+ * mapa nuevo alcanza con sumar un boton aca y un metodo de fabrica en {@link Arena}.
  */
-public class PantallaMenu extends ScreenAdapter {
+public class PantallaSeleccionMapa extends ScreenAdapter {
 
     private static final float ANCHO_MUNDO = 960f;
     private static final float ALTO_MUNDO = 540f;
@@ -45,49 +42,58 @@ public class PantallaMenu extends ScreenAdapter {
     private final Viewport viewport = new FitViewport(ANCHO_MUNDO, ALTO_MUNDO, new OrthographicCamera());
     private final Texture pixel = crearPixelBlanco();
 
-    private final Rectangle botonJugar = new Rectangle(ANCHO_MUNDO / 2f - 120f, 230f, 240f, 60f);
-    private final Rectangle botonSalir = new Rectangle(ANCHO_MUNDO / 2f - 120f, 150f, 240f, 60f);
+    private final Rectangle botonArenaClasica = new Rectangle(ANCHO_MUNDO / 2f - 150f, 280f, 300f, 60f);
+    private final Rectangle botonArenaAgujero = new Rectangle(ANCHO_MUNDO / 2f - 150f, 200f, 300f, 60f);
+    private final Rectangle botonVolver = new Rectangle(ANCHO_MUNDO / 2f - 150f, 100f, 300f, 60f);
 
-    public PantallaMenu(RecursosGraficos recursos) {
+    public PantallaSeleccionMapa(RecursosGraficos recursos) {
         this.recursos = recursos;
     }
 
     @Override
     public void render(float delta) {
         Vector2 mouse = viewport.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
-        boolean sobreJugar = botonJugar.contains(mouse);
-        boolean sobreSalir = botonSalir.contains(mouse);
+        boolean sobreClasica = botonArenaClasica.contains(mouse);
+        boolean sobreAgujero = botonArenaAgujero.contains(mouse);
+        boolean sobreVolver = botonVolver.contains(mouse);
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || (Gdx.input.justTouched() && sobreJugar)) {
-            irAJugar();
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || (Gdx.input.justTouched() && sobreClasica)) {
+            jugarEn(Arena.porDefecto());
             return;
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (Gdx.input.justTouched() && sobreSalir)) {
-            Gdx.app.exit();
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2) || (Gdx.input.justTouched() && sobreAgujero)) {
+            jugarEn(Arena.conAgujero());
+            return;
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (Gdx.input.justTouched() && sobreVolver)) {
+            volverAlMenu();
             return;
         }
 
-        dibujar(sobreJugar, sobreSalir);
+        dibujar(sobreClasica, sobreAgujero, sobreVolver);
     }
 
-    /**
-     * Igual que {@code PantallaArena.reiniciar()}: {@code setScreen} no libera esta pantalla, solo le
-     * llama {@code hide()}, asi que hay que disponerla a mano o el pixel/la fuente quedan sin liberar.
-     */
-    private void irAJugar() {
+    private void jugarEn(Arena arena) {
         Game juego = (Game) Gdx.app.getApplicationListener();
-        juego.setScreen(new PantallaSeleccionMapa(recursos));
+        juego.setScreen(new PantallaArena(recursos, arena));
         dispose();
     }
 
-    private void dibujar(boolean sobreJugar, boolean sobreSalir) {
+    private void volverAlMenu() {
+        Game juego = (Game) Gdx.app.getApplicationListener();
+        juego.setScreen(new PantallaMenu(recursos));
+        dispose();
+    }
+
+    private void dibujar(boolean sobreClasica, boolean sobreAgujero, boolean sobreVolver) {
         ScreenUtils.clear(FONDO);
         viewport.apply();
         batch.setProjectionMatrix(viewport.getCamera().combined);
 
         batch.begin();
-        dibujarBoton(botonJugar, sobreJugar, "JUGAR");
-        dibujarBoton(botonSalir, sobreSalir, "SALIR");
+        dibujarBoton(botonArenaClasica, sobreClasica, "1 - ARENA CLASICA");
+        dibujarBoton(botonArenaAgujero, sobreAgujero, "2 - ARENA CON AGUJERO");
+        dibujarBoton(botonVolver, sobreVolver, "VOLVER");
         dibujarTitulo();
         batch.end();
     }
@@ -97,7 +103,7 @@ public class PantallaMenu extends ScreenAdapter {
         batch.draw(pixel, boton.x, boton.y, boton.width, boton.height);
         batch.setColor(Color.WHITE);
 
-        fuente.getData().setScale(1.6f);
+        fuente.getData().setScale(1.3f);
         layout.setText(fuente, texto);
         float x = boton.x + (boton.width - layout.width) / 2f;
         float y = boton.y + (boton.height + layout.height) / 2f;
@@ -105,8 +111,8 @@ public class PantallaMenu extends ScreenAdapter {
     }
 
     private void dibujarTitulo() {
-        fuente.getData().setScale(3f);
-        layout.setText(fuente, "TECHNO MORTEM ARENA");
+        fuente.getData().setScale(2.2f);
+        layout.setText(fuente, "ELEGI EL MAPA");
         float x = (ANCHO_MUNDO - layout.width) / 2f;
         float y = ALTO_MUNDO - 100f;
         fuente.draw(batch, layout, x, y);

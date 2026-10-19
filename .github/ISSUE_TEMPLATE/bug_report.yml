@@ -1,0 +1,43 @@
+name: Reporte de error
+description: Algo no funciona (el juego se cierra, una mecánica se comporta mal, el editor falla...).
+labels: ["bug"]
+body:
+  - type: textarea
+    id: que-paso
+    attributes:
+      label: ¿Qué pasó?
+      description: Incluí el mensaje de error o la excepción, si hay.
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducirlo
+      placeholder: |
+        1. Abrir el editor de niveles
+        2. Pintar un bloque con el pincel de 4x4 en el borde
+        3. Probar el mapa
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: ¿Qué esperabas que pasara?
+  - type: input
+    id: version
+    attributes:
+      label: Versión del juego
+      description: La del último CHANGELOG, o el commit.
+      placeholder: "0.4.0"
+  - type: input
+    id: sistema
+    attributes:
+      label: Sistema operativo y Java
+      placeholder: "Windows 11, JDK 17"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Salida de la consola o captura
+      description: Lo que se muestra en la terminal, o arrastrá una captura acá.

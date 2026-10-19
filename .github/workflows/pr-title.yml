@@ -1,0 +1,58 @@
+name: PR title
+
+# Los pull requests se mergean con squash y el título del PR pasa a ser el mensaje del commit en
+# main, así que el título debe seguir Conventional Commits: https://www.conventionalcommits.org
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  conventional-title:
+    name: conventional title
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Verificar que el título siga Conventional Commits
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          ACTOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: [^ ].{0,70}$'
+          # Dependabot escribe títulos largos ("bump X from A to B in /dir"): se le controla el tipo
+          # y el alcance, pero no el largo.
+          if [ "$ACTOR" = "dependabot[bot]" ]; then
+            pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: [^ ].*$'
+          fi
+          if printf '%s' "$TITLE" | grep -Eq "$pattern"; then
+            echo "OK: $TITLE"
+          else
+            echo "::error::El título del PR debe seguir Conventional Commits: tipo(alcance): resumen"
+            echo "Tipos permitidos: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+            echo "Ejemplos: 'fix(editor): evita guardar mapas sin nombre', 'docs: agrega la guía de contribución'"
+            echo "Recibido: $TITLE"
+            exit 1
+          fi
+
+  # La descripción pasa a ser el mensaje del commit en main, así que tiene que decir qué herramienta
+  # de IA y qué modelo ayudaron, si hubo alguno (ver "Contribuciones asistidas por IA" en CONTRIBUTING.md)
+  ai-disclosure:
+    name: ai disclosure
+    # Dependabot escribe sus propias descripciones
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Verificar que la descripción termine con una línea Assisted-by
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          lines=$(printf '%s\n' "$BODY" | tr -d '\r' | grep -Ei '^Assisted-by:' || true)
+          if [ -n "$lines" ] && ! printf '%s\n' "$lines" | grep -Eivq '^Assisted-by: *(none|[^:]+:[^[:space:]]+) *$'; then
+            echo "$lines"
+          else
+            echo "::error::Terminá la descripción con 'Assisted-by: AGENTE:MODELO' (una línea por asistente, por ejemplo 'Assisted-by: Claude Code:claude-sonnet-5-5') o con 'Assisted-by: none'. Ver 'Contribuciones asistidas por IA' en CONTRIBUTING.md."
+            echo "Recibido: ${lines:-ninguna línea Assisted-by}"
+            exit 1
+          fi

@@ -7,6 +7,21 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [No publicado]
 
+### Añadido
+
+- Workflows de GitHub Actions: `CI` (compila todos los módulos y corre los tests con JDK 17) y
+  `PR title` (título Conventional Commits y línea `Assisted-by:` en la descripción).
+- Dependabot mensual y agrupado para las GitHub Actions y las dependencias de Gradle.
+- Tests unitarios con JUnit 5 en `core/src/test`: grilla de la arena y sus bloques, alturas de la
+  espada y mapas del editor.
+- Plantillas de pull request y de issues (error y sugerencia), `SECURITY.md`, `CODE_OF_CONDUCT.md` y
+  `THIRD_PARTY_NOTICES.md`.
+
+### Cambiado
+
+- `CONTRIBUTING.md`: todo cambio llega por pull request con squash, se documentan las
+  verificaciones y las reglas para asistentes de IA.
+
 ### Por hacer
 
 - Estocadas, bloqueos por coincidencia de altura y desarme.

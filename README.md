@@ -220,3 +220,15 @@ Para reemplazarlos por arte propio basta sobrescribir el `.png` respetando el no
 medidas, hay que ajustar `Jugador.ANCHO` y `Jugador.ALTO`.
 
 El registro detallado de cambios está en [CHANGELOG.md](CHANGELOG.md).
+
+## Pruebas y contribuciones
+
+```bash
+./gradlew test    # tests unitarios (JUnit 5, en core/src/test)
+./gradlew build   # compila todos los módulos
+```
+
+El CI de GitHub Actions corre estas mismas tareas en cada pull request. Las reglas para contribuir
+están en [CONTRIBUTING.md](CONTRIBUTING.md), la política de seguridad en [SECURITY.md](SECURITY.md)
+y el código de conducta en [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Las licencias de las
+dependencias están en [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

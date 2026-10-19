@@ -1,0 +1,28 @@
+name: Sugerencia
+description: Proponé una idea para Techno Mortem Arena.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: ¿Qué te gustaría poder hacer?
+      description: El problema o el caso de uso, más que la solución.
+      placeholder: "Cuando pierdo una ronda quiero poder elegir un objeto para agregar al mapa..."
+    validations:
+      required: true
+  - type: textarea
+    id: solucion
+    attributes:
+      label: ¿Cómo podría resolverlo el juego?
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas que consideraste
+  - type: dropdown
+    id: propuesta
+    attributes:
+      label: ¿Está en la propuesta del proyecto (Wiki)?
+      options:
+        - Sí
+        - No, es una idea nueva
+        - No sé

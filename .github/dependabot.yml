@@ -1,0 +1,34 @@
+# Mantiene al día las GitHub Actions y las dependencias de Gradle con PRs mensuales y agrupados.
+# Los prefijos de commit generan títulos Conventional Commits como "ci(deps): bump ...".
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci
+      include: scope
+
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    # libGDX y LWJGL se versionan juntos en gradle.properties: los saltos mayores se hacen a mano,
+    # como trabajo planificado. Las actualizaciones menores y de seguridad sí llegan.
+    ignore:
+      - dependency-name: "com.badlogicgames.gdx:*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      gradle:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: build
+      include: scope

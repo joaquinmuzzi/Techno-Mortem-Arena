@@ -78,13 +78,15 @@ core/src/main/java/com/et35/technomortemarena/
 │   ├── Jugador.java           Entidad controlable: física, salto, guardia y apilado
 │   └── AlturaEspada.java      Las tres alturas de guardia (cadera, pecho, cabeza)
 ├── entrada/Controles.java     Mapeo de teclas de cada duelista
+├── partida/
+│   └── MarcadorPartida.java   Marcador al mejor de 5 rondas y ganador de la partida
 ├── niveles/
 │   ├── MapaGuardado.java      Mapa con nombre creado en el editor
 │   └── RepositorioMapas.java  Guardado y lectura de mapas
 └── pantallas/
     ├── PantallaMenu.java          Menú principal (Jugar / Editor de niveles / Salir)
-    ├── PantallaSeleccionMapa.java Elección del mapa
-    ├── PantallaArena.java         Ronda de duelo, cartel de controles y pausa
+    ├── PantallaSeleccionMapa.java Elección del mapa: predefinidos y "Mis mapas" del editor
+    ├── PantallaArena.java         Partida al mejor de 5: ronda, HUD de vidas, marcador y pausa
     ├── PantallaEditor.java        Editor de niveles
     └── Ui.java                    Interfaz común (botones, texto, rectángulos)
 ```
@@ -205,7 +207,8 @@ Las tareas específicas de un módulo se invocan con el prefijo del módulo: por
 - [x] Ventana a resolución nativa y pantalla completa con F11.
 - [ ] Desarme, lanzamiento de espada y modo cuerpo a cuerpo.
 - [ ] Rodado para esquivar.
-- [ ] Estructura de partida (mejor de 5 rondas, temporizador, muerte súbita).
+- [x] Estructura de partida al mejor de 5 rondas, con HUD de vidas y marcador.
+- [ ] Temporizador por ronda y muerte súbita.
 - [ ] Selección de mapa aleatorio por ronda.
 - [ ] Multijugador en red local (host / cliente).
 - [ ] Pantalla de ajustes (audio y controles) y personalización del personaje.

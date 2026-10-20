@@ -9,7 +9,31 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
-- Workflows de GitHub Actions: `CI` (compila todos los módulos y corre los tests con JDK 17) y
+- Estructura de partida al mejor de 5 rondas: `partida.MarcadorPartida` lleva el conteo de rondas
+  ganadas y termina la partida cuando alguien llega a 3. Cuando un duelistas muere se anota la
+  ronda, hay una pausa breve con el resultado y la siguiente arranca con los dos de vuelta en sus
+  spawns. En empate (murieron los dos en el mismo fotograma) la ronda se vuelve a jugar sin sumar.
+- Cartel de victoria con el ganador de la partida, el marcador final y botones de revancha, volver
+  a la selección de mapa o al menú principal.
+- HUD durante la ronda: las vidas restantes de cada duelistas en su esquina (del color de cada uno,
+  apagadas cuando se pierden) y, arriba al centro, el número de ronda y el marcador de la partida.
+- `pantallas.PantallaSeleccionMapa`: sección "MIS MAPAS" con los mapas guardados por el editor, que
+  se juegan igual que los predefinidos. La lista se desplaza con la rueda del mouse cuando hay más
+  mapas que filas en pantalla.
+- Pausa con botón "REINICIAR RONDA": reinicia la ronda actual sin tocar el marcador de la partida.
+- `entidades.Jugador`: `reiniciar()` para empezar una ronda nueva en el mismo mapa (spawn, vidas
+  completas y sin efectos pendientes), y los accesores `isVivo()` y `getVida()` para el HUD y el
+  fin de ronda.
+- Tests JUnit 5: `partida.MarcadorPartidaTest` y `entidades.JugadorTest`.
+
+### Cambiado
+
+- `pantallas.PantallaArena`: corrige el dibujado con recursos ya liberados al salir de la pausa
+  hacia el menú principal o la selección de mapa (antes, el mismo fotograma seguía dibujando con
+  el `SpriteBatch` recién disposeado). Al morir, la vida del duelistas queda en cero, para que el
+  HUD muestre el estado real.
+
+### Workflows de GitHub Actions: `CI` (compila todos los módulos y corre los tests con JDK 17) y
   `PR title` (título Conventional Commits y línea `Assisted-by:` en la descripción).
 - Dependabot mensual y agrupado para las GitHub Actions y las dependencias de Gradle.
 - Tests unitarios con JUnit 5 en `core/src/test`: grilla de la arena y sus bloques, alturas de la
@@ -27,7 +51,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Estocadas, bloqueos por coincidencia de altura y desarme.
 - Lanzamiento de espada y modo cuerpo a cuerpo (puños y patadas).
 - Rodado para esquivar ataques.
-- Estructura de partida al mejor de 5 rondas, con temporizador y muerte súbita.
+- Temporizador por ronda y muerte súbita, dentro de la partida al mejor de 5 ya implementada.
 - Más arenas y selección de mapa aleatorio por ronda.
 - Multijugador en red local: creación de partida (host) y búsqueda / unión (cliente).
 - Ajustes de audio y controles, y personalización visual del personaje.

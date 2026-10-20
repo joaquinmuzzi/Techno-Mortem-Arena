@@ -7,21 +7,26 @@ recibe correcciones.
 
 ## Cómo está expuesto el juego
 
-Techno Mortem Arena es un juego de escritorio que se ejecuta en tu propia computadora. Hoy no abre
-ningún puerto: el duelo es local, con dos jugadores en el mismo teclado. Lee y escribe un único
-archivo de datos, `niveles/mapas.txt`, donde el editor de niveles guarda los mapas.
+Techno Mortem Arena es un juego de escritorio que se ejecuta en tu propia computadora. El duelo
+local no abre ningún puerto. Lee y escribe un único archivo de datos, `niveles/mapas.txt`, donde el
+editor de niveles guarda los mapas.
 
-El multijugador en red local (anfitrión y cliente por sockets de Java) todavía no está implementado.
-Cuando llegue, el juego va a abrir y aceptar conexiones en la red local, y esa parte va a entrar en
-esta política.
+El **multijugador** usa UDP. Quien crea una sala (el anfitrión) abre un puerto UDP (7777 por
+defecto) en **todas** las interfaces de su computadora, y cualquiera que conozca la dirección y el
+puerto puede intentar unirse. La sala acepta un solo cliente a la vez. El juego no cifra el tráfico
+ni autentica a las personas: solo evita que un tercero tome el lugar de un cliente ya conectado
+(cada sesión tiene un token al azar y las entradas solo valen desde la dirección del cliente), y
+descarta todo paquete con otro formato o fuera de rango. El cliente baja el mapa del anfitrión,
+y lo valida (largo y caracteres permitidos) antes de usarlo.
 
 Ejemplos de problemas que queremos conocer:
 
 - un mapa de `niveles/mapas.txt` armado a propósito que haga que el juego lea o escriba archivos
   fuera de su carpeta, ejecute código o se caiga de una forma que afecte al sistema;
 - una dependencia con una vulnerabilidad que el juego use de manera vulnerable;
-- cuando exista el multijugador: un paquete de red mal formado que cuelgue o tome el control del
-  anfitrión o del cliente, o que el juego quede accesible desde fuera de la red local;
+- un paquete de red mal formado que cuelgue, tumbe o tome el control del anfitrión o del cliente, o
+  que una sala pueda usarse para atacar a un tercero (por ejemplo, para amplificar tráfico);
+- que alguien sin el token pueda mover al jugador de otra persona o sacarla de la sala;
 - credenciales, claves o datos personales subidos por error al repositorio.
 
 Fuera de alcance: tramposos en una partida local y errores de balance del juego.

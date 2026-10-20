@@ -75,37 +75,86 @@ core/src/main/java/com/et35/technomortemarena/
 │   ├── CintaTransportadora.java  Bloque que empuja hacia un lado
 │   └── Pincho.java            Bloque letal al tocarlo
 ├── entidades/
-│   ├── Jugador.java           Entidad controlable: física, salto, guardia y apilado
-│   └── AlturaEspada.java      Las tres alturas de guardia (cadera, pecho, cabeza)
-├── entrada/Controles.java     Mapeo de teclas de cada duelista
+│   ├── Jugador.java           Entidad controlable: física, salto, apuntado, estocada y apilado
+│   ├── EstadoJugador.java     Lo necesario para dibujar a un jugador (viaja por la red)
+│   └── Hoja.java              La espada como caja rotada: choque exacto (SAT) y barrido de tajos
+├── entrada/
+│   ├── Controles.java         Mapeo de teclas de cada duelista
+│   ├── FuenteEntrada.java     De dónde lee un jugador lo que hace (teclado o red)
+│   ├── EntradaJugador.java    Lo que un jugador quiere hacer en un fotograma
+│   └── EntradaLocal.java      Teclado (mover, saltar) y mouse (apuntar, estocar) locales
+├── red/                       Multijugador por UDP (ver "Multijugador")
+│   ├── Protocolo.java         Cabecera, tipos de paquete y constantes
+│   ├── ServidorSala.java      Lado del anfitrión: recibe entradas y manda el estado
+│   ├── ClienteSala.java       Lado del cliente: se une, baja el mapa y recibe el estado
+│   ├── EntradaRemota.java     Entrada de un jugador que llega por la red
+│   ├── CodecMapa.java         Filas del mapa a bytes (con repeticiones comprimidas)
+│   └── CodecEstado.java       Estado de un jugador a bytes
 ├── partida/
-│   └── MarcadorPartida.java   Marcador al mejor de 5 rondas y ganador de la partida
+│   ├── MarcadorPartida.java   Marcador al mejor de 5 rondas y ganador de la partida
+│   ├── RondasPartida.java     Ronda, espera entre rondas y victoria (lógica pura)
+│   └── EstadoPartida.java     Estado de la partida que viaja por la red
 ├── niveles/
 │   ├── MapaGuardado.java      Mapa con nombre creado en el editor
 │   └── RepositorioMapas.java  Guardado y lectura de mapas
 └── pantallas/
-    ├── PantallaMenu.java          Menú principal (Jugar / Editor de niveles / Salir)
+    ├── PantallaMenu.java          Menú principal (Modo de prueba / Multijugador / Editor de niveles / Salir)
+    ├── PantallaMultijugador.java  Crear una sala o unirse a la de otro
     ├── PantallaSeleccionMapa.java Elección del mapa: predefinidos y "Mis mapas" del editor
-    ├── PantallaArena.java         Partida al mejor de 5: ronda, HUD de vidas, marcador y pausa
+    ├── PantallaArena.java         Modo de prueba, anfitrión o cliente: rondas, HUD, marcador y pausa
     ├── PantallaEditor.java        Editor de niveles
     └── Ui.java                    Interfaz común (botones, texto, rectángulos)
 ```
 
 ## Controles
 
-| Acción | Jugador 1 | Jugador 2 |
-|---|---|---|
-| Mover izquierda | `A` | `←` |
-| Mover derecha | `D` | `→` |
-| Saltar | `W` | `↑` |
-| Subir guardia | `E` | `O` |
-| Bajar guardia | `Q` | `L` |
-| Estocada | `F` | `K` |
+| Acción | Control |
+|---|---|
+| Mover izquierda / derecha | `A` / `D` |
+| Saltar | `W` |
+| Apuntar la espada | Mover el mouse: la espada gira hacia el cursor |
+| Estocada | Clic izquierdo |
 
-La guardia tiene tres alturas —cadera, pecho y cabeza— y arranca en pecho. Al iniciar cada ronda se
-muestra un cartel con los controles de cada jugador.
+La espada es una caja rotada y lo que se ve es lo que choca: cualquier contacto de la hoja con el
+cuerpo del rival lo hiere, y el choque entre dos hojas empuja a los dos. La estocada adelanta la hoja
+un instante (más alcance) y tiene una recarga corta. Un tajo rápido hiere a quien cruza en el camino,
+no solo a quien queda debajo de la hoja al terminar. Al iniciar la ronda se muestra un cartel con los
+controles.
+
+**Modo de prueba** (botón del menú principal): un jugador con mouse contra un blanco quieto y sin
+espada, que reaparece unos segundos después de caer. Sirve para probar mapas (también desde el editor)
+y, más adelante, armas. El 1 contra 1 se juega por Multijugador.
 
 Controles generales: `ESC` pausa la partida y `F11` alterna la pantalla completa.
+
+## Multijugador
+
+Cada instancia del juego controla **un solo jugador**, con el mismo teclado y mouse de siempre
+(`A`/`D`, `W`, mouse y clic), y varias instancias se conectan a una misma sala. Hoy la sala admite
+dos jugadores. La comunicación es por **UDP**.
+
+Para probarlo en una sola máquina, abrí el juego dos veces:
+
+1. En la primera: `MULTIJUGADOR` → `CREAR SALA` → elegir el mapa. Queda esperando al otro jugador.
+2. En la segunda: `MULTIJUGADOR` → dejar `127.0.0.1:7777` → `UNIRSE A UNA SALA`.
+
+El campo de texto acepta `ip:puerto`. Para jugar entre dos computadoras de la misma red, el
+anfitrión comparte su IP local y el puerto (7777 por defecto; es el mismo que se escribe al crear
+la sala). El firewall de Windows puede preguntar si permite a Java recibir conexiones: para probar
+en la misma máquina no hace falta permitirlo.
+
+La partida es **al mejor de 5 rondas** (gana quien llega a 3): cuando alguien cae se anota la ronda,
+hay una pausa breve con el resultado y la siguiente arranca con los dos de vuelta en sus lugares. En
+empate la ronda se repite sin sumar. El HUD muestra las vidas de cada uno y el marcador, y al final
+aparece el cartel de victoria con la revancha (la pide el anfitrión).
+
+El anfitrión simula todo el juego y le manda el estado al cliente, que solo manda sus teclas y
+dibuja lo que recibe. `R` reinicia la ronda solo en el anfitrión, y en red `ESC` abre el menú
+de pausa sin frenar la partida. Si el anfitrión sale, el cliente vuelve a la pantalla de
+multijugador con el motivo; si el cliente se va, el anfitrión vuelve a esperar a otro.
+
+Todavía no hay descubrimiento de salas ni juego por internet (requiere NAT o un servidor): ver
+`CHANGELOG.md` y la tarea de ClickUp "Red".
 
 ## Propuesta del proyecto (Wiki)
 
@@ -198,8 +247,8 @@ Las tareas específicas de un módulo se invocan con el prefijo del módulo: por
 - [x] `README.md` y `CHANGELOG.md`.
 - [x] Wiki activada con la propuesta del proyecto.
 - [x] Arena cerrada con piso y límites laterales.
-- [x] Dos entidades controlables por teclado, con gravedad y salto.
-- [x] Guardia en tres alturas (cadera, pecho, cabeza).
+- [x] Entidades con gravedad y salto.
+- [x] Combate apuntado con el mouse: espada como caja rotada con choque exacto, estocada con clic y modo de prueba con blanco.
 - [x] Menú principal y selección manual de mapa.
 - [x] Bloques interactivos: piso, trampolín, cinta transportadora y pincho.
 - [x] Editor de niveles (grilla, pincel, spawns, guardar/cargar, probar mapa).
@@ -207,10 +256,11 @@ Las tareas específicas de un módulo se invocan con el prefijo del módulo: por
 - [x] Ventana a resolución nativa y pantalla completa con F11.
 - [ ] Desarme, lanzamiento de espada y modo cuerpo a cuerpo.
 - [ ] Rodado para esquivar.
-- [x] Estructura de partida al mejor de 5 rondas, con HUD de vidas y marcador.
+- [x] Estructura de partida al mejor de 5 rondas, con HUD de vidas y marcador (en Multijugador).
 - [ ] Temporizador por ronda y muerte súbita.
 - [ ] Selección de mapa aleatorio por ronda.
-- [ ] Multijugador en red local (host / cliente).
+- [x] Multijugador por UDP en red local: crear sala y unirse (2 jugadores, una instancia por jugador).
+- [ ] Multijugador por internet (NAT, relay o servidor dedicado) y descubrimiento de salas.
 - [ ] Pantalla de ajustes (audio y controles) y personalización del personaje.
 - [ ] Animaciones del personaje.
 

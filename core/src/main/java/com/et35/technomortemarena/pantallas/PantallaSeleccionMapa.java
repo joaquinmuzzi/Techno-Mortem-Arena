@@ -1,6 +1,8 @@
 package com.et35.technomortemarena.pantallas;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
@@ -64,9 +66,26 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     /** Primera fila de {@link #mapasGuardados} visible en pantalla; se mueve con la rueda del mouse. */
     private int desplazamientoGuardados;
 
+    /** Pantalla a la que se pasa con el mapa elegido, y a la que se vuelve con ESC o el boton Volver. */
+    private final Function<Arena, Screen> alElegir;
+    private final Supplier<Screen> alVolver;
+
     public PantallaSeleccionMapa(RecursosGraficos recursos, RecursosAudio audio) {
+        this(recursos, audio,
+            arena -> new PantallaArena(recursos, audio, arena),
+            () -> new PantallaMenu(recursos, audio));
+    }
+
+    /**
+     * @param alElegir pantalla que se muestra con el mapa elegido; la de multijugador abre la sala
+     * @param alVolver pantalla a la que se vuelve sin elegir
+     */
+    public PantallaSeleccionMapa(RecursosGraficos recursos, RecursosAudio audio,
+                                 Function<Arena, Screen> alElegir, Supplier<Screen> alVolver) {
         this.recursos = recursos;
         this.audio = audio;
+        this.alElegir = alElegir;
+        this.alVolver = alVolver;
         this.mapasGuardados = RepositorioMapas.cargarTodos();
     }
 
@@ -108,7 +127,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (Gdx.input.justTouched() && sobreVolver)) {
-            cambiarA(new PantallaMenu(recursos, audio));
+            cambiarA(alVolver.get());
             return;
         }
 
@@ -154,7 +173,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     }
 
     private void jugarEn(Arena arena) {
-        cambiarA(new PantallaArena(recursos, audio, arena));
+        cambiarA(alElegir.apply(arena));
     }
 
     /** Igual que en el menu principal: {@code setScreen} no libera esta pantalla, hay que disponerla a mano. */

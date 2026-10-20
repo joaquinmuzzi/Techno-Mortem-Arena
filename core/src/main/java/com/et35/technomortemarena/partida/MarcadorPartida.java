@@ -48,6 +48,15 @@ public final class MarcadorPartida {
         return rondasGanadasDos >= RONDAS_PARA_GANAR;
     }
 
+    /**
+     * Pone el marcador en un valor dado. Lo usan los clientes de una partida en red, que no llevan la
+     * cuenta: copian la que lleva el anfitrion.
+     */
+    public void restaurar(int rondasGanadasUno, int rondasGanadasDos) {
+        this.rondasGanadasUno = rondasGanadasUno;
+        this.rondasGanadasDos = rondasGanadasDos;
+    }
+
     /** Vuelve el marcador a cero, para una revancha en el mismo mapa. */
     public void reiniciar() {
         rondasGanadasUno = 0;

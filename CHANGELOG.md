@@ -9,42 +9,82 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
-- Estructura de partida al mejor de 5 rondas: `partida.MarcadorPartida` lleva el conteo de rondas
-  ganadas y termina la partida cuando alguien llega a 3. Cuando un duelistas muere se anota la
-  ronda, hay una pausa breve con el resultado y la siguiente arranca con los dos de vuelta en sus
-  spawns. En empate (murieron los dos en el mismo fotograma) la ronda se vuelve a jugar sin sumar.
-- Cartel de victoria con el ganador de la partida, el marcador final y botones de revancha, volver
-  a la selección de mapa o al menú principal.
-- HUD durante la ronda: las vidas restantes de cada duelistas en su esquina (del color de cada uno,
-  apagadas cuando se pierden) y, arriba al centro, el número de ronda y el marcador de la partida.
-- `pantallas.PantallaSeleccionMapa`: sección "MIS MAPAS" con los mapas guardados por el editor, que
-  se juegan igual que los predefinidos. La lista se desplaza con la rueda del mouse cuando hay más
-  mapas que filas en pantalla.
-- Pausa con botón "REINICIAR RONDA": reinicia la ronda actual sin tocar el marcador de la partida.
-- `entidades.Jugador`: `reiniciar()` para empezar una ronda nueva en el mismo mapa (spawn, vidas
-  completas y sin efectos pendientes), y los accesores `isVivo()` y `getVida()` para el HUD y el
-  fin de ronda.
-- Tests JUnit 5: `partida.MarcadorPartidaTest` y `entidades.JugadorTest`.
-
-### Cambiado
-
-- `pantallas.PantallaArena`: corrige el dibujado con recursos ya liberados al salir de la pausa
-  hacia el menú principal o la selección de mapa (antes, el mismo fotograma seguía dibujando con
-  el `SpriteBatch` recién disposeado). Al morir, la vida del duelistas queda en cero, para que el
-  HUD muestre el estado real.
-
-### Workflows de GitHub Actions: `CI` (compila todos los módulos y corre los tests con JDK 17) y
+- Estructura de partida al mejor de 5 rondas (por PR de @juarezmateo, integrada con el combate con mouse
+  y la red). `partida.MarcadorPartida` lleva el conteo de rondas ganadas y termina la partida cuando
+  alguien llega a 3; `partida.RondasPartida` es la lógica pura de la ronda, la espera entre rondas y la
+  victoria. Cuando un duelista cae se anota la ronda, hay una pausa breve con el resultado y la siguiente
+  arranca con los dos de vuelta en sus spawns. En empate (cayeron los dos en el mismo fotograma) la ronda
+  se vuelve a jugar sin sumar. Se juega en Multijugador: el anfitrión lleva la cuenta y el estado de la
+  partida (`partida.EstadoPartida`) viaja al cliente junto con el de los jugadores.
+- Cartel de victoria con el ganador de la partida, el marcador final y botones de revancha (la pide el
+  anfitrión), salir de la sala o volver al menú principal.
+- HUD durante la ronda: las vidas restantes de cada duelista (del color de cada uno, apagadas cuando se
+  pierden) a los costados del centro, y arriba al centro el número de ronda y el marcador. Las vidas van
+  al lado del centro y no en las esquinas para no pisar el cartel de controles.
+- `pantallas.PantallaSeleccionMapa`: sección "MIS MAPAS" con los mapas guardados por el editor, que se
+  juegan igual que los predefinidos (también al crear una sala). La lista se desplaza con la rueda del
+  mouse cuando hay más mapas que filas en pantalla.
+- Pausa con botón "REINICIAR RONDA" (modo de prueba y anfitrión): reinicia la ronda actual sin tocar el
+  marcador de la partida.
+- `entidades.Jugador`: `reiniciar()` para empezar una ronda nueva en el mismo mapa (spawn, vidas completas
+  y sin efectos pendientes), y los accesores `isVivo()` y `getVida()` para el HUD y el fin de ronda.
+- Tests JUnit 5: `MarcadorPartidaTest`, `RondasPartidaTest`, `JugadorTest` y los del estado de la partida
+  en el protocolo.
+- Combate apuntado con el mouse. La espada gira hacia el cursor desde el hombro y el clic izquierdo
+  lanza una estocada (la hoja avanza un instante, con una recarga corta). `entidades.Hoja` es la hoja
+  como caja rotada, con choque exacto por el teorema del eje de separación contra el cuerpo y contra
+  otras hojas. Cualquier contacto de la hoja con el cuerpo del rival lo hiere y el choque de hojas
+  empuja a los dos. Un tajo rápido se barre en pasos de unos 11 grados, así hiere a quien cruza en el
+  camino y no solo a quien queda debajo de la hoja al final del fotograma.
+- `entrada.EntradaLocal`: teclado (mover, saltar) y mouse (apuntar, estocar) locales. El cursor se
+  pasa a coordenadas del mundo con el viewport de la arena.
+- Modo de prueba: un blanco quieto, sin espada, que reaparece 2 segundos después de caer.
+- Tests del combate sin ventana (`JugadorCombateTest`, `HojaTest`): apuntado exacto, hiere solo al
+  apuntar al rival, alcance de la estocada y su recarga, invulnerabilidad de 1 segundo, barrido de
+  tajos rápidos, choque de hojas, blanco inerte y estado exportado e importado.
+- Multijugador por UDP: cada instancia del juego controla un solo jugador y se conecta a una sala
+  (hoy de dos jugadores). El anfitrión simula toda la partida y le manda el estado al cliente, que
+  manda sus teclas y dibuja lo recibido. Paquete `red` (`Protocolo`, `ServidorSala`, `ClienteSala`,
+  `EntradaRemota`, `CodecMapa`, `CodecEstado`) y pantalla `PantallaMultijugador` (crear sala o
+  unirse con `ip:puerto`), con un botón nuevo en el menú principal. El cliente baja el mapa del
+  anfitrión. Las acciones de una sola vez viajan como contadores y los paquetes viejos se
+  descartan, así la pérdida o el desorden de UDP no rompe la partida. La entrada de red lleva un
+  token por sesión y solo vale desde la dirección del cliente.
+- `entrada.FuenteEntrada` y `EntradaJugador`, y `entidades.EstadoJugador`:
+  `Jugador` ya no lee el teclado directamente, y puede exportar e importar su estado.
+- `Arena.getFilas()`: las filas de texto de las que salió el mapa.
+- Tests de la red: codecs, entrada remota y la sala completa sobre sockets reales por loopback
+  (apretón de manos, mapa, entradas, estado, sala llena, tokens, timeouts y paquetes basura).
+- Workflows de GitHub Actions: `CI` (compila todos los módulos y corre los tests con JDK 17) y
   `PR title` (título Conventional Commits y línea `Assisted-by:` en la descripción).
 - Dependabot mensual y agrupado para las GitHub Actions y las dependencias de Gradle.
-- Tests unitarios con JUnit 5 en `core/src/test`: grilla de la arena y sus bloques, alturas de la
-  espada y mapas del editor.
+- Tests unitarios con JUnit 5 en `core/src/test`: grilla de la arena y sus bloques y mapas del editor.
 - Plantillas de pull request y de issues (error y sugerencia), `SECURITY.md`, `CODE_OF_CONDUCT.md` y
   `THIRD_PARTY_NOTICES.md`.
 
 ### Cambiado
 
+- Protocolo de red versión 3: el estado que manda el anfitrión incluye el de la partida (etapa, ronda,
+  marcador y ganador de la ronda). No es compatible con la versión 2.
+- `pantallas.PantallaArena`: corrige el dibujado con recursos ya liberados al salir de la pausa hacia el
+  menú principal o la selección de mapa (antes, el mismo fotograma seguía dibujando con el `SpriteBatch`
+  recién disposeado). Al morir, la vida del duelista queda en cero, para que el HUD muestre el estado real.
+  ESC solo pausa mientras la ronda está en juego.
+- Protocolo de red versión 2: la entrada lleva el punto del mouse (dos enteros de 16 bits) y un
+  contador de estocadas, y el estado lleva el ángulo y la extensión de la espada. No es compatible
+  con la versión 1: las dos instancias tienen que ser de la misma versión del juego.
+- El botón "Jugar" del menú pasa a ser "Modo de prueba". El modo local de dos jugadores en un teclado
+  se reemplaza por un jugador con mouse contra un blanco; el 1 contra 1 es por Multijugador.
+- `PantallaArena` tiene tres modos (de prueba, anfitrión y cliente) y `PantallaSeleccionMapa` acepta qué
+  hacer con el mapa elegido.
 - `CONTRIBUTING.md`: todo cambio llega por pull request con squash, se documentan las
   verificaciones y las reglas para asistentes de IA.
+
+### Quitado
+
+- Las tres alturas de guardia (`AlturaEspada`) y sus teclas (`E`/`Q`, `O`/`L`), la estocada con tecla
+  sostenida y el Jugador 2 con teclado (flechas, `K`).
+- `entrada.EntradaTeclado`, reemplazada por `EntradaLocal`.
 
 ### Por hacer
 
@@ -53,7 +93,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Rodado para esquivar ataques.
 - Temporizador por ronda y muerte súbita, dentro de la partida al mejor de 5 ya implementada.
 - Más arenas y selección de mapa aleatorio por ronda.
-- Multijugador en red local: creación de partida (host) y búsqueda / unión (cliente).
+- Multijugador por internet (NAT, relay o servidor dedicado), descubrimiento de salas en la red local
+  y más de dos jugadores por sala.
 - Ajustes de audio y controles, y personalización visual del personaje.
 
 ## [0.4.1] - 2026-10-19

@@ -16,6 +16,7 @@ public final class EstadoJugador {
     public boolean corriendo;
     /** Hacia donde apunta la espada, en radianes. */
     public float anguloEspada;
+    public float anguloObjetivo;
     /** Cuanto esta adelantada la hoja por la estocada, de 0 a 1. */
     public float extension;
     public float tiempoRestanteFlash;

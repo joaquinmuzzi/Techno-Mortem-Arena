@@ -88,7 +88,12 @@ class JugadorCombateTest {
         assertEquals(3, d.getVida());
         guionA.apuntar(1200f, HOMBRO_Y);
 
-        paso(a, d);
+        // la espada tarda unos fotogramas en girar hasta el rival
+        int fotogramas = 0;
+        while (d.getVida() == 3 && fotogramas < 60) {
+            paso(a, d);
+            fotogramas++;
+        }
 
         assertEquals(2, d.getVida());
         assertEquals(3, a.getVida());
@@ -132,7 +137,7 @@ class JugadorCombateTest {
         // un punto a 3 de ancho y 4 de alto del hombro (ver pivote: 1068, 240): angulo de 53.13 grados
         guionA.apuntar(1068f + 300f, HOMBRO_Y + 400f);
 
-        paso(a, d);
+        pasos(a, d, 30); // la espada tarda unos fotogramas en girar hasta el cursor
 
         assertEquals(Math.atan2(4, 3), a.getAngulo(), 0.001);
         assertEquals(a.getAngulo(), a.getHoja().getAngulo(), 0.0001f);
@@ -231,9 +236,12 @@ class JugadorCombateTest {
         // el rival esta en el aire, entre la hoja horizontal (abajo) y la vertical (a la izquierda)
         Jugador a = jugador(guionA, 1000f, PISO, true);
         Jugador d = blanco(1110f, PISO + 172f);
-        guionA.apuntar(1068f, HOMBRO_Y + 500f); // arriba, en un solo fotograma
+        guionA.apuntar(1068f, HOMBRO_Y + 500f); // arriba
 
-        a.actualizar(DT, arena, d);
+        // la espada tarda varios fotogramas en girar hasta alli, pero en el camino cruza al rival
+        for (int i = 0; i < 30; i++) {
+            a.actualizar(DT, arena, d);
+        }
 
         Rectangle cuerpoDelRival = new Rectangle(d.getPosicion().x, d.getPosicion().y, Jugador.ANCHO, Jugador.ALTO);
         assertFalse(a.getHoja().solapa(cuerpoDelRival), "la hoja final apunta al cielo y no lo toca");
@@ -277,6 +285,9 @@ class JugadorCombateTest {
         Jugador d = blanco(3000f, PISO);
         pasos(a, d, 5);
         guionA.apuntar(1300f, HOMBRO_Y + 250f);
+        // hasta que la espada termine de girar: el angulo exportado y la hoja dibujada tienen que
+        // coincidir, y eso recien pasa cuando el giro se fija en el cursor
+        pasos(a, d, 30);
         guionA.hacerClic();
         pasos(a, d, 4);
         EstadoJugador estado = new EstadoJugador();

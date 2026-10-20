@@ -75,14 +75,14 @@ core/src/main/java/com/et35/technomortemarena/
 │   ├── CintaTransportadora.java  Bloque que empuja hacia un lado
 │   └── Pincho.java            Bloque letal al tocarlo
 ├── entidades/
-│   ├── Jugador.java           Entidad controlable: física, salto, guardia y apilado
+│   ├── Jugador.java           Entidad controlable: física, salto, apuntado, estocada y apilado
 │   ├── EstadoJugador.java     Lo necesario para dibujar a un jugador (viaja por la red)
-│   └── AlturaEspada.java      Las tres alturas de guardia (cadera, pecho, cabeza)
+│   └── Hoja.java              La espada como caja rotada: choque exacto (SAT) y barrido de tajos
 ├── entrada/
 │   ├── Controles.java         Mapeo de teclas de cada duelista
 │   ├── FuenteEntrada.java     De dónde lee un jugador lo que hace (teclado o red)
 │   ├── EntradaJugador.java    Lo que un jugador quiere hacer en un fotograma
-│   └── EntradaTeclado.java    Entrada del teclado local
+│   └── EntradaLocal.java      Teclado (mover, saltar) y mouse (apuntar, estocar) locales
 ├── red/                       Multijugador por UDP (ver "Multijugador")
 │   ├── Protocolo.java         Cabecera, tipos de paquete y constantes
 │   ├── ServidorSala.java      Lado del anfitrión: recibe entradas y manda el estado
@@ -94,34 +94,39 @@ core/src/main/java/com/et35/technomortemarena/
 │   ├── MapaGuardado.java      Mapa con nombre creado en el editor
 │   └── RepositorioMapas.java  Guardado y lectura de mapas
 └── pantallas/
-    ├── PantallaMenu.java          Menú principal (Jugar / Multijugador / Editor de niveles / Salir)
+    ├── PantallaMenu.java          Menú principal (Modo de prueba / Multijugador / Editor de niveles / Salir)
     ├── PantallaMultijugador.java  Crear una sala o unirse a la de otro
     ├── PantallaSeleccionMapa.java Elección del mapa
-    ├── PantallaArena.java         Ronda de duelo (local, anfitrión o cliente), controles y pausa
+    ├── PantallaArena.java         Ronda (modo de prueba, anfitrión o cliente), controles y pausa
     ├── PantallaEditor.java        Editor de niveles
     └── Ui.java                    Interfaz común (botones, texto, rectángulos)
 ```
 
 ## Controles
 
-| Acción | Jugador 1 | Jugador 2 |
-|---|---|---|
-| Mover izquierda | `A` | `←` |
-| Mover derecha | `D` | `→` |
-| Saltar | `W` | `↑` |
-| Subir guardia | `E` | `O` |
-| Bajar guardia | `Q` | `L` |
-| Estocada | `F` | `K` |
+| Acción | Control |
+|---|---|
+| Mover izquierda / derecha | `A` / `D` |
+| Saltar | `W` |
+| Apuntar la espada | Mover el mouse: la espada gira hacia el cursor |
+| Estocada | Clic izquierdo |
 
-La guardia tiene tres alturas —cadera, pecho y cabeza— y arranca en pecho. Al iniciar cada ronda se
-muestra un cartel con los controles de cada jugador.
+La espada es una caja rotada y lo que se ve es lo que choca: cualquier contacto de la hoja con el
+cuerpo del rival lo hiere, y el choque entre dos hojas empuja a los dos. La estocada adelanta la hoja
+un instante (más alcance) y tiene una recarga corta. Un tajo rápido hiere a quien cruza en el camino,
+no solo a quien queda debajo de la hoja al terminar. Al iniciar la ronda se muestra un cartel con los
+controles.
+
+**Modo de prueba** (botón del menú principal): un jugador con mouse contra un blanco quieto y sin
+espada, que reaparece unos segundos después de caer. Sirve para probar mapas (también desde el editor)
+y, más adelante, armas. El 1 contra 1 se juega por Multijugador.
 
 Controles generales: `ESC` pausa la partida y `F11` alterna la pantalla completa.
 
 ## Multijugador
 
-Cada instancia del juego controla **un solo jugador**, siempre con las teclas del Jugador 1
-(`A`/`D`, `W`, `E`/`Q`, `F`), y varias instancias se conectan a una misma sala. Hoy la sala admite
+Cada instancia del juego controla **un solo jugador**, con el mismo teclado y mouse de siempre
+(`A`/`D`, `W`, mouse y clic), y varias instancias se conectan a una misma sala. Hoy la sala admite
 dos jugadores. La comunicación es por **UDP**.
 
 Para probarlo en una sola máquina, abrí el juego dos veces:
@@ -233,8 +238,8 @@ Las tareas específicas de un módulo se invocan con el prefijo del módulo: por
 - [x] `README.md` y `CHANGELOG.md`.
 - [x] Wiki activada con la propuesta del proyecto.
 - [x] Arena cerrada con piso y límites laterales.
-- [x] Dos entidades controlables por teclado, con gravedad y salto.
-- [x] Guardia en tres alturas (cadera, pecho, cabeza).
+- [x] Entidades con gravedad y salto.
+- [x] Combate apuntado con el mouse: espada como caja rotada con choque exacto, estocada con clic y modo de prueba con blanco.
 - [x] Menú principal y selección manual de mapa.
 - [x] Bloques interactivos: piso, trampolín, cinta transportadora y pincho.
 - [x] Editor de niveles (grilla, pincel, spawns, guardar/cargar, probar mapa).

@@ -25,7 +25,7 @@ public final class Protocolo {
 
     /** "TM" de Techno Mortem. */
     public static final short MAGIA = 0x544D;
-    public static final byte VERSION = 1;
+    public static final byte VERSION = 2;
 
     public static final int PUERTO_POR_DEFECTO = 7777;
 

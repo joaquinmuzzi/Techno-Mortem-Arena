@@ -108,6 +108,10 @@ class SalaLoopbackTest {
         EntradaJugador teclas = new EntradaJugador();
         teclas.izquierda = true;
         teclas.saltar = true;
+        teclas.estocada = true;
+        teclas.hayPuntero = true;
+        teclas.apuntaX = 1234.4f;
+        teclas.apuntaY = 567.6f;
 
         cliente.enviarEntrada(teclas);
         girarHasta(servidor::clienteListo);
@@ -116,8 +120,14 @@ class SalaLoopbackTest {
         servidor.getEntradaRemota().leer(recibida);
         assertTrue(recibida.izquierda);
         assertTrue(recibida.saltar);
+        assertTrue(recibida.estocada);
+        assertTrue(recibida.hayPuntero);
+        assertEquals(1234f, recibida.apuntaX, "el punto apuntado viaja redondeado a pixeles");
+        assertEquals(568f, recibida.apuntaY);
         servidor.getEntradaRemota().leer(recibida);
         assertFalse(recibida.saltar, "el salto solo vale una vez");
+        assertFalse(recibida.estocada, "la estocada solo vale una vez");
+        assertEquals(1234f, recibida.apuntaX, "el punto apuntado se mantiene");
     }
 
     @Test
@@ -294,7 +304,8 @@ class SalaLoopbackTest {
         paquete.putInt(token);
         paquete.putInt(secuencia);
         paquete.put((byte) banderas);
-        paquete.put((byte) 0).put((byte) 0).put((byte) 0);
+        paquete.put((byte) 0).put((byte) 0);
+        paquete.putShort((short) 0).putShort((short) 0);
         paquete.flip();
         return paquete;
     }

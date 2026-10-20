@@ -17,7 +17,7 @@ import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
 
 /**
- * Menu principal: titulo del juego y los botones Jugar, Multijugador, Editor de niveles y Salir.
+ * Menu principal: titulo del juego y los botones Modo de prueba, Multijugador, Editor de niveles y Salir.
  *
  * <p>Usa el mismo mundo de 960x540 que la interfaz de las demas pantallas para que la escala no "salte"
  * al cambiar de pantalla.
@@ -88,7 +88,7 @@ public class PantallaMenu extends ScreenAdapter {
         batch.setProjectionMatrix(viewport.getCamera().combined);
 
         batch.begin();
-        ui.boton(batch, botonJugar, sobreJugar, "JUGAR", 1.6f);
+        ui.boton(batch, botonJugar, sobreJugar, "MODO DE PRUEBA", 1.3f);
         ui.boton(batch, botonMultijugador, sobreMultijugador, "MULTIJUGADOR", 1.3f);
         ui.boton(batch, botonEditor, sobreEditor, "EDITOR DE NIVELES", 1.3f);
         ui.boton(batch, botonSalir, sobreSalir, "SALIR", 1.6f);

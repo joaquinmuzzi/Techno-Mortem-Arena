@@ -44,8 +44,7 @@ public final class ClienteSala implements AutoCloseable {
 
     private int secuenciaEntrada;
     private byte contadorSalto;
-    private byte contadorSubir;
-    private byte contadorBajar;
+    private byte contadorEstocada;
 
     private ClienteSala(DatagramChannel canal, SocketAddress servidor, LongSupplier reloj) {
         this.canal = canal;
@@ -191,9 +190,8 @@ public final class ClienteSala implements AutoCloseable {
         destino.x = origen.x;
         destino.y = origen.y;
         destino.vida = origen.vida;
-        destino.alturaEspada = origen.alturaEspada;
         destino.mirandoDerecha = origen.mirandoDerecha;
-        destino.estocada = origen.estocada;
+        destino.extension = origen.extension;
         destino.vivo = origen.vivo;
         destino.corriendo = origen.corriendo;
         destino.anguloEspada = origen.anguloEspada;
@@ -252,8 +250,8 @@ public final class ClienteSala implements AutoCloseable {
     }
 
     /**
-     * Manda la entrada de este fotograma. Las acciones de una sola vez suben un contador, asi si este
-     * paquete se pierde el siguiente las lleva igual.
+     * Manda la entrada de este fotograma: teclas, punto apuntado y contadores. Las acciones de una sola
+     * vez (saltar, estocar) suben un contador, asi si este paquete se pierde el siguiente las lleva igual.
      */
     public void enviarEntrada(EntradaJugador entrada) {
         if (fase != Fase.JUGANDO) {
@@ -262,20 +260,23 @@ public final class ClienteSala implements AutoCloseable {
         if (entrada.saltar) {
             contadorSalto++;
         }
-        if (entrada.subirEspada) {
-            contadorSubir++;
-        }
-        if (entrada.bajarEspada) {
-            contadorBajar++;
+        if (entrada.estocada) {
+            contadorEstocada++;
         }
         ByteBuffer paquete = Protocolo.nuevo(Protocolo.ENTRADA);
         paquete.putInt(token);
         paquete.putInt(++secuenciaEntrada);
-        paquete.put((byte) ((entrada.izquierda ? 1 : 0) | (entrada.derecha ? 2 : 0) | (entrada.estocada ? 4 : 0)));
+        paquete.put((byte) ((entrada.izquierda ? 1 : 0) | (entrada.derecha ? 2 : 0) | (entrada.hayPuntero ? 4 : 0)));
         paquete.put(contadorSalto);
-        paquete.put(contadorSubir);
-        paquete.put(contadorBajar);
+        paquete.put(contadorEstocada);
+        // El punto apuntado va en pixeles del mundo, como entero de 16 bits: la arena mide menos de 4000.
+        paquete.putShort(aCorto(entrada.apuntaX));
+        paquete.putShort(aCorto(entrada.apuntaY));
         Protocolo.enviar(canal, paquete, servidor);
+    }
+
+    private static short aCorto(float valor) {
+        return (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, Math.round(valor)));
     }
 
     public Fase getFase() {

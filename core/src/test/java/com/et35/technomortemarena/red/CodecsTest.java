@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.et35.technomortemarena.entidades.AlturaEspada;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.mundo.Arena;
 import java.nio.ByteBuffer;
@@ -65,9 +64,8 @@ class CodecsTest {
         estado.x = 123.5f;
         estado.y = -4.25f;
         estado.vida = 2;
-        estado.alturaEspada = AlturaEspada.CABEZA;
         estado.mirandoDerecha = true;
-        estado.estocada = true;
+        estado.extension = 0.5f;
         estado.vivo = true;
         estado.corriendo = false;
         estado.anguloEspada = 3.5f;
@@ -90,9 +88,8 @@ class CodecsTest {
         assertEquals(123.5f, leido.x);
         assertEquals(-4.25f, leido.y);
         assertEquals(2, leido.vida);
-        assertEquals(AlturaEspada.CABEZA, leido.alturaEspada);
         assertTrue(leido.mirandoDerecha);
-        assertTrue(leido.estocada);
+        assertEquals(0.5f, leido.extension);
         assertTrue(leido.vivo);
         assertFalse(leido.corriendo);
         assertEquals(3.5f, leido.anguloEspada);
@@ -117,10 +114,11 @@ class CodecsTest {
             assertFalse(CodecEstado.leer(buffer, new EstadoJugador()));
         }
 
-        // una altura de espada que no existe
+        // una extension de la estocada fuera de 0 a 1
+        EstadoJugador conExtensionAbsurda = estadoDeEjemplo();
+        conExtensionAbsurda.extension = 1.5f;
         ByteBuffer buffer = ByteBuffer.allocate(64);
-        CodecEstado.escribir(buffer, estadoDeEjemplo());
-        buffer.put(9, (byte) 99);
+        CodecEstado.escribir(buffer, conExtensionAbsurda);
         buffer.flip();
         EstadoJugador intacto = new EstadoJugador();
         intacto.x = 1f;

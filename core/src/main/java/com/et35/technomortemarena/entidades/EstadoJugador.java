@@ -11,12 +11,13 @@ public final class EstadoJugador {
     public float x;
     public float y;
     public int vida;
-    public AlturaEspada alturaEspada = AlturaEspada.PECHO;
     public boolean mirandoDerecha;
-    public boolean estocada;
     public boolean vivo;
     public boolean corriendo;
+    /** Hacia donde apunta la espada, en radianes. */
     public float anguloEspada;
+    /** Cuanto esta adelantada la hoja por la estocada, de 0 a 1. */
+    public float extension;
     public float tiempoRestanteFlash;
     /** Cuantos golpes dio y cuantos aterrizajes hizo, para que el cliente dispare los sonidos. */
     public int contadorGolpes;

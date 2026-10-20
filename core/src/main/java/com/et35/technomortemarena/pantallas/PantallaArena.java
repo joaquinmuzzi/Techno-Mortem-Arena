@@ -22,7 +22,7 @@ import com.et35.technomortemarena.entidades.Jugador;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entrada.Controles;
 import com.et35.technomortemarena.entrada.EntradaJugador;
-import com.et35.technomortemarena.entrada.EntradaTeclado;
+import com.et35.technomortemarena.entrada.EntradaLocal;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
@@ -32,8 +32,9 @@ import com.et35.technomortemarena.red.ServidorSala;
 /**
  * Ronda de duelo: arma la arena, los dos duelistas y corre el bucle de juego.
  *
- * <p>Tiene tres modos. En el modo local, dos jugadores comparten el teclado. En red, cada instancia
- * controla un solo jugador (con las teclas del Jugador 1): el anfitrion ({@link ServidorSala}) simula
+ * <p>Tiene tres modos. En el modo de prueba (local) un jugador con teclado y mouse enfrenta a un blanco
+ * quieto que reaparece cuando lo derrotan: sirve para probar mapas y armas. En red, cada instancia
+ * controla un solo jugador (con el mismo teclado y mouse): el anfitrion ({@link ServidorSala}) simula
  * toda la partida y le manda el estado al cliente ({@link ClienteSala}), que solo manda sus teclas y
  * dibuja lo que recibe. En red la pausa no frena la simulacion: es solo un menu encima.
  *
@@ -73,20 +74,15 @@ public class PantallaArena extends ScreenAdapter {
     private static final float ESCALA_TITULO_AYUDA = 1.4f;
     private static final float ESCALA_LINEA_AYUDA = 1.15f;
     private static final Color FONDO_AYUDA = new Color(0f, 0f, 0f, 0.55f);
-    private static final String TITULO_AYUDA_UNO = "JUGADOR 1";
-    private static final String[] LINEAS_AYUDA_UNO = {
+    private static final String[] LINEAS_AYUDA = {
         "MOVER: A / D",
         "SALTAR: W",
-        "GUARDIA: E / Q",
-        "ESTOCADA: F",
+        "APUNTAR: MOUSE",
+        "ESTOCADA: CLIC",
     };
-    private static final String TITULO_AYUDA_DOS = "JUGADOR 2";
-    private static final String[] LINEAS_AYUDA_DOS = {
-        "MOVER: FLECHA IZQ / DER",
-        "SALTAR: FLECHA ARRIBA",
-        "GUARDIA: O / L",
-        "ESTOCADA: K",
-    };
+
+    /** Segundos que tarda en reaparecer el blanco del modo de prueba despues de caer. */
+    private static final float REAPARICION_BLANCO = 2f;
 
     private final RecursosGraficos recursos;
     private final RecursosAudio audio;
@@ -103,10 +99,12 @@ public class PantallaArena extends ScreenAdapter {
     /** No son nulos en modo anfitrion / cliente. Si los dos son nulos, es la partida local. */
     private final ServidorSala servidor;
     private final ClienteSala cliente;
-    /** Teclado del jugador de esta instancia en red; se apaga mientras el menu de pausa esta abierto. */
-    private EntradaTeclado teclado;
+    /** Teclado y mouse de quien juega en esta instancia; en red se apagan mientras el menu de pausa esta abierto. */
+    private EntradaLocal entradaLocal;
     /** Oponente de mentira, lejos del mapa, para el anfitrion mientras nadie se une. */
     private Jugador fantasma;
+    /** Segundos que lleva caido el blanco del modo de prueba. */
+    private float tiempoBlancoCaido;
     private final Vector2 spawnUno;
     private final Vector2 spawnDos;
     private final EntradaJugador entradaAux = new EntradaJugador();
@@ -186,28 +184,37 @@ public class PantallaArena extends ScreenAdapter {
      * anfitrion como si es el cliente. Las copias que solo se dibujan no leen ninguna entrada.
      */
     private void armarJugadores() {
-        if (!enRed()) {
-            jugadorUno = new Jugador(Controles.jugadorUno(), spawnUno.x, spawnUno.y, true, TINTE_UNO, 3);
-            jugadorDos = new Jugador(Controles.jugadorDos(), spawnDos.x, spawnDos.y, false, TINTE_DOS, 3);
-            return;
+        if (entradaLocal == null) {
+            entradaLocal = new EntradaLocal(Controles.porDefecto());
+            entradaLocal.setViewport(viewport);
         }
-        if (teclado == null) {
-            teclado = new EntradaTeclado(Controles.jugadorUno());
-        }
-        if (servidor != null) {
-            jugadorUno = new Jugador(teclado, spawnUno.x, spawnUno.y, true, TINTE_UNO, 3);
-            jugadorDos = servidor.clienteListo()
-                ? new Jugador(servidor.getEntradaRemota(), spawnDos.x, spawnDos.y, false, TINTE_DOS, 3)
-                : null;
-            if (fantasma == null) {
-                fantasma = new Jugador(FuenteEntrada.NINGUNA, -100000f, -100000f, false, TINTE_DOS, 1);
-            }
-        } else {
+        if (cliente != null) {
+            // Copias que solo se dibujan: el anfitrion les manda el estado.
             jugadorUno = new Jugador(FuenteEntrada.NINGUNA, spawnUno.x, spawnUno.y, true, TINTE_UNO, 3);
             jugadorDos = new Jugador(FuenteEntrada.NINGUNA, spawnDos.x, spawnDos.y, false, TINTE_DOS, 3);
+        } else {
+            jugadorUno = new Jugador(entradaLocal, spawnUno.x, spawnUno.y, true, TINTE_UNO, 3);
+            if (servidor == null) {
+                jugadorDos = nuevoBlanco();
+            } else {
+                jugadorDos = servidor.clienteListo()
+                    ? new Jugador(servidor.getEntradaRemota(), spawnDos.x, spawnDos.y, false, TINTE_DOS, 3)
+                    : null;
+                if (fantasma == null) {
+                    fantasma = new Jugador(FuenteEntrada.NINGUNA, -100000f, -100000f, false, TINTE_DOS, 1);
+                }
+            }
         }
+        tiempoBlancoCaido = 0f;
         golpesSonados = 0;
         aterrizajesSonados = 0;
+    }
+
+    /** El blanco del modo de prueba: un jugador que no se mueve, no apunta y no tiene espada. */
+    private Jugador nuevoBlanco() {
+        Jugador blanco = new Jugador(FuenteEntrada.NINGUNA, spawnDos.x, spawnDos.y, false, TINTE_DOS, 3);
+        blanco.setDesarmado(true);
+        return blanco;
     }
 
     @Override
@@ -265,12 +272,25 @@ public class PantallaArena extends ScreenAdapter {
         } else {
             jugadorUno.actualizar(paso, arena, jugadorDos);
             jugadorDos.actualizar(paso, arena, jugadorUno);
+            reaparecerBlanco(paso);
         }
         actualizarSonidos();
     }
 
+    /** Cuando el blanco cae, espera un momento y reaparece entero en su lugar. */
+    private void reaparecerBlanco(float paso) {
+        if (jugadorDos.estaVivo()) {
+            return;
+        }
+        tiempoBlancoCaido += paso;
+        if (tiempoBlancoCaido >= REAPARICION_BLANCO) {
+            jugadorDos = nuevoBlanco();
+            tiempoBlancoCaido = 0f;
+        }
+    }
+
     /**
-     * El anfitrion simula todo: su jugador con el teclado y el del cliente con la entrada que llega
+     * El anfitrion simula todo: su jugador con el teclado y el mouse y el del cliente con la entrada que llega
      * por la red. Despues le manda el estado resultante al cliente.
      */
     private void actualizarComoAnfitrion(float paso) {
@@ -281,7 +301,7 @@ public class PantallaArena extends ScreenAdapter {
         if (jugadorDos == null && servidor.clienteListo()) {
             jugadorDos = new Jugador(servidor.getEntradaRemota(), spawnDos.x, spawnDos.y, false, TINTE_DOS, 3);
         }
-        teclado.setActiva(!pausado);
+        entradaLocal.setActiva(!pausado);
         jugadorUno.actualizar(paso, arena, jugadorDos != null ? jugadorDos : fantasma);
         if (jugadorDos != null) {
             jugadorDos.actualizar(paso, arena, jugadorUno);
@@ -301,8 +321,8 @@ public class PantallaArena extends ScreenAdapter {
             cambiarA(new PantallaMultijugador(recursos, audio, cliente.getMotivo()));
             return;
         }
-        teclado.setActiva(!pausado);
-        teclado.leer(entradaAux);
+        entradaLocal.setActiva(!pausado);
+        entradaLocal.leer(entradaAux);
         cliente.enviarEntrada(entradaAux);
         if (cliente.hayEstado()) {
             jugadorUno.importar(cliente.getEstado(0));
@@ -419,14 +439,9 @@ public class PantallaArena extends ScreenAdapter {
         viewportUi.apply();
         batch.setProjectionMatrix(viewportUi.getCamera().combined);
         batch.begin();
-        if (enRed()) {
-            // En red cada instancia controla un solo jugador, siempre con las teclas del Jugador 1.
-            String titulo = cliente != null ? "VOS: JUGADOR 2" : "VOS: JUGADOR 1 (ANFITRION)";
-            dibujarPanelAyuda(titulo, LINEAS_AYUDA_UNO, cliente != null ? TINTE_DOS : TINTE_UNO, false, alfa);
-        } else {
-            dibujarPanelAyuda(TITULO_AYUDA_UNO, LINEAS_AYUDA_UNO, TINTE_UNO, false, alfa);
-            dibujarPanelAyuda(TITULO_AYUDA_DOS, LINEAS_AYUDA_DOS, TINTE_DOS, true, alfa);
-        }
+        String titulo = cliente != null ? "VOS: JUGADOR 2"
+            : servidor != null ? "VOS: JUGADOR 1 (ANFITRION)" : "MODO DE PRUEBA";
+        dibujarPanelAyuda(titulo, LINEAS_AYUDA, cliente != null ? TINTE_DOS : TINTE_UNO, false, alfa);
         batch.end();
     }
 

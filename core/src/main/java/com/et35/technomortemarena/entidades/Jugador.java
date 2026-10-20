@@ -1,29 +1,32 @@
 package com.et35.technomortemarena.entidades;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 import com.et35.technomortemarena.RecursosGraficos;
-import com.et35.technomortemarena.entrada.Controles;
 import com.et35.technomortemarena.entrada.EntradaJugador;
-import com.et35.technomortemarena.entrada.EntradaTeclado;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
 
 /**
- * Duelista controlado por un jugador humano.
+ * Duelista: se mueve, salta y apunta su espada hacia un punto del mundo (el mouse).
  *
- * <p>Concentra estado (posicion, velocidad, altura de la guardia) y comportamiento (moverse, saltar,
- * dibujarse). Las teclas llegan desde afuera en un objeto {@link Controles}, asi la misma clase
- * sirve para los dos duelistas sin duplicar codigo.
+ * <p>Concentra estado (posicion, velocidad, angulo de la espada) y comportamiento (moverse, saltar,
+ * estocar, dibujarse). Lo que el jugador quiere hacer llega desde afuera en una {@link FuenteEntrada}
+ * (teclado y mouse locales, o paquetes de red), asi la misma clase sirve para un duelista local, uno
+ * remoto y un blanco de prueba.
+ *
+ * <p>La espada es una {@link Hoja}: una caja rotada que apunta al punto del mouse desde el hombro. Lo
+ * que se dibuja es lo que choca. Cualquier contacto de la hoja con el cuerpo del rival lo hiere; el
+ * clic lanza una estocada, que adelanta la hoja y le da mas alcance un instante.
  *
  * <p>Todas las medidas y velocidades se escriben en la escala base y se multiplican por
- * {@link Arena#ESCALA}, asi el duelista crece junto con la arena.
+ * {@link Arena#ESCALA}: para agrandar o achicar el juego se cambia un solo numero.
  */
 public class Jugador {
 
@@ -49,6 +52,15 @@ public class Jugador {
     /** Choque entre espadas: un empujon corto que no saca al jugador del todo. */
     private static final float EMPUJE_CHOQUE = 0.2f * VELOCIDAD;
 
+    /** Segundos que dura una estocada, de que sale la hoja hasta que vuelve. */
+    private static final float DURACION_ESTOCADA = 0.18f;
+    /** Segundos desde que arranca una estocada hasta que se puede lanzar otra. */
+    private static final float RECARGA_ESTOCADA = 0.30f;
+    /** Altura del hombro (el pivote de la espada) sobre los pies. */
+    private static final float ALTURA_HOMBRO = 56f * ESCALA;
+    /** Cuanto se corre el hombro hacia el lado al que mira el jugador, desde el centro del cuerpo. */
+    private static final float DESPLAZAMIENTO_HOMBRO = 10f * ESCALA;
+
     private final FuenteEntrada fuente;
     private final EntradaJugador entrada = new EntradaJugador();
     private final Color tinte;
@@ -56,11 +68,25 @@ public class Jugador {
     private final Vector2 velocidad = new Vector2();
     private int vida;
 
-    private AlturaEspada alturaEspada = AlturaEspada.PECHO;
     private boolean mirandoDerecha;
     private boolean enElPiso;
-    private boolean estocada;
     private boolean vivo = true;
+    /** Un blanco de prueba no tiene espada: ni hiere, ni choca con otras hojas, ni se dibuja. */
+    private boolean desarmado;
+
+    /** Hacia donde apunta la espada, en radianes (0 es hacia la derecha, positivo hacia arriba). */
+    private float angulo;
+    /** El angulo al empezar el fotograma, para barrer el tajo de un fotograma al siguiente. */
+    private float anguloPrevio;
+    /** Segundos que le quedan a la estocada en curso; 0 si no hay ninguna. */
+    private float tiempoEstocada;
+    private float recargaEstocada;
+    /** Cuanto esta adelantada la hoja, de 0 (quieta) a 1 (en lo mas fuerte de la estocada). */
+    private float extension;
+    private final Hoja hoja = new Hoja();
+    private final Hoja hojaDeBarrido = new Hoja();
+    private final Rectangle limitesPropios = new Rectangle();
+    private final Rectangle limitesAjenos = new Rectangle();
 
     /** Entrada horizontal del fotograma: se guarda para saber si corre sin volver a leer el teclado. */
     private boolean entradaIzquierda;
@@ -83,21 +109,13 @@ public class Jugador {
     /** Verdadero mientras esta parado sobre la cabeza del oponente. */
     private boolean montadoSobreOponente;
 
-    private float anguloEspada = 0f;
-    private float anguloObjetivo = 0f;
-    private float tiempoParaNuevoObjetivo = 0f;
-
-    private float tiempoParaRecuperarAtaque = 0f;
-
-    private static final float VELOCIDAD_ANGULO = 6f;
-
     private float tiempoRestanteFlash;
 
     /** Velocidad horizontal del empuje por golpe o choque. Se frena sola en el tiempo. */
     private float empujeX;
 
-    public static final float ANCHO_ESPADA = 56f * ESCALA;
-    public static final float ALTO_ESPADA = 10f * ESCALA;
+    public static final float ANCHO_ESPADA = Hoja.LARGO;
+    public static final float ALTO_ESPADA = Hoja.GROSOR;
 
     private static final float ANCHO_BRAZO = 22f * ESCALA;
     private static final float ALTO_BRAZO = 8f * ESCALA;
@@ -108,17 +126,15 @@ public class Jugador {
      * @param mirandoDerecha hacia donde apunta la espada al empezar la ronda
      * @param tinte color con el que se pinta el sprite blanco, para distinguir a los duelistas
      */
-    public Jugador(Controles controles, float x, float y, boolean mirandoDerecha, Color tinte, int vida) {
-        this(new EntradaTeclado(controles), x, y, mirandoDerecha, tinte, vida);
-    }
-
-    /** Igual que el anterior, pero la entrada puede venir de cualquier {@link FuenteEntrada}, como la red. */
     public Jugador(FuenteEntrada fuente, float x, float y, boolean mirandoDerecha, Color tinte, int vida) {
         this.fuente = fuente;
         this.tinte = tinte;
         this.mirandoDerecha = mirandoDerecha;
         this.posicion.set(x, y);
         this.vida = vida;
+        this.angulo = mirandoDerecha ? 0f : MathUtils.PI;
+        this.anguloPrevio = angulo;
+        actualizarHoja();
     }
 
     /**
@@ -133,25 +149,20 @@ public class Jugador {
         acabaDeAterrizar = false;
         acabaDeGolpear = false;
         boolean estabaEnPiso = enElPiso;
-    	if(vivo) {
-    		leerEntrada();
-    	}
+        anguloPrevio = angulo;
+        if (vivo) {
+            leerEntrada();
+        }
+        actualizarEstocada(delta);
         integrarFisica(delta, arena, oponente);
+        // La hoja se coloca despues de mover al jugador, asi sigue al hombro y al cursor del fotograma.
+        apuntar();
+        actualizarHoja();
         resolverColisiones(arena, oponente);
         actualizarPiso(estabaEnPiso);
-        if(tiempoRestanteFlash > 0f) {
-        	tiempoRestanteFlash -= delta;
+        if (tiempoRestanteFlash > 0f) {
+            tiempoRestanteFlash -= delta;
         }
-
-        if(tiempoParaRecuperarAtaque > 0f) {
-        	tiempoParaRecuperarAtaque -= delta;
-        }
-        tiempoParaNuevoObjetivo -= delta;
-        if (tiempoParaNuevoObjetivo <= 0f) {
-            anguloObjetivo = (float) (Math.random() * 10f - 5f); // nuevo objetivo, por ej. entre -10 y 10 grados
-            tiempoParaNuevoObjetivo = 0.4f; // elige un objetivo nuevo cada 0.3s, no cada fotograma
-        }
-        anguloEspada += (anguloObjetivo - anguloEspada) * VELOCIDAD_ANGULO * delta;
     }
 
     /** Mata al jugador al instante. Lo usan los bloques mortales, como los pinchos. */
@@ -192,37 +203,68 @@ public class Jugador {
         bloqueBajoPies = null;
     }
 
-    public Rectangle getCajaEspada() {
-        float y = posicion.y + alturaEspada.getDesplazamientoY();
-        float extension = estocada ? 24f * ESCALA : 0f;
-        float x = mirandoDerecha
-            ? posicion.x + ANCHO - 14f * ESCALA + extension
-            : posicion.x - ANCHO_ESPADA + 14f * ESCALA - extension;
-        return new Rectangle(x, y, ANCHO_ESPADA, ALTO_ESPADA);
+    /** Posicion del hombro, el pivote alrededor del que gira la espada. */
+    private float pivoteX() {
+        return posicion.x + ANCHO / 2f + (mirandoDerecha ? DESPLAZAMIENTO_HOMBRO : -DESPLAZAMIENTO_HOMBRO);
+    }
+
+    private float pivoteY() {
+        return posicion.y + ALTURA_HOMBRO;
+    }
+
+    private void actualizarHoja() {
+        hoja.colocar(pivoteX(), pivoteY(), angulo, extension * Hoja.ALCANCE_ESTOCADA);
+    }
+
+    /**
+     * Gira la espada hacia el punto apuntado y hace que el jugador mire hacia ese lado. Si la entrada no
+     * trae un punto (un blanco de prueba, o un jugador ya muerto), la espada se queda como estaba.
+     */
+    private void apuntar() {
+        if (!vivo || !entrada.hayPuntero) {
+            return;
+        }
+        mirandoDerecha = entrada.apuntaX >= posicion.x + ANCHO / 2f;
+        float dx = entrada.apuntaX - pivoteX();
+        float dy = entrada.apuntaY - pivoteY();
+        if (dx * dx + dy * dy > 1f) {
+            angulo = (float) Math.atan2(dy, dx);
+        }
+    }
+
+    /**
+     * Lanza una estocada si se pidio una y la anterior ya termino y recargo. La hoja sale y vuelve
+     * siguiendo una curva suave: {@code extension} sube de 0 a 1 y baja a 0 en {@link #DURACION_ESTOCADA}.
+     */
+    private void actualizarEstocada(float delta) {
+        if (recargaEstocada > 0f) {
+            recargaEstocada -= delta;
+        }
+        if (tiempoEstocada > 0f) {
+            tiempoEstocada = Math.max(0f, tiempoEstocada - delta);
+        }
+        if (vivo && entrada.estocada && tiempoEstocada <= 0f && recargaEstocada <= 0f) {
+            tiempoEstocada = DURACION_ESTOCADA;
+            recargaEstocada = RECARGA_ESTOCADA;
+        }
+        extension = tiempoEstocada > 0f
+            ? (float) Math.sin(Math.PI * (1f - tiempoEstocada / DURACION_ESTOCADA))
+            : 0f;
     }
 
     private void leerEntrada() {
         fuente.leer(entrada);
         entradaIzquierda = entrada.izquierda;
         entradaDerecha = entrada.derecha;
-        estocada = entrada.estocada;
 
         if (entradaIzquierda && !entradaDerecha) {
-            velocidad.x += -(VELOCIDAD+velocidad.x);
-            mirandoDerecha = false;
+            velocidad.x += -(VELOCIDAD + velocidad.x);
         } else if (entradaDerecha && !entradaIzquierda) {
-            velocidad.x += VELOCIDAD-velocidad.x;
-            mirandoDerecha = true;
+            velocidad.x += VELOCIDAD - velocidad.x;
         }
 
         if (enElPiso && entrada.saltar) {
             impulsar(IMPULSO_SALTO);
-        }
-        if (entrada.subirEspada) {
-            alturaEspada = alturaEspada.subir();
-        }
-        if (entrada.bajarEspada) {
-            alturaEspada = alturaEspada.bajar();
         }
     }
 
@@ -357,82 +399,86 @@ public class Jugador {
 
     private void resolverColisiones(Arena arena, Jugador oponente) {
         posicion.x = arena.limitarX(posicion.x, ANCHO);
-        oponente.getPosicion();
-        Rectangle cajaEspadaOponente = oponente.getCajaEspada();
+        Hoja hojaOponente = oponente.hoja;
 
-        Rectangle miCaja = new Rectangle(posicion.x, posicion.y, ANCHO, ALTO);
-        Rectangle cajaOponente = new Rectangle(oponente.getPosicion().x, oponente.getPosicion().y, ANCHO, ALTO);
+        Rectangle miCaja = cuerpo();
+        Rectangle cajaOponente = oponente.cuerpo();
         if (miCaja.overlaps(cajaOponente)) {
-        	float miY0 = posicion.y,             miY1 = posicion.y + ALTO;
-        	float suY0 = oponente.getPosicion().y, suY1 = oponente.getPosicion().y + ALTO;
-        	boolean seCruzanEnY = miY0 < suY1 && suY0 < miY1;
-        	float miX0 = posicion.x,               miX1 = posicion.x + ANCHO;
-        	float suX0 = oponente.getPosicion().x, suX1 = oponente.getPosicion().x + ANCHO;
-        	float penetracionX = Math.min(miX1, suX1) - Math.max(miX0, suX0);
-        	float penetracionY = Math.min(miY1, suY1) - Math.max(miY0, suY0);
-        	// Solo se empuja de costado si la superposicion mas chica es horizontal. Si es vertical
-        	// (uno parado sobre la cabeza del otro), el apilado lo resuelve el aterrizaje.
-        	if (seCruzanEnY && penetracionX > 0f && penetracionX <= penetracionY) {
-        	    float miCentro = posicion.x + ANCHO / 2f;
-        	    float suCentro = oponente.getPosicion().x + ANCHO / 2f;
-        	    float direccion = (miCentro < suCentro) ? -1f : 1f;
-        	    posicion.x += direccion * (penetracionX / 2f);
-        	    posicion.x = arena.limitarX(posicion.x, ANCHO); // por si el empujón te saca por la pared
-        	}
+            float miY0 = posicion.y, miY1 = posicion.y + ALTO;
+            float suY0 = oponente.posicion.y, suY1 = oponente.posicion.y + ALTO;
+            boolean seCruzanEnY = miY0 < suY1 && suY0 < miY1;
+            float miX0 = posicion.x, miX1 = posicion.x + ANCHO;
+            float suX0 = oponente.posicion.x, suX1 = oponente.posicion.x + ANCHO;
+            float penetracionX = Math.min(miX1, suX1) - Math.max(miX0, suX0);
+            float penetracionY = Math.min(miY1, suY1) - Math.max(miY0, suY0);
+            // Solo se empuja de costado si la superposicion mas chica es horizontal. Si es vertical
+            // (uno parado sobre la cabeza del otro), el apilado lo resuelve el aterrizaje.
+            if (seCruzanEnY && penetracionX > 0f && penetracionX <= penetracionY) {
+                separarDe(oponente, penetracionX, arena);
+            }
         }
-        if(cajaEspadaOponente.overlaps(miCaja)) {
-        	float miY0 = posicion.y,             miY1 = posicion.y + ALTO;
-        	float suY0 = cajaEspadaOponente.y, suY1 = cajaEspadaOponente.y + cajaEspadaOponente.height;
-        	float miX0 = posicion.x,               miX1 = posicion.x + ANCHO;
-        	float suX0 = cajaEspadaOponente.x, suX1 = cajaEspadaOponente.x + cajaEspadaOponente.width;
-        	float penetracionX = Math.min(miX1, suX1) - Math.max(miX0, suX0);
-        	if (penetracionX > 0f) {
-        	    float miCentro = posicion.x + ANCHO / 2f;
-        	    float suCentro = oponente.getPosicion().x + ANCHO / 2f;
-        	    float direccion = (miCentro < suCentro) ? -1f : 1f;
-        	    posicion.x += direccion * (penetracionX / 2f);
-        	    posicion.x = arena.limitarX(posicion.x, ANCHO); // por si el empujón te saca por la pared
-        	}
-        }
-        if(cajaEspadaOponente.overlaps(getCajaEspada())) {
-        	Rectangle miEspada = getCajaEspada();
 
-        	float miY0 = miEspada.y,             miY1 = miEspada.y + miEspada.height;
-        	float suY0 = cajaEspadaOponente.y, suY1 = cajaEspadaOponente.y + cajaEspadaOponente.height;
-        	float miX0 = miEspada.x,               miX1 = miEspada.x + miEspada.width;
-        	float suX0 = cajaEspadaOponente.x, suX1 = cajaEspadaOponente.x + cajaEspadaOponente.width;
-        	float penetracionX = Math.min(miX1, suX1) - Math.max(miX0, suX0);
-        	if (penetracionX > 0f) {
-        	    float miCentro = posicion.x + ANCHO / 2f;
-        	    float suCentro = oponente.getPosicion().x + ANCHO / 2f;
-        	    float direccion = (miCentro < suCentro) ? -1f : 1f;
-        	    posicion.x += direccion * (penetracionX / 2f);
-        	    posicion.x = arena.limitarX(posicion.x, ANCHO); // por si el empujón te saca por la pared
-        	    empujar(direccion, EMPUJE_CHOQUE);
-        	}
+        // La hoja del rival empuja a mi cuerpo: no se puede atravesar una espada parado.
+        if (!oponente.desarmado && hojaOponente.solapa(miCaja)) {
+            float penetracionX = penetracionEnX(hojaOponente.limites(limitesAjenos), miCaja);
+            if (penetracionX > 0f) {
+                separarDe(oponente, penetracionX, arena);
+            }
         }
-        if(cajaEspadaOponente.overlaps(getCajaEspada()) && !(tiempoParaRecuperarAtaque > 0f)) {
-        	Rectangle miEspada = getCajaEspada();
 
-        	float miY0 = miEspada.y,             miY1 = miEspada.y + miEspada.height;
-        	float suY0 = cajaEspadaOponente.y, suY1 = cajaEspadaOponente.y + cajaEspadaOponente.height;
-        	float miX0 = miEspada.x,               miX1 = miEspada.x + miEspada.width;
-        	float suX0 = cajaEspadaOponente.x, suX1 = cajaEspadaOponente.x + cajaEspadaOponente.width;
-        	float penetracionX = Math.min(miX1, suX1) - Math.max(miX0, suX0);
-        	if (penetracionX > 0f) {
-        		anguloObjetivo = (float) (Math.random() * 60f - 30f);
-        	    tiempoParaNuevoObjetivo = 0.1f;
-        	    tiempoParaRecuperarAtaque = 0.5f;
-        	}
+        // Choque de hojas: los dos se empujan para separarse.
+        if (!desarmado && !oponente.desarmado && hoja.solapa(hojaOponente)) {
+            float penetracionX = penetracionEnX(hoja.limites(limitesPropios), hojaOponente.limites(limitesAjenos));
+            if (penetracionX > 0f) {
+                float direccion = separarDe(oponente, penetracionX, arena);
+                empujar(direccion, EMPUJE_CHOQUE);
+            }
         }
-        if(!(oponente.tiempoRestanteFlash > 0f) && vivo && cajaOponente.overlaps(getCajaEspada())) {
-        	oponente.activarFlash(1f, this);
-        	acabaDeGolpear = true;
-        	contadorGolpes++;
+
+        // Cualquier contacto de mi hoja con el cuerpo del rival lo hiere, y si gire rapido tambien cuenta
+        // lo que la hoja barrio entre este fotograma y el anterior.
+        if (!desarmado && !(oponente.tiempoRestanteFlash > 0f) && vivo && golpea(cajaOponente)) {
+            oponente.activarFlash(1f, this);
+            acabaDeGolpear = true;
+            contadorGolpes++;
         }
         if (posicion.y < -ALTO) {
             vivo = false;
         }
+    }
+
+    /**
+     * Corre a este jugador la mitad de la penetracion, lejos del oponente, sin sacarlo de la arena.
+     *
+     * @return la direccion en que se corrio (-1 izquierda, 1 derecha)
+     */
+    private float separarDe(Jugador oponente, float penetracionX, Arena arena) {
+        float miCentro = posicion.x + ANCHO / 2f;
+        float suCentro = oponente.posicion.x + ANCHO / 2f;
+        float direccion = (miCentro < suCentro) ? -1f : 1f;
+        posicion.x += direccion * (penetracionX / 2f);
+        posicion.x = arena.limitarX(posicion.x, ANCHO); // por si el empujon te saca por la pared
+        return direccion;
+    }
+
+    private static float penetracionEnX(Rectangle a, Rectangle b) {
+        return Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+    }
+
+    /** Verdadero si la hoja toca el cuerpo, ahora o en algun punto del giro desde el fotograma anterior. */
+    private boolean golpea(Rectangle cuerpoAjeno) {
+        if (hoja.solapa(cuerpoAjeno)) {
+            return true;
+        }
+        int pasos = Hoja.pasosDeBarrido(anguloPrevio, angulo);
+        float avance = extension * Hoja.ALCANCE_ESTOCADA;
+        for (int i = 1; i < pasos; i++) {
+            hojaDeBarrido.colocar(pivoteX(), pivoteY(), Hoja.anguloDeBarrido(anguloPrevio, angulo, i, pasos), avance);
+            if (hojaDeBarrido.solapa(cuerpoAjeno)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -455,8 +501,10 @@ public class Jugador {
     	}
     	batch.setColor(colorActual);
         dibujarSprite(batch, recursos.jugador, posicion.x, posicion.y, ANCHO, ALTO);
-        dibujarBrazo(batch, recursos);
-        dibujarEspada(batch, recursos);
+        if (!desarmado) {
+            dibujarBrazo(batch, recursos);
+            dibujarEspada(batch, recursos);
+        }
         batch.setColor(Color.WHITE);
     }
 
@@ -465,8 +513,8 @@ public class Jugador {
         recibirImpacto(atacante);
     }
 
-    private boolean isVivo() {
-    	return vivo;
+    public boolean estaVivo() {
+        return vivo;
     }
 
     private void recibirImpacto(Jugador atacante) {
@@ -483,38 +531,25 @@ public class Jugador {
     	}
     }
 
-    /**
-     * Dibuja el antebrazo que sostiene la espada.
-     *
-     * <p>Usa exactamente la misma formula de posicion horizontal que {@link #dibujarEspada}, con
-     * {@link #ANCHO_BRAZO} en vez del ancho de la espada: nace pegado al mismo borde del cuerpo y
-     * se estira durante la estocada, asi que sigue a la espada automaticamente cuando cambia la
-     * altura de guardia o se ataca, sin necesitar sincronizarlo a mano.
-     */
+    /** Dibuja el antebrazo y la espada: salen de la base de la hoja y giran con ella hacia el cursor. */
     private void dibujarBrazo(SpriteBatch batch, RecursosGraficos recursos) {
-        int atacar = estocada ? 1 : 0;
-        float y = posicion.y + alturaEspada.getDesplazamientoY() - (ALTO_BRAZO - ALTO_ESPADA) / 2f;
-        float x = mirandoDerecha
-            ? posicion.x + ANCHO - 14f * ESCALA + (24f * ESCALA * atacar)
-            : posicion.x - ANCHO_BRAZO + 14f * ESCALA - (24f * ESCALA * atacar);
-        dibujarSprite(batch, recursos.brazo, x, y, ANCHO_BRAZO, ALTO_BRAZO);
+        dibujarGirado(batch, recursos.brazo, ANCHO_BRAZO, ALTO_BRAZO);
     }
 
     private void dibujarEspada(SpriteBatch batch, RecursosGraficos recursos) {
-        int atacar = estocada ? 1 : 0;
-        float y = posicion.y + alturaEspada.getDesplazamientoY();
-        float x = mirandoDerecha
-            ? posicion.x + ANCHO - 14f * ESCALA + (24f * ESCALA * atacar)
-            : posicion.x - ANCHO_ESPADA + 14f * ESCALA - (24f * ESCALA * atacar);
+        dibujarGirado(batch, recursos.espada, ANCHO_ESPADA, ALTO_ESPADA);
+    }
 
-        // El pivote es el borde pegado al cuerpo: x=0 si mira a la derecha (la guarda
-        // queda ahi), x=ANCHO_ESPADA si mira a la izquierda (ahi es donde el flip deja la guarda).
-        float originX = mirandoDerecha ? 0f : ANCHO_ESPADA;
-        float originY = ALTO_ESPADA / 2f;
-        batch.draw(recursos.espada, x, y, originX, originY, ANCHO_ESPADA, ALTO_ESPADA,
-            1f, 1f, anguloEspada,
-            0, 0, recursos.espada.getWidth(), recursos.espada.getHeight(),
-            !mirandoDerecha, false);
+    /**
+     * Dibuja un sprite que mira hacia la derecha, girado {@code angulo} alrededor de su extremo izquierdo,
+     * que se apoya en la base de la hoja. Al apuntar hacia la izquierda se espeja en vertical para que
+     * no quede cabeza abajo.
+     */
+    private void dibujarGirado(SpriteBatch batch, Texture textura, float ancho, float alto) {
+        boolean haciaLaIzquierda = Math.cos(angulo) < 0.0;
+        batch.draw(textura, hoja.getBaseX(), hoja.getBaseY() - alto / 2f,
+            0f, alto / 2f, ancho, alto, 1f, 1f, angulo * MathUtils.radiansToDegrees,
+            0, 0, textura.getWidth(), textura.getHeight(), false, haciaLaIzquierda);
     }
 
     /**
@@ -528,10 +563,6 @@ public class Jugador {
         batch.draw(textura, x, y, ancho, alto,
             0, 0, textura.getWidth(), textura.getHeight(),
             !mirandoDerecha, false);
-    }
-
-    public AlturaEspada getAlturaEspada() {
-        return alturaEspada;
     }
 
     public boolean isMirandoDerecha() {
@@ -558,12 +589,11 @@ public class Jugador {
         destino.x = posicion.x;
         destino.y = posicion.y;
         destino.vida = vida;
-        destino.alturaEspada = alturaEspada;
         destino.mirandoDerecha = mirandoDerecha;
-        destino.estocada = estocada;
         destino.vivo = vivo;
         destino.corriendo = corriendo;
-        destino.anguloEspada = anguloEspada;
+        destino.anguloEspada = angulo;
+        destino.extension = extension;
         destino.tiempoRestanteFlash = tiempoRestanteFlash;
         destino.contadorGolpes = contadorGolpes;
         destino.contadorAterrizajes = contadorAterrizajes;
@@ -576,15 +606,15 @@ public class Jugador {
     public void importar(EstadoJugador origen) {
         posicion.set(origen.x, origen.y);
         vida = origen.vida;
-        alturaEspada = origen.alturaEspada;
         mirandoDerecha = origen.mirandoDerecha;
-        estocada = origen.estocada;
         vivo = origen.vivo;
         corriendo = origen.corriendo;
-        anguloEspada = origen.anguloEspada;
+        angulo = origen.anguloEspada;
+        extension = origen.extension;
         tiempoRestanteFlash = origen.tiempoRestanteFlash;
         contadorGolpes = origen.contadorGolpes;
         contadorAterrizajes = origen.contadorAterrizajes;
+        actualizarHoja();
     }
 
     /** Cantidad de golpes que dio desde que empezo; sube de a uno en cada golpe. */
@@ -599,6 +629,26 @@ public class Jugador {
 
     public int getVida() {
         return vida;
+    }
+
+    /** Quita o devuelve la espada. El blanco del modo de prueba esta desarmado. */
+    public void setDesarmado(boolean desarmado) {
+        this.desarmado = desarmado;
+    }
+
+    /** Hacia donde apunta la espada, en radianes. */
+    public float getAngulo() {
+        return angulo;
+    }
+
+    /** Cuanto esta adelantada la hoja por la estocada: 0 quieta, 1 en lo mas fuerte. */
+    public float getExtension() {
+        return extension;
+    }
+
+    /** La hoja de la espada tal como esta ahora; es la misma forma que se dibuja y que choca. */
+    public Hoja getHoja() {
+        return hoja;
     }
 
     /** Copia defensiva: devolver el {@code Vector2} interno permitiria moverlo desde afuera. */

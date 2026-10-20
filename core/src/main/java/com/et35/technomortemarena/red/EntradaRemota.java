@@ -7,34 +7,34 @@ import com.et35.technomortemarena.entrada.FuenteEntrada;
  * La entrada de un jugador que juega desde otra instancia: la reconstruye a partir de los paquetes
  * {@link Protocolo#ENTRADA} que van llegando.
  *
- * <p>Los estados (izquierda, derecha, estocada) se pisan con el ultimo paquete. Las acciones de una
- * sola vez llegan como contadores que solo suben: una accion es nueva cuando el contador avanzo
- * respecto del ultimo visto. Asi un paquete duplicado no repite el salto, y uno perdido se recupera
- * con el siguiente, que trae el contador actualizado.
+ * <p>Los estados (izquierda, derecha) y el punto apuntado se pisan con el ultimo paquete. Las acciones
+ * de una sola vez (saltar, estocar) llegan como contadores que solo suben: una accion es nueva cuando
+ * el contador avanzo respecto del ultimo visto. Asi un paquete duplicado no repite el salto, y uno
+ * perdido se recupera con el siguiente, que trae el contador actualizado.
  */
 public final class EntradaRemota implements FuenteEntrada {
 
     private boolean izquierda;
     private boolean derecha;
-    private boolean estocada;
+    private boolean hayPuntero;
+    private float apuntaX;
+    private float apuntaY;
 
     private int ultimaSecuencia;
     private boolean huboPaquete;
     private byte ultimoSalto;
-    private byte ultimoSubir;
-    private byte ultimoBajar;
+    private byte ultimaEstocada;
 
     private boolean saltoPendiente;
-    private boolean subirPendiente;
-    private boolean bajarPendiente;
+    private boolean estocadaPendiente;
 
     /**
      * Incorpora un paquete de entrada.
      *
      * @return {@code false} si era mas viejo que el ultimo ya recibido y se descarto
      */
-    boolean aplicar(int secuencia, boolean izquierda, boolean derecha, boolean estocada,
-                    byte contadorSalto, byte contadorSubir, byte contadorBajar) {
+    boolean aplicar(int secuencia, boolean izquierda, boolean derecha, boolean hayPuntero,
+                    byte contadorSalto, byte contadorEstocada, float apuntaX, float apuntaY) {
         if (huboPaquete && !Protocolo.esMasNueva(secuencia, ultimaSecuencia)) {
             return false;
         }
@@ -42,13 +42,13 @@ public final class EntradaRemota implements FuenteEntrada {
         ultimaSecuencia = secuencia;
         this.izquierda = izquierda;
         this.derecha = derecha;
-        this.estocada = estocada;
+        this.hayPuntero = hayPuntero;
+        this.apuntaX = apuntaX;
+        this.apuntaY = apuntaY;
         saltoPendiente |= avanzo(contadorSalto, ultimoSalto);
-        subirPendiente |= avanzo(contadorSubir, ultimoSubir);
-        bajarPendiente |= avanzo(contadorBajar, ultimoBajar);
+        estocadaPendiente |= avanzo(contadorEstocada, ultimaEstocada);
         ultimoSalto = contadorSalto;
-        ultimoSubir = contadorSubir;
-        ultimoBajar = contadorBajar;
+        ultimaEstocada = contadorEstocada;
         return true;
     }
 
@@ -60,15 +60,16 @@ public final class EntradaRemota implements FuenteEntrada {
 
     @Override
     public void leer(EntradaJugador destino) {
+        destino.limpiar();
         destino.izquierda = izquierda;
         destino.derecha = derecha;
-        destino.estocada = estocada;
+        destino.hayPuntero = hayPuntero;
+        destino.apuntaX = apuntaX;
+        destino.apuntaY = apuntaY;
         destino.saltar = saltoPendiente;
-        destino.subirEspada = subirPendiente;
-        destino.bajarEspada = bajarPendiente;
+        destino.estocada = estocadaPendiente;
         // Las acciones de una sola vez se consumen: valen para un unico fotograma.
         saltoPendiente = false;
-        subirPendiente = false;
-        bajarPendiente = false;
+        estocadaPendiente = false;
     }
 }

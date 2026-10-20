@@ -9,6 +9,18 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Combate apuntado con el mouse. La espada gira hacia el cursor desde el hombro y el clic izquierdo
+  lanza una estocada (la hoja avanza un instante, con una recarga corta). `entidades.Hoja` es la hoja
+  como caja rotada, con choque exacto por el teorema del eje de separación contra el cuerpo y contra
+  otras hojas. Cualquier contacto de la hoja con el cuerpo del rival lo hiere y el choque de hojas
+  empuja a los dos. Un tajo rápido se barre en pasos de unos 11 grados, así hiere a quien cruza en el
+  camino y no solo a quien queda debajo de la hoja al final del fotograma.
+- `entrada.EntradaLocal`: teclado (mover, saltar) y mouse (apuntar, estocar) locales. El cursor se
+  pasa a coordenadas del mundo con el viewport de la arena.
+- Modo de prueba: un blanco quieto, sin espada, que reaparece 2 segundos después de caer.
+- Tests del combate sin ventana (`JugadorCombateTest`, `HojaTest`): apuntado exacto, hiere solo al
+  apuntar al rival, alcance de la estocada y su recarga, invulnerabilidad de 1 segundo, barrido de
+  tajos rápidos, choque de hojas, blanco inerte y estado exportado e importado.
 - Multijugador por UDP: cada instancia del juego controla un solo jugador y se conecta a una sala
   (hoy de dos jugadores). El anfitrión simula toda la partida y le manda el estado al cliente, que
   manda sus teclas y dibuja lo recibido. Paquete `red` (`Protocolo`, `ServidorSala`, `ClienteSala`,
@@ -17,7 +29,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
   anfitrión. Las acciones de una sola vez viajan como contadores y los paquetes viejos se
   descartan, así la pérdida o el desorden de UDP no rompe la partida. La entrada de red lleva un
   token por sesión y solo vale desde la dirección del cliente.
-- `entrada.FuenteEntrada`, `EntradaJugador` y `EntradaTeclado`, y `entidades.EstadoJugador`:
+- `entrada.FuenteEntrada` y `EntradaJugador`, y `entidades.EstadoJugador`:
   `Jugador` ya no lee el teclado directamente, y puede exportar e importar su estado.
 - `Arena.getFilas()`: las filas de texto de las que salió el mapa.
 - Tests de la red: codecs, entrada remota y la sala completa sobre sockets reales por loopback
@@ -25,17 +37,27 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Workflows de GitHub Actions: `CI` (compila todos los módulos y corre los tests con JDK 17) y
   `PR title` (título Conventional Commits y línea `Assisted-by:` en la descripción).
 - Dependabot mensual y agrupado para las GitHub Actions y las dependencias de Gradle.
-- Tests unitarios con JUnit 5 en `core/src/test`: grilla de la arena y sus bloques, alturas de la
-  espada y mapas del editor.
+- Tests unitarios con JUnit 5 en `core/src/test`: grilla de la arena y sus bloques y mapas del editor.
 - Plantillas de pull request y de issues (error y sugerencia), `SECURITY.md`, `CODE_OF_CONDUCT.md` y
   `THIRD_PARTY_NOTICES.md`.
 
 ### Cambiado
 
-- `PantallaArena` tiene tres modos (local, anfitrión y cliente) y `PantallaSeleccionMapa` acepta qué
-  hacer con el mapa elegido. El modo local de dos jugadores en un teclado no cambia.
+- Protocolo de red versión 2: la entrada lleva el punto del mouse (dos enteros de 16 bits) y un
+  contador de estocadas, y el estado lleva el ángulo y la extensión de la espada. No es compatible
+  con la versión 1: las dos instancias tienen que ser de la misma versión del juego.
+- El botón "Jugar" del menú pasa a ser "Modo de prueba". El modo local de dos jugadores en un teclado
+  se reemplaza por un jugador con mouse contra un blanco; el 1 contra 1 es por Multijugador.
+- `PantallaArena` tiene tres modos (de prueba, anfitrión y cliente) y `PantallaSeleccionMapa` acepta qué
+  hacer con el mapa elegido.
 - `CONTRIBUTING.md`: todo cambio llega por pull request con squash, se documentan las
   verificaciones y las reglas para asistentes de IA.
+
+### Quitado
+
+- Las tres alturas de guardia (`AlturaEspada`) y sus teclas (`E`/`Q`, `O`/`L`), la estocada con tecla
+  sostenida y el Jugador 2 con teclado (flechas, `K`).
+- `entrada.EntradaTeclado`, reemplazada por `EntradaLocal`.
 
 ### Por hacer
 

@@ -204,6 +204,7 @@ public final class ClienteSala implements AutoCloseable {
         destino.vivo = origen.vivo;
         destino.corriendo = origen.corriendo;
         destino.anguloEspada = origen.anguloEspada;
+        destino.anguloObjetivo = origen.anguloObjetivo;
         destino.tiempoRestanteFlash = origen.tiempoRestanteFlash;
         destino.contadorGolpes = origen.contadorGolpes;
         destino.contadorAterrizajes = origen.contadorAterrizajes;

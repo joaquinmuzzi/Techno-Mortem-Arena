@@ -53,9 +53,9 @@ public class Jugador {
     private static final float EMPUJE_CHOQUE = 0.2f * VELOCIDAD;
 
     /** Segundos que dura una estocada, de que sale la hoja hasta que vuelve. */
-    private static final float DURACION_ESTOCADA = 0.18f;
+    private static final float DURACION_ESTOCADA = 0.14f;
     /** Segundos desde que arranca una estocada hasta que se puede lanzar otra. */
-    private static final float RECARGA_ESTOCADA = 0.30f;
+    private static final float RECARGA_ESTOCADA = 0.08f;
     /** Altura del hombro (el pivote de la espada) sobre los pies. */
     private static final float ALTURA_HOMBRO = 56f * ESCALA;
     /** Cuanto se corre el hombro hacia el lado al que mira el jugador, desde el centro del cuerpo. */
@@ -78,10 +78,12 @@ public class Jugador {
 
     /** Hacia donde apunta la espada, en radianes (0 es hacia la derecha, positivo hacia arriba). */
     private float angulo;
+    private float anguloObjetivo;
     /** El angulo al empezar el fotograma, para barrer el tajo de un fotograma al siguiente. */
     private float anguloPrevio;
     /** Segundos que le quedan a la estocada en curso; 0 si no hay ninguna. */
     private float tiempoEstocada;
+    private float bloqueadoTimer;
     private float recargaEstocada;
     /** Cuanto esta adelantada la hoja, de 0 (quieta) a 1 (en lo mas fuerte de la estocada). */
     private float extension;
@@ -135,6 +137,7 @@ public class Jugador {
         this.posicion.set(x, y);
         this.vidaInicial = vida;
         this.vida = vida;
+        this.anguloObjetivo = mirandoDerecha ? 0f : MathUtils.PI;
         this.angulo = mirandoDerecha ? 0f : MathUtils.PI;
         this.anguloPrevio = angulo;
         actualizarHoja();
@@ -161,6 +164,7 @@ public class Jugador {
         enElPiso = false;
         vivo = true;
         angulo = mirandoDerecha ? 0f : MathUtils.PI;
+        anguloObjetivo = mirandoDerecha ? 0f : MathUtils.PI;
         anguloPrevio = angulo;
         tiempoEstocada = 0f;
         recargaEstocada = 0f;
@@ -203,6 +207,15 @@ public class Jugador {
         actualizarPiso(estabaEnPiso);
         if (tiempoRestanteFlash > 0f) {
             tiempoRestanteFlash -= delta;
+        }
+        if (bloqueadoTimer > 0f) {
+        	bloqueadoTimer -= delta;
+        }
+        
+        if(angulo < anguloObjetivo) {
+        	angulo = Math.min(angulo + (0.2f - (bloqueadoTimer > 0f ? 0.15f : 0f)), anguloObjetivo);
+        }else if(angulo > anguloObjetivo) {
+        	angulo = Math.max(angulo - (0.2f - (bloqueadoTimer > 0f ? 0.15f : 0f)), anguloObjetivo);
         }
     }
 
@@ -269,7 +282,7 @@ public class Jugador {
         float dx = entrada.apuntaX - pivoteX();
         float dy = entrada.apuntaY - pivoteY();
         if (dx * dx + dy * dy > 1f) {
-            angulo = (float) Math.atan2(dy, dx);
+            anguloObjetivo = (float) Math.atan2(dy, dx);
         }
     }
 
@@ -285,8 +298,8 @@ public class Jugador {
             tiempoEstocada = Math.max(0f, tiempoEstocada - delta);
         }
         if (vivo && entrada.estocada && tiempoEstocada <= 0f && recargaEstocada <= 0f) {
-            tiempoEstocada = DURACION_ESTOCADA;
-            recargaEstocada = RECARGA_ESTOCADA;
+            tiempoEstocada = DURACION_ESTOCADA * (bloqueadoTimer > 0f ? 1.2f : 1f);
+            recargaEstocada = RECARGA_ESTOCADA * (bloqueadoTimer > 0f ? 6f : 1f);
         }
         extension = tiempoEstocada > 0f
             ? (float) Math.sin(Math.PI * (1f - tiempoEstocada / DURACION_ESTOCADA))
@@ -299,9 +312,9 @@ public class Jugador {
         entradaDerecha = entrada.derecha;
 
         if (entradaIzquierda && !entradaDerecha) {
-            velocidad.x += -(VELOCIDAD + velocidad.x);
+            velocidad.x += -(VELOCIDAD*(bloqueadoTimer > 0f ? 0.5f : 1f) + velocidad.x);
         } else if (entradaDerecha && !entradaIzquierda) {
-            velocidad.x += VELOCIDAD - velocidad.x;
+            velocidad.x += VELOCIDAD*(bloqueadoTimer > 0f ? 0.5f : 1f) - velocidad.x;
         }
 
         if (enElPiso && entrada.saltar) {
@@ -473,6 +486,7 @@ public class Jugador {
             if (penetracionX > 0f) {
                 float direccion = separarDe(oponente, penetracionX, arena);
                 empujar(direccion, EMPUJE_CHOQUE);
+                bloqueadoTimer = 1f;
             }
         }
 
@@ -636,6 +650,7 @@ public class Jugador {
         destino.vivo = vivo;
         destino.corriendo = corriendo;
         destino.anguloEspada = angulo;
+        destino.anguloObjetivo = anguloObjetivo;
         destino.extension = extension;
         destino.tiempoRestanteFlash = tiempoRestanteFlash;
         destino.contadorGolpes = contadorGolpes;
@@ -653,6 +668,7 @@ public class Jugador {
         vivo = origen.vivo;
         corriendo = origen.corriendo;
         angulo = origen.anguloEspada;
+        anguloObjetivo = origen.anguloObjetivo;
         extension = origen.extension;
         tiempoRestanteFlash = origen.tiempoRestanteFlash;
         contadorGolpes = origen.contadorGolpes;

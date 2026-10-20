@@ -19,7 +19,7 @@ public final class Hoja {
     public static final float LARGO = 56f * Arena.ESCALA;
     public static final float GROSOR = 10f * Arena.ESCALA;
     /** Cuanto avanza la base de la hoja en lo mas fuerte de una estocada. */
-    public static final float ALCANCE_ESTOCADA = 24f * Arena.ESCALA;
+    public static final float ALCANCE_ESTOCADA = 32f * Arena.ESCALA;
 
     /** Angulo maximo entre dos posiciones de la hoja probadas al barrer un tajo, en radianes (unos 11 grados). */
     private static final float PASO_BARRIDO = 0.2f;

@@ -48,6 +48,8 @@ public class Jugador {
 
     private final Controles controles;
     private final Color tinte;
+    /** Vidas con las que arranca cada ronda: ver {@link #reiniciar}. */
+    private final int vidaInicial;
     private final Vector2 posicion = new Vector2();
     private final Vector2 velocidad = new Vector2();
     private int vida;
@@ -106,7 +108,44 @@ public class Jugador {
         this.tinte = tinte;
         this.mirandoDerecha = mirandoDerecha;
         this.posicion.set(x, y);
+        this.vidaInicial = vida;
         this.vida = vida;
+    }
+
+    /**
+     * Vuelve al estado inicial para empezar una ronda nueva en el mismo mapa: posicion de spawn,
+     * vida completa, guardia al pecho y sin efectos pendientes (flash, empuje, estocada).
+     *
+     * <p>La partida al mejor de 5 resetea a los duelistas en vez de reconstruir la pantalla, asi
+     * el marcador y el numero de ronda sobreviven de un duelo al siguiente.
+     *
+     * @param x posicion horizontal del spawn, en pixeles desde el borde izquierdo de la arena
+     * @param y posicion vertical del spawn, en pixeles desde el borde inferior de la arena
+     * @param mirandoDerecha hacia donde apunta la espada al empezar la ronda
+     */
+    public void reiniciar(float x, float y, boolean mirandoDerecha) {
+        posicion.set(x, y);
+        velocidad.setZero();
+        vida = vidaInicial;
+        alturaEspada = AlturaEspada.PECHO;
+        this.mirandoDerecha = mirandoDerecha;
+        enElPiso = false;
+        estocada = false;
+        vivo = true;
+        entradaIzquierda = false;
+        entradaDerecha = false;
+        corriendo = false;
+        enVuelo = false;
+        acabaDeAterrizar = false;
+        acabaDeGolpear = false;
+        bloqueBajoPies = null;
+        montadoSobreOponente = false;
+        anguloEspada = 0f;
+        anguloObjetivo = 0f;
+        tiempoParaNuevoObjetivo = 0f;
+        tiempoParaRecuperarAtaque = 0f;
+        tiempoRestanteFlash = 0f;
+        empujeX = 0f;
     }
 
     /**
@@ -454,8 +493,14 @@ public class Jugador {
         recibirImpacto(atacante);
     }
 
-    private boolean isVivo() {
+    /** Verdadero mientras el duelistas siga en pie: al morir empieza la cuenta de la ronda. */
+    public boolean isVivo() {
     	return vivo;
+    }
+
+    /** Vidas restantes del duelistas, para el HUD. */
+    public int getVida() {
+    	return vida;
     }
 
     private void recibirImpacto(Jugador atacante) {
@@ -468,6 +513,7 @@ public class Jugador {
     		vida -= 1;
     	}
     	else {
+    		vida = 0;
     		vivo = false;
     	}
     }

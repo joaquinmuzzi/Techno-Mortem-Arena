@@ -13,6 +13,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
 
 /**
@@ -28,6 +29,7 @@ public class PantallaMenu extends ScreenAdapter {
     private static final Color FONDO = new Color(0.09f, 0.10f, 0.14f, 1f);
 
     private final RecursosGraficos recursos;
+    private final RecursosAudio audio;
     private final SpriteBatch batch = new SpriteBatch();
     private final Ui ui = new Ui();
     private final Viewport viewport = new FitViewport(ANCHO_MUNDO, ALTO_MUNDO, new OrthographicCamera());
@@ -36,8 +38,9 @@ public class PantallaMenu extends ScreenAdapter {
     private final Rectangle botonEditor = new Rectangle(ANCHO_MUNDO / 2f - 120f, 220f, 240f, 60f);
     private final Rectangle botonSalir = new Rectangle(ANCHO_MUNDO / 2f - 120f, 140f, 240f, 60f);
 
-    public PantallaMenu(RecursosGraficos recursos) {
+    public PantallaMenu(RecursosGraficos recursos, RecursosAudio audio) {
         this.recursos = recursos;
+        this.audio = audio;
     }
 
     @Override
@@ -48,11 +51,11 @@ public class PantallaMenu extends ScreenAdapter {
         boolean sobreSalir = botonSalir.contains(mouse);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || (Gdx.input.justTouched() && sobreJugar)) {
-            cambiarA(new PantallaSeleccionMapa(recursos));
+            cambiarA(new PantallaSeleccionMapa(recursos, audio));
             return;
         }
         if (Gdx.input.justTouched() && sobreEditor) {
-            cambiarA(new PantallaEditor(recursos));
+            cambiarA(new PantallaEditor(recursos, audio));
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (Gdx.input.justTouched() && sobreSalir)) {

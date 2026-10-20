@@ -32,6 +32,36 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Multijugador en red local: creación de partida (host) y búsqueda / unión (cliente).
 - Ajustes de audio y controles, y personalización visual del personaje.
 
+## [0.4.1] - 2026-10-19
+
+Primeros efectos de sonido: pisadas al correr, golpes y aterrizajes.
+
+### Añadido
+
+- `assets/sounds/`: tres efectos de sonido en MP3.
+  - `Running On Metal Grate.mp3`: pisadas al correr sobre la rejilla.
+  - `Bloody Sword Hit Sound Effect.mp3`: golpe de la espada contra el cuerpo del rival.
+  - `Landing-Jump.mp3`: aterrizaje despues de un salto o una caida.
+- `RecursosAudio`: carga y liberacion centralizada de los efectos de sonido, con el mismo criterio
+  que `RecursosGraficos` (se cargan una sola vez, no dentro del bucle de dibujo).
+- Sonido de correr en bucle mientras cualquiera de los dos jugadores corre, que se detiene al soltar
+  la tecla y al pausar o salir de la ronda.
+- Sonido de golpe cuando la estocada de un jugador toca el cuerpo del rival (y no su espada), para
+  los dos jugadores.
+- Sonido de aterrizaje cuando un jugador toca el piso despues de haber estado en el aire.
+
+### Cambiado
+
+- `TechnoMortemArena`: carga `RecursosAudio` junto con los graficos y lo libera al cerrar.
+- `entidades.Jugador`: expone `estaCorriendo()`, `acabaDeGolpear()` y `acabaDeAterrizar()`. Distingue
+  salir del piso y volver a tocarlo, para avisar del aterrizaje una sola vez (la primera caida al
+  empezar la ronda no suena).
+- `pantallas.PantallaArena`: reproduce los efectos segun lo que informa cada `Jugador` y apaga el
+  bucle de correr al pausar.
+- `pantallas.PantallaMenu`, `PantallaSeleccionMapa` y `PantallaEditor`: reciben y pasan
+  `RecursosAudio` para que llegue a la ronda.
+- `README.md`: documenta los sonidos de `assets/sounds/` y `RecursosAudio` en la estructura del codigo.
+
 ## [0.4.0] - 2026-10-18
 
 Bloques interactivos, editor de niveles, pausa y cartel de controles al empezar la ronda.
@@ -163,7 +193,8 @@ Primera pre-entrega: configuración inicial del proyecto y del repositorio.
 - Título de la ventana del juego: de `TechnoMortemArena` (nombre técnico del módulo) a
   `Techno Mortem Arena`.
 
-[No publicado]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.4.0...HEAD
+[No publicado]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.2.1...v0.2.2

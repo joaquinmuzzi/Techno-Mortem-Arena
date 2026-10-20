@@ -17,6 +17,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entidades.Jugador;
 import com.et35.technomortemarena.mundo.Arena;
@@ -64,6 +65,7 @@ public class PantallaEditor extends ScreenAdapter {
     private static final int TAMANO_PINCEL_MAXIMO = 4;
 
     private final RecursosGraficos recursos;
+    private final RecursosAudio audio;
     private final SpriteBatch batch = new SpriteBatch();
     private final Ui ui = new Ui();
     private final Viewport viewportMundo = new FitViewport(Arena.ANCHO_MUNDO, Arena.ALTO_MUNDO,
@@ -132,14 +134,15 @@ public class PantallaEditor extends ScreenAdapter {
     };
 
     /** Vuelve a edicion con un mapa ya armado, por ejemplo al salir de probarlo. */
-    public PantallaEditor(RecursosGraficos recursos, String[] filas, String nombre) {
-        this(recursos);
+    public PantallaEditor(RecursosGraficos recursos, RecursosAudio audio, String[] filas, String nombre) {
+        this(recursos, audio);
         cargarFilas(filas);
         nombreMapa = nombre;
     }
 
-    public PantallaEditor(RecursosGraficos recursos) {
+    public PantallaEditor(RecursosGraficos recursos, RecursosAudio audio) {
         this.recursos = recursos;
+        this.audio = audio;
         Gdx.input.setInputProcessor(entrada);
         for (int i = 0; i < HERRAMIENTAS.length; i++) {
             botonesHerramienta[i] = new Rectangle(MARGEN + i * PASO_BOTON, Y_FILA_HERRAMIENTAS, ANCHO_BOTON, 40f);
@@ -168,7 +171,7 @@ public class PantallaEditor extends ScreenAdapter {
             }
         } else {
             if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-                cambiarA(new PantallaMenu(recursos));
+                cambiarA(new PantallaMenu(recursos, audio));
                 return;
             }
             for (int i = 0; i < HERRAMIENTAS.length; i++) {
@@ -266,13 +269,13 @@ public class PantallaEditor extends ScreenAdapter {
         } else if (botonProbar.contains(mouseUi)) {
             String[] filas = filasDeCeldas();
             String nombre = nombreMapa;
-            cambiarA(new PantallaArena(recursos, Arena.desdeGrilla(filas),
-                () -> new PantallaEditor(recursos, filas, nombre)));
+            cambiarA(new PantallaArena(recursos, audio, Arena.desdeGrilla(filas),
+                () -> new PantallaEditor(recursos, audio, filas, nombre)));
             return true;
         } else if (botonPincel.contains(mouseUi)) {
             cambiarTamanoPincel();
         } else if (botonVolver.contains(mouseUi)) {
-            cambiarA(new PantallaMenu(recursos));
+            cambiarA(new PantallaMenu(recursos, audio));
             return true;
         }
         return false;

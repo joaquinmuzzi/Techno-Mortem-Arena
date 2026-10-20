@@ -17,12 +17,15 @@ import com.et35.technomortemarena.pantallas.PantallaMenu;
 public class TechnoMortemArena extends Game {
 
     private RecursosGraficos recursos;
+    private RecursosAudio audio;
 
     @Override
     public void create() {
-        // Las texturas se cargan una sola vez, aca, y se comparten entre todas las pantallas.
+        // Las texturas y los sonidos se cargan una sola vez, aca, y se comparten entre todas las
+        // pantallas.
         recursos = new RecursosGraficos();
-        setScreen(new PantallaMenu(recursos));
+        audio = new RecursosAudio();
+        setScreen(new PantallaMenu(recursos, audio));
     }
 
     @Override
@@ -51,6 +54,7 @@ public class TechnoMortemArena extends Game {
             getScreen().dispose();
         }
         recursos.dispose();
+        audio.dispose();
         super.dispose();
     }
 }

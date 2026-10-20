@@ -58,6 +58,19 @@ public class Jugador {
     private boolean estocada;
     private boolean vivo = true;
 
+    /** Entrada horizontal del fotograma: se guarda para saber si corre sin volver a leer el teclado. */
+    private boolean entradaIzquierda;
+    private boolean entradaDerecha;
+
+    /** Verdadero mientras el jugador corre por el piso (hay entrada horizontal y esta apoyado). */
+    private boolean corriendo;
+    /** Verdadero mientras el jugador esta en el aire despues de haber dejado el piso. */
+    private boolean enVuelo;
+    /** Verdadero solo en el fotograma en que toca el piso tras haber estado en el aire. */
+    private boolean acabaDeAterrizar;
+    /** Verdadero solo en el fotograma en que su espada toca el cuerpo del rival. */
+    private boolean acabaDeGolpear;
+
     /** Bloque sobre el que esta parado, si lo hay. Sirve para avisar solo al aterrizar. */
     private Bloque bloqueBajoPies;
     /** Verdadero mientras esta parado sobre la cabeza del oponente. */
@@ -105,11 +118,15 @@ public class Jugador {
      * @param delta segundos transcurridos desde el fotograma anterior
      */
     public void actualizar(float delta, Arena arena, Jugador oponente) {
+        acabaDeAterrizar = false;
+        acabaDeGolpear = false;
+        boolean estabaEnPiso = enElPiso;
     	if(vivo) {
     		leerEntrada();
     	}
         integrarFisica(delta, arena, oponente);
         resolverColisiones(arena, oponente);
+        actualizarPiso(estabaEnPiso);
         if(tiempoRestanteFlash > 0f) {
         	tiempoRestanteFlash -= delta;
         }
@@ -128,6 +145,27 @@ public class Jugador {
     /** Mata al jugador al instante. Lo usan los bloques mortales, como los pinchos. */
     public void morir() {
         vivo = false;
+    }
+
+    /**
+     * Actualiza las banderas de correr y aterrizar comparando el apoyo en el piso de este fotograma
+     * con el anterior.
+     *
+     * <p>El salto y el trampolin dejan al jugador en el aire ({@code enElPiso} en falso); cuando
+     * vuelve a tocar el piso se avisa una sola vez para que suene el aterrizaje. Al empezar la ronda
+     * el jugador nunca estuvo apoyado, asi que la primera caida al piso no suena.
+     *
+     * @param estabaEnPiso si el jugador estaba apoyado antes de la fisica de este fotograma
+     */
+    private void actualizarPiso(boolean estabaEnPiso) {
+        if (estabaEnPiso && !enElPiso) {
+            enVuelo = true;
+        }
+        if (enVuelo && !estabaEnPiso && enElPiso) {
+            acabaDeAterrizar = true;
+            enVuelo = false;
+        }
+        corriendo = vivo && enElPiso && (entradaIzquierda != entradaDerecha);
     }
 
     /**
@@ -152,14 +190,14 @@ public class Jugador {
 
     private void leerEntrada() {
         // isKeyPressed: verdadero mientras la tecla este hundida -> movimiento continuo.
-        boolean izquierda = Gdx.input.isKeyPressed(controles.getIzquierda());
-        boolean derecha = Gdx.input.isKeyPressed(controles.getDerecha());
+        entradaIzquierda = Gdx.input.isKeyPressed(controles.getIzquierda());
+        entradaDerecha = Gdx.input.isKeyPressed(controles.getDerecha());
         estocada = Gdx.input.isKeyPressed(controles.getEstocada());
 
-        if (izquierda && !derecha) {
+        if (entradaIzquierda && !entradaDerecha) {
             velocidad.x += -(VELOCIDAD+velocidad.x);
             mirandoDerecha = false;
-        } else if (derecha && !izquierda) {
+        } else if (entradaDerecha && !entradaIzquierda) {
             velocidad.x += VELOCIDAD-velocidad.x;
             mirandoDerecha = true;
         }
@@ -379,6 +417,7 @@ public class Jugador {
         }
         if(!(oponente.tiempoRestanteFlash > 0f) && vivo && cajaOponente.overlaps(getCajaEspada())) {
         	oponente.activarFlash(1f, this);
+        	acabaDeGolpear = true;
         }
         if (posicion.y < -ALTO) {
             vivo = false;
@@ -486,6 +525,21 @@ public class Jugador {
 
     public boolean isMirandoDerecha() {
         return mirandoDerecha;
+    }
+
+    /** Verdadero mientras el jugador corre por el piso: hay entrada horizontal y esta apoyado. */
+    public boolean estaCorriendo() {
+        return corriendo;
+    }
+
+    /** Verdadero solo en el fotograma en que la espada toca el cuerpo del rival y le hace dano. */
+    public boolean acabaDeGolpear() {
+        return acabaDeGolpear;
+    }
+
+    /** Verdadero solo en el fotograma en que toca el piso tras haber estado en el aire. */
+    public boolean acabaDeAterrizar() {
+        return acabaDeAterrizar;
     }
 
     /** Copia defensiva: devolver el {@code Vector2} interno permitiria moverlo desde afuera. */

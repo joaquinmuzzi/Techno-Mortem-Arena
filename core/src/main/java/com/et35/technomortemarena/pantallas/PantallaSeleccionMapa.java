@@ -14,6 +14,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.mundo.Arena;
 
@@ -30,6 +31,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     private static final Color FONDO = new Color(0.09f, 0.10f, 0.14f, 1f);
 
     private final RecursosGraficos recursos;
+    private final RecursosAudio audio;
     private final SpriteBatch batch = new SpriteBatch();
     private final Ui ui = new Ui();
     private final Viewport viewport = new FitViewport(ANCHO_MUNDO, ALTO_MUNDO, new OrthographicCamera());
@@ -41,8 +43,9 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     private final Rectangle botonArenaCintas = new Rectangle(ANCHO_MUNDO / 2f - 150f, 120f, 300f, 50f);
     private final Rectangle botonVolver = new Rectangle(ANCHO_MUNDO / 2f - 150f, 40f, 300f, 50f);
 
-    public PantallaSeleccionMapa(RecursosGraficos recursos) {
+    public PantallaSeleccionMapa(RecursosGraficos recursos, RecursosAudio audio) {
         this.recursos = recursos;
+        this.audio = audio;
     }
 
     @Override
@@ -76,7 +79,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (Gdx.input.justTouched() && sobreVolver)) {
-            cambiarA(new PantallaMenu(recursos));
+            cambiarA(new PantallaMenu(recursos, audio));
             return;
         }
 
@@ -84,7 +87,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     }
 
     private void jugarEn(Arena arena) {
-        cambiarA(new PantallaArena(recursos, arena));
+        cambiarA(new PantallaArena(recursos, audio, arena));
     }
 
     /** Igual que en el menu principal: {@code setScreen} no libera esta pantalla, hay que disponerla a mano. */

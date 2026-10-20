@@ -16,6 +16,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import java.util.function.Supplier;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entidades.Jugador;
 import com.et35.technomortemarena.entrada.Controles;
@@ -41,6 +42,12 @@ public class PantallaArena extends ScreenAdapter {
     private static final Color TINTE_UNO = Jugador.TINTE_UNO;
     private static final Color TINTE_DOS = Jugador.TINTE_DOS;
     private static final Color VELO_PAUSA = new Color(0f, 0f, 0f, 0.6f);
+
+    // Volumen de cada efecto. El de correr es mas bajo porque suena en bucle casi todo el tiempo y
+    // taparia el resto; los golpes y aterrizajes son cortos y puntuales.
+    private static final float VOLUMEN_CORRER = 0.6f;
+    private static final float VOLUMEN_GOLPE = 1.0f;
+    private static final float VOLUMEN_ATERRIZAR = 0.8f;
 
     // Cartel de controles que aparece al empezar la ronda. Se muestran los del Jugador 1 arriba a
     // la izquierda y los del Jugador 2 arriba a la derecha, para que nadie arranque perdido.
@@ -71,6 +78,7 @@ public class PantallaArena extends ScreenAdapter {
     };
 
     private final RecursosGraficos recursos;
+    private final RecursosAudio audio;
     private final Arena arena;
     private final Supplier<Screen> alReiniciar;
     private final SpriteBatch batch = new SpriteBatch();
@@ -81,6 +89,8 @@ public class PantallaArena extends ScreenAdapter {
     private final Jugador jugadorDos;
 
     private boolean pausado;
+    /** Verdadero mientras el bucle del sonido de correr esta sonando, para no reiniciarlo cada fotograma. */
+    private boolean suenaCorrer;
     /** Tiempo (segundos de juego) transcurrido desde que arranco la ronda, para el cartel de ayuda. */
     private float tiempoAyuda;
     /** Color y rectangulo de trabajo: evitan crear objetos nuevos en cada fotograma del cartel. */
@@ -91,16 +101,17 @@ public class PantallaArena extends ScreenAdapter {
     private final Rectangle botonSeleccion = new Rectangle(330f, 180f, 300f, 50f);
     private final Rectangle botonSalir = new Rectangle(330f, 110f, 300f, 50f);
 
-    public PantallaArena(RecursosGraficos recursos, Arena arena) {
-        this(recursos, arena, () -> new PantallaArena(recursos, arena));
+    public PantallaArena(RecursosGraficos recursos, RecursosAudio audio, Arena arena) {
+        this(recursos, audio, arena, () -> new PantallaArena(recursos, audio, arena));
     }
 
     /**
      * @param alReiniciar pantalla que se muestra al apretar R. Por defecto reinicia la ronda; el editor la
      *                    cambia para volver a edicion con el mismo mapa.
      */
-    public PantallaArena(RecursosGraficos recursos, Arena arena, Supplier<Screen> alReiniciar) {
+    public PantallaArena(RecursosGraficos recursos, RecursosAudio audio, Arena arena, Supplier<Screen> alReiniciar) {
         this.recursos = recursos;
+        this.audio = audio;
         this.arena = arena;
         this.alReiniciar = alReiniciar;
         // FitViewport mantiene la relacion de aspecto agregando bandas negras si hace falta, en
@@ -122,6 +133,11 @@ public class PantallaArena extends ScreenAdapter {
     public void render(float delta) {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             pausado = !pausado;
+            if (pausado) {
+                // Al pausar deja de correr la simulacion, asi que el bucle quedaria sonando para
+                // siempre: hay que apagarlo a mano.
+                detenerSonidoCorrer();
+            }
         }
         if (pausado) {
             atenderPausa();
@@ -148,6 +164,38 @@ public class PantallaArena extends ScreenAdapter {
         tiempoAyuda += paso;
         jugadorUno.actualizar(paso, arena, jugadorDos);
         jugadorDos.actualizar(paso, arena, jugadorUno);
+        actualizarSonidos();
+    }
+
+    /**
+     * Dispara los efectos segun lo que paso en el fotograma.
+     *
+     * <p>El sonido de correr es un bucle: se enciende la primera vez que algun jugador corre y se
+     * apaga cuando ninguno lo hace. Los otros dos son golpes y aterrizajes puntuales, que cada jugador
+     * marca con una bandera valida solo en el fotograma en que ocurren.
+     */
+    private void actualizarSonidos() {
+        boolean corriendo = jugadorUno.estaCorriendo() || jugadorDos.estaCorriendo();
+        if (corriendo && !suenaCorrer) {
+            audio.correr.loop(VOLUMEN_CORRER);
+            suenaCorrer = true;
+        } else if (!corriendo) {
+            detenerSonidoCorrer();
+        }
+        if (jugadorUno.acabaDeGolpear() || jugadorDos.acabaDeGolpear()) {
+            audio.golpe.play(VOLUMEN_GOLPE);
+        }
+        if (jugadorUno.acabaDeAterrizar() || jugadorDos.acabaDeAterrizar()) {
+            audio.aterrizar.play(VOLUMEN_ATERRIZAR);
+        }
+    }
+
+    /** Apaga el bucle del sonido de correr si estaba sonando. Se usa al pausar y al salir de la ronda. */
+    private void detenerSonidoCorrer() {
+        if (suenaCorrer) {
+            audio.correr.stop();
+            suenaCorrer = false;
+        }
     }
 
     private void atenderPausa() {
@@ -158,9 +206,9 @@ public class PantallaArena extends ScreenAdapter {
         if (botonSeguir.contains(mouse)) {
             pausado = false;
         } else if (botonMenu.contains(mouse)) {
-            cambiarA(new PantallaMenu(recursos));
+            cambiarA(new PantallaMenu(recursos, audio));
         } else if (botonSeleccion.contains(mouse)) {
-            cambiarA(new PantallaSeleccionMapa(recursos));
+            cambiarA(new PantallaSeleccionMapa(recursos, audio));
         } else if (botonSalir.contains(mouse)) {
             Gdx.app.exit();
         }
@@ -313,6 +361,7 @@ public class PantallaArena extends ScreenAdapter {
 
     @Override
     public void dispose() {
+        detenerSonidoCorrer();
         batch.dispose();
         ui.dispose();
     }

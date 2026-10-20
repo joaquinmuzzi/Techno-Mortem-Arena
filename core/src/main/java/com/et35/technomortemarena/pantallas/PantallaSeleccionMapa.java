@@ -13,6 +13,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
@@ -43,9 +45,26 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     private final Rectangle botonArenaCintas = new Rectangle(ANCHO_MUNDO / 2f - 150f, 120f, 300f, 50f);
     private final Rectangle botonVolver = new Rectangle(ANCHO_MUNDO / 2f - 150f, 40f, 300f, 50f);
 
+    /** Pantalla a la que se pasa con el mapa elegido, y a la que se vuelve con ESC o el boton Volver. */
+    private final Function<Arena, Screen> alElegir;
+    private final Supplier<Screen> alVolver;
+
     public PantallaSeleccionMapa(RecursosGraficos recursos, RecursosAudio audio) {
+        this(recursos, audio,
+            arena -> new PantallaArena(recursos, audio, arena),
+            () -> new PantallaMenu(recursos, audio));
+    }
+
+    /**
+     * @param alElegir pantalla que se muestra con el mapa elegido; la de multijugador abre la sala
+     * @param alVolver pantalla a la que se vuelve sin elegir
+     */
+    public PantallaSeleccionMapa(RecursosGraficos recursos, RecursosAudio audio,
+                                 Function<Arena, Screen> alElegir, Supplier<Screen> alVolver) {
         this.recursos = recursos;
         this.audio = audio;
+        this.alElegir = alElegir;
+        this.alVolver = alVolver;
     }
 
     @Override
@@ -79,7 +98,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (Gdx.input.justTouched() && sobreVolver)) {
-            cambiarA(new PantallaMenu(recursos, audio));
+            cambiarA(alVolver.get());
             return;
         }
 
@@ -87,7 +106,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     }
 
     private void jugarEn(Arena arena) {
-        cambiarA(new PantallaArena(recursos, audio, arena));
+        cambiarA(alElegir.apply(arena));
     }
 
     /** Igual que en el menu principal: {@code setScreen} no libera esta pantalla, hay que disponerla a mano. */

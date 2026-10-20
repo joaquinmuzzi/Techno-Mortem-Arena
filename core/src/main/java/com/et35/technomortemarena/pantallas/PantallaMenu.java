@@ -17,7 +17,7 @@ import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
 
 /**
- * Menu principal: titulo del juego y los botones Jugar, Editor de niveles y Salir.
+ * Menu principal: titulo del juego y los botones Jugar, Multijugador, Editor de niveles y Salir.
  *
  * <p>Usa el mismo mundo de 960x540 que la interfaz de las demas pantallas para que la escala no "salte"
  * al cambiar de pantalla.
@@ -34,9 +34,10 @@ public class PantallaMenu extends ScreenAdapter {
     private final Ui ui = new Ui();
     private final Viewport viewport = new FitViewport(ANCHO_MUNDO, ALTO_MUNDO, new OrthographicCamera());
 
-    private final Rectangle botonJugar = new Rectangle(ANCHO_MUNDO / 2f - 120f, 300f, 240f, 60f);
-    private final Rectangle botonEditor = new Rectangle(ANCHO_MUNDO / 2f - 120f, 220f, 240f, 60f);
-    private final Rectangle botonSalir = new Rectangle(ANCHO_MUNDO / 2f - 120f, 140f, 240f, 60f);
+    private final Rectangle botonJugar = new Rectangle(ANCHO_MUNDO / 2f - 120f, 330f, 240f, 60f);
+    private final Rectangle botonMultijugador = new Rectangle(ANCHO_MUNDO / 2f - 120f, 255f, 240f, 60f);
+    private final Rectangle botonEditor = new Rectangle(ANCHO_MUNDO / 2f - 120f, 180f, 240f, 60f);
+    private final Rectangle botonSalir = new Rectangle(ANCHO_MUNDO / 2f - 120f, 105f, 240f, 60f);
 
     public PantallaMenu(RecursosGraficos recursos, RecursosAudio audio) {
         this.recursos = recursos;
@@ -47,11 +48,16 @@ public class PantallaMenu extends ScreenAdapter {
     public void render(float delta) {
         Vector2 mouse = viewport.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
         boolean sobreJugar = botonJugar.contains(mouse);
+        boolean sobreMultijugador = botonMultijugador.contains(mouse);
         boolean sobreEditor = botonEditor.contains(mouse);
         boolean sobreSalir = botonSalir.contains(mouse);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || (Gdx.input.justTouched() && sobreJugar)) {
             cambiarA(new PantallaSeleccionMapa(recursos, audio));
+            return;
+        }
+        if (Gdx.input.justTouched() && sobreMultijugador) {
+            cambiarA(new PantallaMultijugador(recursos, audio, ""));
             return;
         }
         if (Gdx.input.justTouched() && sobreEditor) {
@@ -63,7 +69,7 @@ public class PantallaMenu extends ScreenAdapter {
             return;
         }
 
-        dibujar(sobreJugar, sobreEditor, sobreSalir);
+        dibujar(sobreJugar, sobreMultijugador, sobreEditor, sobreSalir);
     }
 
     /**
@@ -76,13 +82,14 @@ public class PantallaMenu extends ScreenAdapter {
         dispose();
     }
 
-    private void dibujar(boolean sobreJugar, boolean sobreEditor, boolean sobreSalir) {
+    private void dibujar(boolean sobreJugar, boolean sobreMultijugador, boolean sobreEditor, boolean sobreSalir) {
         ScreenUtils.clear(FONDO);
         viewport.apply();
         batch.setProjectionMatrix(viewport.getCamera().combined);
 
         batch.begin();
         ui.boton(batch, botonJugar, sobreJugar, "JUGAR", 1.6f);
+        ui.boton(batch, botonMultijugador, sobreMultijugador, "MULTIJUGADOR", 1.3f);
         ui.boton(batch, botonEditor, sobreEditor, "EDITOR DE NIVELES", 1.3f);
         ui.boton(batch, botonSalir, sobreSalir, "SALIR", 1.6f);
         String titulo = "TECHNO MORTEM ARENA";

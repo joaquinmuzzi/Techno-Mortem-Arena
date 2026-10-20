@@ -76,15 +76,28 @@ core/src/main/java/com/et35/technomortemarena/
 │   └── Pincho.java            Bloque letal al tocarlo
 ├── entidades/
 │   ├── Jugador.java           Entidad controlable: física, salto, guardia y apilado
+│   ├── EstadoJugador.java     Lo necesario para dibujar a un jugador (viaja por la red)
 │   └── AlturaEspada.java      Las tres alturas de guardia (cadera, pecho, cabeza)
-├── entrada/Controles.java     Mapeo de teclas de cada duelista
+├── entrada/
+│   ├── Controles.java         Mapeo de teclas de cada duelista
+│   ├── FuenteEntrada.java     De dónde lee un jugador lo que hace (teclado o red)
+│   ├── EntradaJugador.java    Lo que un jugador quiere hacer en un fotograma
+│   └── EntradaTeclado.java    Entrada del teclado local
+├── red/                       Multijugador por UDP (ver "Multijugador")
+│   ├── Protocolo.java         Cabecera, tipos de paquete y constantes
+│   ├── ServidorSala.java      Lado del anfitrión: recibe entradas y manda el estado
+│   ├── ClienteSala.java       Lado del cliente: se une, baja el mapa y recibe el estado
+│   ├── EntradaRemota.java     Entrada de un jugador que llega por la red
+│   ├── CodecMapa.java         Filas del mapa a bytes (con repeticiones comprimidas)
+│   └── CodecEstado.java       Estado de un jugador a bytes
 ├── niveles/
 │   ├── MapaGuardado.java      Mapa con nombre creado en el editor
 │   └── RepositorioMapas.java  Guardado y lectura de mapas
 └── pantallas/
-    ├── PantallaMenu.java          Menú principal (Jugar / Editor de niveles / Salir)
+    ├── PantallaMenu.java          Menú principal (Jugar / Multijugador / Editor de niveles / Salir)
+    ├── PantallaMultijugador.java  Crear una sala o unirse a la de otro
     ├── PantallaSeleccionMapa.java Elección del mapa
-    ├── PantallaArena.java         Ronda de duelo, cartel de controles y pausa
+    ├── PantallaArena.java         Ronda de duelo (local, anfitrión o cliente), controles y pausa
     ├── PantallaEditor.java        Editor de niveles
     └── Ui.java                    Interfaz común (botones, texto, rectángulos)
 ```
@@ -104,6 +117,30 @@ La guardia tiene tres alturas —cadera, pecho y cabeza— y arranca en pecho. A
 muestra un cartel con los controles de cada jugador.
 
 Controles generales: `ESC` pausa la partida y `F11` alterna la pantalla completa.
+
+## Multijugador
+
+Cada instancia del juego controla **un solo jugador**, siempre con las teclas del Jugador 1
+(`A`/`D`, `W`, `E`/`Q`, `F`), y varias instancias se conectan a una misma sala. Hoy la sala admite
+dos jugadores. La comunicación es por **UDP**.
+
+Para probarlo en una sola máquina, abrí el juego dos veces:
+
+1. En la primera: `MULTIJUGADOR` → `CREAR SALA` → elegir el mapa. Queda esperando al otro jugador.
+2. En la segunda: `MULTIJUGADOR` → dejar `127.0.0.1:7777` → `UNIRSE A UNA SALA`.
+
+El campo de texto acepta `ip:puerto`. Para jugar entre dos computadoras de la misma red, el
+anfitrión comparte su IP local y el puerto (7777 por defecto; es el mismo que se escribe al crear
+la sala). El firewall de Windows puede preguntar si permite a Java recibir conexiones: para probar
+en la misma máquina no hace falta permitirlo.
+
+El anfitrión simula todo el juego y le manda el estado al cliente, que solo manda sus teclas y
+dibuja lo que recibe. `R` reinicia la ronda solo en el anfitrión, y en red `ESC` abre el menú
+de pausa sin frenar la partida. Si el anfitrión sale, el cliente vuelve a la pantalla de
+multijugador con el motivo; si el cliente se va, el anfitrión vuelve a esperar a otro.
+
+Todavía no hay descubrimiento de salas ni juego por internet (requiere NAT o un servidor): ver
+`CHANGELOG.md` y la tarea de ClickUp "Red".
 
 ## Propuesta del proyecto (Wiki)
 
@@ -207,7 +244,8 @@ Las tareas específicas de un módulo se invocan con el prefijo del módulo: por
 - [ ] Rodado para esquivar.
 - [ ] Estructura de partida (mejor de 5 rondas, temporizador, muerte súbita).
 - [ ] Selección de mapa aleatorio por ronda.
-- [ ] Multijugador en red local (host / cliente).
+- [x] Multijugador por UDP en red local: crear sala y unirse (2 jugadores, una instancia por jugador).
+- [ ] Multijugador por internet (NAT, relay o servidor dedicado) y descubrimiento de salas.
 - [ ] Pantalla de ajustes (audio y controles) y personalización del personaje.
 - [ ] Animaciones del personaje.
 

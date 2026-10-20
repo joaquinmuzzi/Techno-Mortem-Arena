@@ -9,6 +9,19 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Multijugador por UDP: cada instancia del juego controla un solo jugador y se conecta a una sala
+  (hoy de dos jugadores). El anfitrión simula toda la partida y le manda el estado al cliente, que
+  manda sus teclas y dibuja lo recibido. Paquete `red` (`Protocolo`, `ServidorSala`, `ClienteSala`,
+  `EntradaRemota`, `CodecMapa`, `CodecEstado`) y pantalla `PantallaMultijugador` (crear sala o
+  unirse con `ip:puerto`), con un botón nuevo en el menú principal. El cliente baja el mapa del
+  anfitrión. Las acciones de una sola vez viajan como contadores y los paquetes viejos se
+  descartan, así la pérdida o el desorden de UDP no rompe la partida. La entrada de red lleva un
+  token por sesión y solo vale desde la dirección del cliente.
+- `entrada.FuenteEntrada`, `EntradaJugador` y `EntradaTeclado`, y `entidades.EstadoJugador`:
+  `Jugador` ya no lee el teclado directamente, y puede exportar e importar su estado.
+- `Arena.getFilas()`: las filas de texto de las que salió el mapa.
+- Tests de la red: codecs, entrada remota y la sala completa sobre sockets reales por loopback
+  (apretón de manos, mapa, entradas, estado, sala llena, tokens, timeouts y paquetes basura).
 - Workflows de GitHub Actions: `CI` (compila todos los módulos y corre los tests con JDK 17) y
   `PR title` (título Conventional Commits y línea `Assisted-by:` en la descripción).
 - Dependabot mensual y agrupado para las GitHub Actions y las dependencias de Gradle.
@@ -19,6 +32,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- `PantallaArena` tiene tres modos (local, anfitrión y cliente) y `PantallaSeleccionMapa` acepta qué
+  hacer con el mapa elegido. El modo local de dos jugadores en un teclado no cambia.
 - `CONTRIBUTING.md`: todo cambio llega por pull request con squash, se documentan las
   verificaciones y las reglas para asistentes de IA.
 
@@ -29,7 +44,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Rodado para esquivar ataques.
 - Estructura de partida al mejor de 5 rondas, con temporizador y muerte súbita.
 - Más arenas y selección de mapa aleatorio por ronda.
-- Multijugador en red local: creación de partida (host) y búsqueda / unión (cliente).
+- Multijugador por internet (NAT, relay o servidor dedicado), descubrimiento de salas en la red local
+  y más de dos jugadores por sala.
 - Ajustes de audio y controles, y personalización visual del personaje.
 
 ## [0.4.1] - 2026-10-19

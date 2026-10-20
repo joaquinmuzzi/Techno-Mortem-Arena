@@ -19,12 +19,23 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entidades.Jugador;
+import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entrada.Controles;
+import com.et35.technomortemarena.entrada.EntradaJugador;
+import com.et35.technomortemarena.entrada.EntradaTeclado;
+import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
+import com.et35.technomortemarena.red.ClienteSala;
+import com.et35.technomortemarena.red.ServidorSala;
 
 /**
  * Ronda de duelo: arma la arena, los dos duelistas y corre el bucle de juego.
+ *
+ * <p>Tiene tres modos. En el modo local, dos jugadores comparten el teclado. En red, cada instancia
+ * controla un solo jugador (con las teclas del Jugador 1): el anfitrion ({@link ServidorSala}) simula
+ * toda la partida y le manda el estado al cliente ({@link ClienteSala}), que solo manda sus teclas y
+ * dibuja lo que recibe. En red la pausa no frena la simulacion: es solo un menu encima.
  *
  * <p>ESC abre el menu de pausa encima de la ronda, con opciones para volver al menu principal, a la
  * seleccion de mapa o cerrar el juego.
@@ -85,10 +96,29 @@ public class PantallaArena extends ScreenAdapter {
     private final Viewport viewport;
     private final Viewport viewportUi = new FitViewport(ANCHO_UI, ALTO_UI, new OrthographicCamera());
     private final Ui ui = new Ui();
-    private final Jugador jugadorUno;
-    private final Jugador jugadorDos;
+    private Jugador jugadorUno;
+    /** En modo anfitrion es nulo hasta que se une alguien. */
+    private Jugador jugadorDos;
+
+    /** No son nulos en modo anfitrion / cliente. Si los dos son nulos, es la partida local. */
+    private final ServidorSala servidor;
+    private final ClienteSala cliente;
+    /** Teclado del jugador de esta instancia en red; se apaga mientras el menu de pausa esta abierto. */
+    private EntradaTeclado teclado;
+    /** Oponente de mentira, lejos del mapa, para el anfitrion mientras nadie se une. */
+    private Jugador fantasma;
+    private final Vector2 spawnUno;
+    private final Vector2 spawnDos;
+    private final EntradaJugador entradaAux = new EntradaJugador();
+    private final EstadoJugador estadoUno = new EstadoJugador();
+    private final EstadoJugador estadoDos = new EstadoJugador();
+    /** Cuentas de golpes y aterrizajes ya sonados, para disparar cada sonido una sola vez. */
+    private int golpesSonados;
+    private int aterrizajesSonados;
 
     private boolean pausado;
+    /** Verdadero despues de dispose(): si un boton de la pausa nos cambio de pantalla, no hay que seguir dibujando. */
+    private boolean liberada;
     /** Verdadero mientras el bucle del sonido de correr esta sonando, para no reiniciarlo cada fotograma. */
     private boolean suenaCorrer;
     /** Tiempo (segundos de juego) transcurrido desde que arranco la ronda, para el cartel de ayuda. */
@@ -110,10 +140,27 @@ public class PantallaArena extends ScreenAdapter {
      *                    cambia para volver a edicion con el mismo mapa.
      */
     public PantallaArena(RecursosGraficos recursos, RecursosAudio audio, Arena arena, Supplier<Screen> alReiniciar) {
+        this(recursos, audio, arena, alReiniciar, null, null);
+    }
+
+    /** Partida en red como anfitrion: controla al Jugador 1 y espera a que se una el otro. */
+    public PantallaArena(RecursosGraficos recursos, RecursosAudio audio, Arena arena, ServidorSala servidor) {
+        this(recursos, audio, arena, null, servidor, null);
+    }
+
+    /** Partida en red como cliente: el mapa es el que bajo de la sala. */
+    public PantallaArena(RecursosGraficos recursos, RecursosAudio audio, ClienteSala cliente) {
+        this(recursos, audio, Arena.desdeGrilla(cliente.getFilas()), null, null, cliente);
+    }
+
+    private PantallaArena(RecursosGraficos recursos, RecursosAudio audio, Arena arena,
+                          Supplier<Screen> alReiniciar, ServidorSala servidor, ClienteSala cliente) {
         this.recursos = recursos;
         this.audio = audio;
         this.arena = arena;
         this.alReiniciar = alReiniciar;
+        this.servidor = servidor;
+        this.cliente = cliente;
         // FitViewport mantiene la relacion de aspecto agregando bandas negras si hace falta, en
         // lugar de estirar la imagen. Asi las distancias del duelo son identicas en cualquier
         // resolucion, que es imprescindible para que el enfrentamiento sea justo.
@@ -121,36 +168,82 @@ public class PantallaArena extends ScreenAdapter {
         float yPiso = Arena.FILAS_PISO * Arena.CELDA;
         float xPorDefectoUno = 24f * Arena.CELDA;
         float xPorDefectoDos = arena.getAncho() - xPorDefectoUno - Jugador.ANCHO;
-        Vector2 spawnUno = arena.getSpawnUno();
-        Vector2 spawnDos = arena.getSpawnDos();
-        Vector2 pisoUno = spawnUno != null ? spawnUno : new Vector2(xPorDefectoUno, yPiso);
-        Vector2 pisoDos = spawnDos != null ? spawnDos : new Vector2(xPorDefectoDos, yPiso);
-        this.jugadorUno = new Jugador(Controles.jugadorUno(), pisoUno.x, pisoUno.y, true, TINTE_UNO, 3);
-        this.jugadorDos = new Jugador(Controles.jugadorDos(), pisoDos.x, pisoDos.y, false, TINTE_DOS, 3);
+        Vector2 spawnUnoMapa = arena.getSpawnUno();
+        Vector2 spawnDosMapa = arena.getSpawnDos();
+        this.spawnUno = spawnUnoMapa != null ? spawnUnoMapa : new Vector2(xPorDefectoUno, yPiso);
+        this.spawnDos = spawnDosMapa != null ? spawnDosMapa : new Vector2(xPorDefectoDos, yPiso);
+        armarJugadores();
+    }
+
+    private boolean enRed() {
+        return servidor != null || cliente != null;
+    }
+
+    /**
+     * Crea a los jugadores de cero. Se usa al empezar y cuando el anfitrion reinicia la ronda.
+     *
+     * <p>En red, la instancia controla a un solo jugador con las teclas del Jugador 1, tanto si es el
+     * anfitrion como si es el cliente. Las copias que solo se dibujan no leen ninguna entrada.
+     */
+    private void armarJugadores() {
+        if (!enRed()) {
+            jugadorUno = new Jugador(Controles.jugadorUno(), spawnUno.x, spawnUno.y, true, TINTE_UNO, 3);
+            jugadorDos = new Jugador(Controles.jugadorDos(), spawnDos.x, spawnDos.y, false, TINTE_DOS, 3);
+            return;
+        }
+        if (teclado == null) {
+            teclado = new EntradaTeclado(Controles.jugadorUno());
+        }
+        if (servidor != null) {
+            jugadorUno = new Jugador(teclado, spawnUno.x, spawnUno.y, true, TINTE_UNO, 3);
+            jugadorDos = servidor.clienteListo()
+                ? new Jugador(servidor.getEntradaRemota(), spawnDos.x, spawnDos.y, false, TINTE_DOS, 3)
+                : null;
+            if (fantasma == null) {
+                fantasma = new Jugador(FuenteEntrada.NINGUNA, -100000f, -100000f, false, TINTE_DOS, 1);
+            }
+        } else {
+            jugadorUno = new Jugador(FuenteEntrada.NINGUNA, spawnUno.x, spawnUno.y, true, TINTE_UNO, 3);
+            jugadorDos = new Jugador(FuenteEntrada.NINGUNA, spawnDos.x, spawnDos.y, false, TINTE_DOS, 3);
+        }
+        golpesSonados = 0;
+        aterrizajesSonados = 0;
     }
 
     @Override
     public void render(float delta) {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             pausado = !pausado;
-            if (pausado) {
+            if (pausado && !enRed()) {
                 // Al pausar deja de correr la simulacion, asi que el bucle quedaria sonando para
-                // siempre: hay que apagarlo a mano.
+                // siempre: hay que apagarlo a mano. En red la simulacion sigue, y el sonido tambien.
                 detenerSonidoCorrer();
             }
         }
         if (pausado) {
             atenderPausa();
-            dibujar();
-            return;
+            if (liberada) {
+                return;
+            }
+            if (!enRed()) {
+                dibujar();
+                return;
+            }
+            // En red el mundo sigue corriendo por debajo del menu de pausa.
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+        if (servidor != null && Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            // El anfitrion reinicia la ronda en el lugar: la sala y el socket siguen abiertos.
+            armarJugadores();
+        } else if (!enRed() && Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             // Cortar aca todo el fotograma: reiniciar() ya libero el SpriteBatch de esta instancia
             // (ver dispose() mas abajo), asi que llamar a dibujar() despues crashearia.
             reiniciar();
             return;
         }
         actualizar(delta);
+        if (liberada) {
+            return;
+        }
         dibujar();
     }
 
@@ -162,9 +255,59 @@ public class PantallaArena extends ScreenAdapter {
         // El reloj de la ayuda corre con la simulacion, no con la pausa: mientras el juego esta
         // pausado no se llama a actualizar(), asi el cartel se queda quieto y no se pierde.
         tiempoAyuda += paso;
-        jugadorUno.actualizar(paso, arena, jugadorDos);
-        jugadorDos.actualizar(paso, arena, jugadorUno);
+        if (servidor != null) {
+            actualizarComoAnfitrion(paso);
+        } else if (cliente != null) {
+            actualizarComoCliente();
+            if (liberada) {
+                return;
+            }
+        } else {
+            jugadorUno.actualizar(paso, arena, jugadorDos);
+            jugadorDos.actualizar(paso, arena, jugadorUno);
+        }
         actualizarSonidos();
+    }
+
+    /**
+     * El anfitrion simula todo: su jugador con el teclado y el del cliente con la entrada que llega
+     * por la red. Despues le manda el estado resultante al cliente.
+     */
+    private void actualizarComoAnfitrion(float paso) {
+        servidor.sondear();
+        if (servidor.consumirDesconexion()) {
+            jugadorDos = null;
+        }
+        if (jugadorDos == null && servidor.clienteListo()) {
+            jugadorDos = new Jugador(servidor.getEntradaRemota(), spawnDos.x, spawnDos.y, false, TINTE_DOS, 3);
+        }
+        teclado.setActiva(!pausado);
+        jugadorUno.actualizar(paso, arena, jugadorDos != null ? jugadorDos : fantasma);
+        if (jugadorDos != null) {
+            jugadorDos.actualizar(paso, arena, jugadorUno);
+            jugadorUno.exportar(estadoUno);
+            jugadorDos.exportar(estadoDos);
+            servidor.enviarEstado(estadoUno, estadoDos);
+        }
+    }
+
+    /**
+     * El cliente no simula nada: manda sus teclas y copia el estado que le llega del anfitrion. Si se
+     * corta la conexion vuelve a la pantalla de multijugador con el motivo.
+     */
+    private void actualizarComoCliente() {
+        cliente.sondear();
+        if (cliente.getFase() == ClienteSala.Fase.DESCONECTADO) {
+            cambiarA(new PantallaMultijugador(recursos, audio, cliente.getMotivo()));
+            return;
+        }
+        teclado.setActiva(!pausado);
+        teclado.leer(entradaAux);
+        cliente.enviarEntrada(entradaAux);
+        if (cliente.hayEstado()) {
+            jugadorUno.importar(cliente.getEstado(0));
+            jugadorDos.importar(cliente.getEstado(1));
+        }
     }
 
     /**
@@ -175,19 +318,26 @@ public class PantallaArena extends ScreenAdapter {
      * marca con una bandera valida solo en el fotograma en que ocurren.
      */
     private void actualizarSonidos() {
-        boolean corriendo = jugadorUno.estaCorriendo() || jugadorDos.estaCorriendo();
+        boolean corriendo = jugadorUno.estaCorriendo() || (jugadorDos != null && jugadorDos.estaCorriendo());
         if (corriendo && !suenaCorrer) {
             audio.correr.loop(VOLUMEN_CORRER);
             suenaCorrer = true;
         } else if (!corriendo) {
             detenerSonidoCorrer();
         }
-        if (jugadorUno.acabaDeGolpear() || jugadorDos.acabaDeGolpear()) {
+        // Se dispara cuando el contador sube. Asi funciona igual si el jugador lo simula esta
+        // instancia o si es una copia que llega por la red.
+        int golpes = jugadorUno.getContadorGolpes() + (jugadorDos != null ? jugadorDos.getContadorGolpes() : 0);
+        if (golpes > golpesSonados) {
             audio.golpe.play(VOLUMEN_GOLPE);
         }
-        if (jugadorUno.acabaDeAterrizar() || jugadorDos.acabaDeAterrizar()) {
+        golpesSonados = golpes;
+        int aterrizajes = jugadorUno.getContadorAterrizajes()
+            + (jugadorDos != null ? jugadorDos.getContadorAterrizajes() : 0);
+        if (aterrizajes > aterrizajesSonados) {
             audio.aterrizar.play(VOLUMEN_ATERRIZAR);
         }
+        aterrizajesSonados = aterrizajes;
     }
 
     /** Apaga el bucle del sonido de correr si estaba sonando. Se usa al pausar y al salir de la ronda. */
@@ -208,7 +358,9 @@ public class PantallaArena extends ScreenAdapter {
         } else if (botonMenu.contains(mouse)) {
             cambiarA(new PantallaMenu(recursos, audio));
         } else if (botonSeleccion.contains(mouse)) {
-            cambiarA(new PantallaSeleccionMapa(recursos, audio));
+            cambiarA(enRed()
+                ? new PantallaMultijugador(recursos, audio, "")
+                : new PantallaSeleccionMapa(recursos, audio));
         } else if (botonSalir.contains(mouse)) {
             Gdx.app.exit();
         }
@@ -240,10 +392,13 @@ public class PantallaArena extends ScreenAdapter {
         batch.begin();
         dibujarBloques();
         jugadorUno.dibujar(batch, recursos);
-        jugadorDos.dibujar(batch, recursos);
+        if (jugadorDos != null) {
+            jugadorDos.dibujar(batch, recursos);
+        }
         batch.end();
 
         dibujarAyudaControles();
+        dibujarEstadoRed();
 
         if (pausado) {
             dibujarPausa();
@@ -264,8 +419,33 @@ public class PantallaArena extends ScreenAdapter {
         viewportUi.apply();
         batch.setProjectionMatrix(viewportUi.getCamera().combined);
         batch.begin();
-        dibujarPanelAyuda(TITULO_AYUDA_UNO, LINEAS_AYUDA_UNO, TINTE_UNO, false, alfa);
-        dibujarPanelAyuda(TITULO_AYUDA_DOS, LINEAS_AYUDA_DOS, TINTE_DOS, true, alfa);
+        if (enRed()) {
+            // En red cada instancia controla un solo jugador, siempre con las teclas del Jugador 1.
+            String titulo = cliente != null ? "VOS: JUGADOR 2" : "VOS: JUGADOR 1 (ANFITRION)";
+            dibujarPanelAyuda(titulo, LINEAS_AYUDA_UNO, cliente != null ? TINTE_DOS : TINTE_UNO, false, alfa);
+        } else {
+            dibujarPanelAyuda(TITULO_AYUDA_UNO, LINEAS_AYUDA_UNO, TINTE_UNO, false, alfa);
+            dibujarPanelAyuda(TITULO_AYUDA_DOS, LINEAS_AYUDA_DOS, TINTE_DOS, true, alfa);
+        }
+        batch.end();
+    }
+
+    /** Mensaje centrado mientras falta algo en red: el anfitrion espera a un jugador, el cliente al primer estado. */
+    private void dibujarEstadoRed() {
+        String texto = null;
+        if (servidor != null && jugadorDos == null) {
+            texto = "ESPERANDO JUGADOR... (PUERTO " + servidor.getPuerto() + ")";
+        } else if (cliente != null && !cliente.hayEstado()) {
+            texto = "ESPERANDO AL ANFITRION...";
+        }
+        if (texto == null) {
+            return;
+        }
+        viewportUi.apply();
+        batch.setProjectionMatrix(viewportUi.getCamera().combined);
+        batch.begin();
+        float x = (ANCHO_UI - ui.anchoTexto(texto, 1.6f)) / 2f;
+        ui.texto(batch, texto, x, 300f, 1.6f, Color.WHITE);
         batch.end();
     }
 
@@ -336,7 +516,7 @@ public class PantallaArena extends ScreenAdapter {
         ui.rectangulo(batch, new Rectangle(0f, 0f, ANCHO_UI, ALTO_UI), VELO_PAUSA);
         ui.boton(batch, botonSeguir, botonSeguir.contains(mouse), "SEGUIR", 1.5f);
         ui.boton(batch, botonMenu, botonMenu.contains(mouse), "MENU PRINCIPAL", 1.3f);
-        ui.boton(batch, botonSeleccion, botonSeleccion.contains(mouse), "SELECCION DE MAPA", 1.3f);
+        ui.boton(batch, botonSeleccion, botonSeleccion.contains(mouse), enRed() ? "SALIR DE LA SALA" : "SELECCION DE MAPA", 1.3f);
         ui.boton(batch, botonSalir, botonSalir.contains(mouse), "SALIR", 1.5f);
         String titulo = "PAUSA";
         float x = (ANCHO_UI - ui.anchoTexto(titulo, 2.5f)) / 2f;
@@ -361,6 +541,14 @@ public class PantallaArena extends ScreenAdapter {
 
     @Override
     public void dispose() {
+        liberada = true;
+        // Cerrar la sala le avisa al otro lado, y suelta el puerto para poder crear otra.
+        if (servidor != null) {
+            servidor.close();
+        }
+        if (cliente != null) {
+            cliente.close();
+        }
         detenerSonidoCorrer();
         batch.dispose();
         ui.dispose();

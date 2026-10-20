@@ -9,6 +9,9 @@ import com.badlogic.gdx.math.Vector2;
 
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entrada.Controles;
+import com.et35.technomortemarena.entrada.EntradaJugador;
+import com.et35.technomortemarena.entrada.EntradaTeclado;
+import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
 
@@ -46,7 +49,8 @@ public class Jugador {
     /** Choque entre espadas: un empujon corto que no saca al jugador del todo. */
     private static final float EMPUJE_CHOQUE = 0.2f * VELOCIDAD;
 
-    private final Controles controles;
+    private final FuenteEntrada fuente;
+    private final EntradaJugador entrada = new EntradaJugador();
     private final Color tinte;
     private final Vector2 posicion = new Vector2();
     private final Vector2 velocidad = new Vector2();
@@ -70,6 +74,9 @@ public class Jugador {
     private boolean acabaDeAterrizar;
     /** Verdadero solo en el fotograma en que su espada toca el cuerpo del rival. */
     private boolean acabaDeGolpear;
+    /** Cuantas veces ocurrieron: viajan por la red para que los clientes disparen los sonidos. */
+    private int contadorGolpes;
+    private int contadorAterrizajes;
 
     /** Bloque sobre el que esta parado, si lo hay. Sirve para avisar solo al aterrizar. */
     private Bloque bloqueBajoPies;
@@ -102,7 +109,12 @@ public class Jugador {
      * @param tinte color con el que se pinta el sprite blanco, para distinguir a los duelistas
      */
     public Jugador(Controles controles, float x, float y, boolean mirandoDerecha, Color tinte, int vida) {
-        this.controles = controles;
+        this(new EntradaTeclado(controles), x, y, mirandoDerecha, tinte, vida);
+    }
+
+    /** Igual que el anterior, pero la entrada puede venir de cualquier {@link FuenteEntrada}, como la red. */
+    public Jugador(FuenteEntrada fuente, float x, float y, boolean mirandoDerecha, Color tinte, int vida) {
+        this.fuente = fuente;
         this.tinte = tinte;
         this.mirandoDerecha = mirandoDerecha;
         this.posicion.set(x, y);
@@ -163,6 +175,7 @@ public class Jugador {
         }
         if (enVuelo && !estabaEnPiso && enElPiso) {
             acabaDeAterrizar = true;
+            contadorAterrizajes++;
             enVuelo = false;
         }
         corriendo = vivo && enElPiso && (entradaIzquierda != entradaDerecha);
@@ -189,10 +202,10 @@ public class Jugador {
     }
 
     private void leerEntrada() {
-        // isKeyPressed: verdadero mientras la tecla este hundida -> movimiento continuo.
-        entradaIzquierda = Gdx.input.isKeyPressed(controles.getIzquierda());
-        entradaDerecha = Gdx.input.isKeyPressed(controles.getDerecha());
-        estocada = Gdx.input.isKeyPressed(controles.getEstocada());
+        fuente.leer(entrada);
+        entradaIzquierda = entrada.izquierda;
+        entradaDerecha = entrada.derecha;
+        estocada = entrada.estocada;
 
         if (entradaIzquierda && !entradaDerecha) {
             velocidad.x += -(VELOCIDAD+velocidad.x);
@@ -202,16 +215,13 @@ public class Jugador {
             mirandoDerecha = true;
         }
 
-        // isKeyJustPressed: verdadero solo en el fotograma del pulsado -> una accion por pulsacion.
-        // Con isKeyPressed, mantener la tecla saltaria en cada fotograma y cambiaria la guardia 60
-        // veces por segundo.
-        if (enElPiso && Gdx.input.isKeyJustPressed(controles.getSaltar())) {
+        if (enElPiso && entrada.saltar) {
             impulsar(IMPULSO_SALTO);
         }
-        if (Gdx.input.isKeyJustPressed(controles.getSubirEspada())) {
+        if (entrada.subirEspada) {
             alturaEspada = alturaEspada.subir();
         }
-        if (Gdx.input.isKeyJustPressed(controles.getBajarEspada())) {
+        if (entrada.bajarEspada) {
             alturaEspada = alturaEspada.bajar();
         }
     }
@@ -418,6 +428,7 @@ public class Jugador {
         if(!(oponente.tiempoRestanteFlash > 0f) && vivo && cajaOponente.overlaps(getCajaEspada())) {
         	oponente.activarFlash(1f, this);
         	acabaDeGolpear = true;
+        	contadorGolpes++;
         }
         if (posicion.y < -ALTO) {
             vivo = false;
@@ -540,6 +551,54 @@ public class Jugador {
     /** Verdadero solo en el fotograma en que toca el piso tras haber estado en el aire. */
     public boolean acabaDeAterrizar() {
         return acabaDeAterrizar;
+    }
+
+    /** Copia en {@code destino} todo lo necesario para dibujar a este jugador. */
+    public void exportar(EstadoJugador destino) {
+        destino.x = posicion.x;
+        destino.y = posicion.y;
+        destino.vida = vida;
+        destino.alturaEspada = alturaEspada;
+        destino.mirandoDerecha = mirandoDerecha;
+        destino.estocada = estocada;
+        destino.vivo = vivo;
+        destino.corriendo = corriendo;
+        destino.anguloEspada = anguloEspada;
+        destino.tiempoRestanteFlash = tiempoRestanteFlash;
+        destino.contadorGolpes = contadorGolpes;
+        destino.contadorAterrizajes = contadorAterrizajes;
+    }
+
+    /**
+     * Pisa el estado de este jugador con el que mando el anfitrion. Lo usa el cliente: su copia no
+     * simula nada, solo se dibuja.
+     */
+    public void importar(EstadoJugador origen) {
+        posicion.set(origen.x, origen.y);
+        vida = origen.vida;
+        alturaEspada = origen.alturaEspada;
+        mirandoDerecha = origen.mirandoDerecha;
+        estocada = origen.estocada;
+        vivo = origen.vivo;
+        corriendo = origen.corriendo;
+        anguloEspada = origen.anguloEspada;
+        tiempoRestanteFlash = origen.tiempoRestanteFlash;
+        contadorGolpes = origen.contadorGolpes;
+        contadorAterrizajes = origen.contadorAterrizajes;
+    }
+
+    /** Cantidad de golpes que dio desde que empezo; sube de a uno en cada golpe. */
+    public int getContadorGolpes() {
+        return contadorGolpes;
+    }
+
+    /** Cantidad de aterrizajes desde que empezo; sube de a uno en cada aterrizaje. */
+    public int getContadorAterrizajes() {
+        return contadorAterrizajes;
+    }
+
+    public int getVida() {
+        return vida;
     }
 
     /** Copia defensiva: devolver el {@code Vector2} interno permitiria moverlo desde afuera. */

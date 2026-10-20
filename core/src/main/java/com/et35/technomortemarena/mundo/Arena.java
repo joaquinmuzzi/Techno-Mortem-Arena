@@ -46,9 +46,16 @@ public class Arena {
     private final List<Bloque> bloques;
     private final Vector2 spawnUno;
     private final Vector2 spawnDos;
+    /** Las filas de texto de las que salio la arena, para mandarla por la red. Vacio si no salio de una grilla. */
+    private final String[] filas;
 
     /** @param spawnUno, spawnDos posicion de los pies de cada jugador, o {@code null} si el mapa no la define */
     public Arena(float ancho, float alto, List<Bloque> bloques, Vector2 spawnUno, Vector2 spawnDos) {
+        this(ancho, alto, bloques, spawnUno, spawnDos, new String[0]);
+    }
+
+    private Arena(float ancho, float alto, List<Bloque> bloques, Vector2 spawnUno, Vector2 spawnDos, String[] filas) {
+        this.filas = filas.clone();
         this.ancho = ancho;
         this.alto = alto;
         this.bloques = Collections.unmodifiableList(new ArrayList<>(bloques));
@@ -146,7 +153,12 @@ public class Arena {
                 }
             }
         }
-        return new Arena(ANCHO_MUNDO, ALTO_MUNDO, bloques, spawnUno, spawnDos);
+        return new Arena(ANCHO_MUNDO, ALTO_MUNDO, bloques, spawnUno, spawnDos, filas);
+    }
+
+    /** Copia de las filas de texto de la grilla, la primera la de arriba. Vacia si la arena no salio de una grilla. */
+    public String[] getFilas() {
+        return filas.clone();
     }
 
     /** Posicion de los pies del jugador 1, o {@code null} si el mapa no define el spawn. */

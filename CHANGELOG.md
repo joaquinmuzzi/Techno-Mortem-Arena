@@ -85,6 +85,9 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - `CONTRIBUTING.md`: todo cambio llega por pull request con squash, se documentan las
   verificaciones y las reglas para asistentes de IA.
 - `RecursosAudio` carga y libera los dos sonidos de interfaz junto con los efectos de la ronda.
+- Se reemplazó la pisada de correr (`Running On Metal Grate.mp3`, 19.8 s) por `Running.mp3`, una
+  pisada corta de 0.34 s, y el aterrizaje (`Landing-Jump.mp3`) por `Landing.wav`. Así el bucle de
+  correr no arrastra un fragmento largo y se nota cada pisada.
 
 ### Quitado
 

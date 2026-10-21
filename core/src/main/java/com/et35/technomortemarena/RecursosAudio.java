@@ -18,7 +18,7 @@ import com.badlogic.gdx.utils.Disposable;
  */
 public class RecursosAudio implements Disposable {
 
-    /** Pisada que suena en bucle mientras un jugador corre sobre la rejilla metalica. */
+    /** Pisada corta que suena en bucle mientras un jugador corre. */
     public final Sound correr;
 
     /** Golpe de la espada contra el cuerpo del rival. */
@@ -34,9 +34,9 @@ public class RecursosAudio implements Disposable {
     public final Sound botonSeleccionado;
 
     public RecursosAudio() {
-        correr = cargar("sounds/Running On Metal Grate.mp3");
+        correr = cargar("sounds/Running.mp3");
         golpe = cargar("sounds/Bloody Sword Hit Sound Effect.mp3");
-        aterrizar = cargar("sounds/Landing-Jump.mp3");
+        aterrizar = cargar("sounds/Landing.wav");
         boton = cargar("sounds/Boton.wav");
         botonSeleccionado = cargar("sounds/Boton Seleccionado.mp3");
     }

@@ -42,6 +42,7 @@ public class PantallaMenu extends ScreenAdapter {
     public PantallaMenu(RecursosGraficos recursos, RecursosAudio audio) {
         this.recursos = recursos;
         this.audio = audio;
+        ui.setAudio(audio);
     }
 
     @Override
@@ -53,10 +54,12 @@ public class PantallaMenu extends ScreenAdapter {
         boolean sobreSalir = botonSalir.contains(mouse);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || (Gdx.input.justTouched() && sobreJugar)) {
+            ui.clic();
             cambiarA(new PantallaSeleccionMapa(recursos, audio));
             return;
         }
         if (Gdx.input.justTouched() && sobreMultijugador) {
+            ui.clic();
             cambiarA(new PantallaMultijugador(recursos, audio, ""));
             return;
         }
@@ -65,6 +68,7 @@ public class PantallaMenu extends ScreenAdapter {
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (Gdx.input.justTouched() && sobreSalir)) {
+            ui.clic();
             Gdx.app.exit();
             return;
         }

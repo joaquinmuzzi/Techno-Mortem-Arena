@@ -192,6 +192,7 @@ public class PantallaArena extends ScreenAdapter {
         this.alReiniciar = alReiniciar;
         this.servidor = servidor;
         this.cliente = cliente;
+        ui.setAudio(audio);
         // FitViewport mantiene la relacion de aspecto agregando bandas negras si hace falta, en
         // lugar de estirar la imagen. Asi las distancias del duelo son identicas en cualquier
         // resolucion, que es imprescindible para que el enfrentamiento sea justo.
@@ -450,20 +451,25 @@ public class PantallaArena extends ScreenAdapter {
         }
         Vector2 mouse = viewportUi.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
         if (botonSeguir.contains(mouse)) {
+            ui.clic();
             pausado = false;
         } else if (puedeReiniciar() && botonReiniciarRonda.contains(mouse)) {
             // Reinicia solo la ronda actual: el marcador de la partida no se toca.
+            ui.clic();
             pausado = false;
             reiniciarRondaActual();
         } else if (botonMenu.contains(mouse)) {
+            ui.clic();
             cambiarA(new PantallaMenu(recursos, audio));
             return true;
         } else if (botonSeleccion.contains(mouse)) {
+            ui.clic();
             cambiarA(enRed()
                 ? new PantallaMultijugador(recursos, audio, "")
                 : new PantallaSeleccionMapa(recursos, audio));
             return true;
         } else if (botonSalir.contains(mouse)) {
+            ui.clic();
             Gdx.app.exit();
         }
         return false;
@@ -481,13 +487,16 @@ public class PantallaArena extends ScreenAdapter {
         }
         Vector2 mouse = viewportUi.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
         if (puedeReiniciar() && botonRevancha.contains(mouse)) {
+            ui.clic();
             reiniciarPartida();
         } else if (botonGanadorSeleccion.contains(mouse)) {
+            ui.clic();
             cambiarA(enRed()
                 ? new PantallaMultijugador(recursos, audio, "")
                 : new PantallaSeleccionMapa(recursos, audio));
             return true;
         } else if (botonGanadorMenu.contains(mouse)) {
+            ui.clic();
             cambiarA(new PantallaMenu(recursos, audio));
             return true;
         }

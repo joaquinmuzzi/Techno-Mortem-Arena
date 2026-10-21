@@ -278,6 +278,11 @@ espada contra el cuerpo del rival y el aterrizaje de un salto. `RecursosAudio` l
 como `Sound` (se reproducen desde memoria, sin cortes) y `PantallaArena` los dispara según lo que
 informa cada `Jugador`.
 
+A esos se suman los dos sonidos de interfaz, `Boton.wav` (pasar el cursor por encima) y
+`Boton Seleccionado.mp3` (hacer clic). Los dispara `pantallas.Ui` desde el propio dibujo del botón, así
+que cada pantalla solo tiene que habilitarlos con `Ui.setAudio`; el editor de niveles no lo hace y por
+eso queda en silencio.
+
 El registro detallado de cambios está en [CHANGELOG.md](CHANGELOG.md).
 
 ## Pruebas y contribuciones

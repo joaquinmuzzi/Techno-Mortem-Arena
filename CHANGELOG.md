@@ -61,6 +61,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Tests unitarios con JUnit 5 en `core/src/test`: grilla de la arena y sus bloques y mapas del editor.
 - Plantillas de pull request y de issues (error y sugerencia), `SECURITY.md`, `CODE_OF_CONDUCT.md` y
   `THIRD_PARTY_NOTICES.md`.
+- Efectos de sonido de interfaz: `sounds/Boton.wav` suena al pasar el cursor por encima de un botón y
+  `sounds/Boton Seleccionado.mp3` al hacer clic. Los dispara `pantallas.Ui` desde el propio dibujo del
+  botón, así que las pantallas solo habilitan el audio con `Ui.setAudio`. Suenan en el menú, la
+  selección de mapa, el multijugador, la pausa y los carteles de la arena; el editor de niveles queda
+  en silencio a propósito.
 
 ### Cambiado
 
@@ -79,6 +84,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
   hacer con el mapa elegido.
 - `CONTRIBUTING.md`: todo cambio llega por pull request con squash, se documentan las
   verificaciones y las reglas para asistentes de IA.
+- `RecursosAudio` carga y libera los dos sonidos de interfaz junto con los efectos de la ronda.
 
 ### Quitado
 

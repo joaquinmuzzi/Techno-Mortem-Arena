@@ -27,10 +27,18 @@ public class RecursosAudio implements Disposable {
     /** Aterrizaje despues de un salto o una caida. */
     public final Sound aterrizar;
 
+    /** Sonido de interfaz al pasar el cursor por encima de un boton. */
+    public final Sound boton;
+
+    /** Sonido de interfaz al hacer clic en un boton. */
+    public final Sound botonSeleccionado;
+
     public RecursosAudio() {
         correr = cargar("sounds/Running On Metal Grate.mp3");
         golpe = cargar("sounds/Bloody Sword Hit Sound Effect.mp3");
         aterrizar = cargar("sounds/Landing-Jump.mp3");
+        boton = cargar("sounds/Boton.wav");
+        botonSeleccionado = cargar("sounds/Boton Seleccionado.mp3");
     }
 
     /**
@@ -49,5 +57,7 @@ public class RecursosAudio implements Disposable {
         correr.dispose();
         golpe.dispose();
         aterrizar.dispose();
+        boton.dispose();
+        botonSeleccionado.dispose();
     }
 }

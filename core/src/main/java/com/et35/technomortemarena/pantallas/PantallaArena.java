@@ -105,6 +105,8 @@ public class PantallaArena extends ScreenAdapter {
     /** Distancia desde el centro de la pantalla hasta la primera vida de cada duelista. */
     private static final float SEPARACION_VIDAS_DEL_CENTRO = 70f;
     private static final Color COLOR_VIDA_PERDIDA = new Color(0.25f, 0.25f, 0.28f, 1f);
+    private static final Color COLOR_TIMER = new Color(1f, 0.9f, 0.4f, 1f);
+    private static final Color COLOR_MUERTE_SUBITA = new Color(1f, 0.3f, 0.2f, 1f);
 
     /** Segundos que tarda en reaparecer el blanco del modo de prueba despues de caer. */
     private static final float REAPARICION_BLANCO = 2f;
@@ -149,6 +151,7 @@ public class PantallaArena extends ScreenAdapter {
     private boolean suenaCorrer;
     /** Tiempo (segundos de juego) transcurrido desde que arranco la ronda, para el cartel de ayuda. */
     private float tiempoAyuda;
+    private boolean muerteSubitaActivada;
     /** Color y rectangulo de trabajo: evitan crear objetos nuevos en cada fotograma del cartel. */
     private final Color colorAux = new Color();
     private final Rectangle rectAux = new Rectangle();
@@ -241,6 +244,7 @@ public class PantallaArena extends ScreenAdapter {
         tiempoBlancoCaido = 0f;
         golpesSonados = 0;
         aterrizajesSonados = 0;
+        muerteSubitaActivada = false;
     }
 
     /** El blanco del modo de prueba: un jugador que no se mueve, no apunta y no tiene espada. */
@@ -364,6 +368,12 @@ public class PantallaArena extends ScreenAdapter {
             // que el cliente haya mandado en el medio, para que no se disparen al arrancar la ronda.
             servidor.getEntradaRemota().leer(entradaAux);
         }
+        if (rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA && !muerteSubitaActivada && jugadorUno != null && jugadorDos != null) {
+            forzarMuerteSubita();
+            muerteSubitaActivada = true;
+        } else if (rondas.getFase() == RondasPartida.Fase.RONDA) {
+            muerteSubitaActivada = false;
+        }
         if (rondas.actualizar(paso, jugadorUno.isVivo(), jugadorDos.isVivo())) {
             reiniciarRondaActual();
         }
@@ -390,6 +400,12 @@ public class PantallaArena extends ScreenAdapter {
             jugadorUno.importar(cliente.getEstado(0));
             jugadorDos.importar(cliente.getEstado(1));
             rondas.importar(cliente.getEstadoPartida());
+            if (rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA && !muerteSubitaActivada && jugadorUno != null && jugadorDos != null) {
+                forzarMuerteSubita();
+                muerteSubitaActivada = true;
+            } else if (rondas.getFase() == RondasPartida.Fase.RONDA || rondas.getFase() == RondasPartida.Fase.ENTRE_RONDAS) {
+                muerteSubitaActivada = false;
+            }
         }
     }
 
@@ -501,6 +517,18 @@ public class PantallaArena extends ScreenAdapter {
             jugadorDos.reiniciar(spawnDos.x, spawnDos.y, false);
         }
         tiempoBlancoCaido = 0f;
+        muerteSubitaActivada = false;
+    }
+
+    private void forzarMuerteSubita() {
+        float centroX = arena.getAncho() / 2f;
+        float yPiso = Arena.FILAS_PISO * Arena.CELDA;
+        if (jugadorUno != null) {
+            jugadorUno.reiniciar(centroX - 80f, yPiso, true);
+        }
+        if (jugadorDos != null) {
+            jugadorDos.reiniciar(centroX + 80f - Jugador.ANCHO, yPiso, false);
+        }
     }
 
     /** Empieza una partida nueva: marcador en cero, ronda 1 y todos de vuelta en su lugar. */
@@ -543,6 +571,19 @@ public class PantallaArena extends ScreenAdapter {
         dibujarAyudaControles();
         dibujarHud();
         dibujarEstadoRed();
+        if (rondas.getFase() == RondasPartida.Fase.RONDA || rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA) {
+            if (rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA) {
+                int seg = Math.max(0, (int) Math.ceil(rondas.getTiempoMuerteSubita()));
+                batch.begin();
+                dibujarTextoCentrado("MUERTE SUBITA " + seg, 1.6f, ALTO_UI - MARGEN_HUD - 68f, COLOR_MUERTE_SUBITA);
+                batch.end();
+            } else {
+                int seg = Math.max(0, (int) Math.ceil(rondas.getTiempoRestante()));
+                batch.begin();
+                dibujarTextoCentrado(seg + "s", 1.4f, ALTO_UI - MARGEN_HUD - 68f, COLOR_TIMER);
+                batch.end();
+            }
+        }
 
         if (rondas.getFase() == RondasPartida.Fase.ENTRE_RONDAS) {
             dibujarEntreRondas();

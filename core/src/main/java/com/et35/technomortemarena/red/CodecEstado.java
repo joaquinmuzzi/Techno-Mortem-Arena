@@ -15,7 +15,7 @@ final class CodecEstado {
     static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4;
 
     /** Etapa, numero de ronda, rondas ganadas de cada uno y ganador de la ultima ronda: un byte cada uno. */
-    static final int BYTES_PARTIDA = 5;
+    static final int BYTES_PARTIDA = 5 + 4 + 4;
 
     private static final int BIT_MIRANDO = 1;
     private static final int BIT_VIVO = 2;
@@ -82,6 +82,8 @@ final class CodecEstado {
         buffer.put((byte) partida.rondasGanadasUno);
         buffer.put((byte) partida.rondasGanadasDos);
         buffer.put((byte) partida.ganadorDeLaRonda);
+        buffer.putFloat(partida.tiempoRestante);
+        buffer.putFloat(partida.tiempoMuerteSubita);
     }
 
     /**
@@ -100,9 +102,13 @@ final class CodecEstado {
         int uno = buffer.get();
         int dos = buffer.get();
         int ganador = buffer.get();
+        float tiempoRestante = buffer.getFloat();
+        float tiempoMuerteSubita = buffer.getFloat();
         int maximo = MarcadorPartida.RONDAS_PARA_GANAR;
         if (fase < 0 || fase >= RondasPartida.Fase.values().length || ronda < 1
-            || uno < 0 || uno > maximo || dos < 0 || dos > maximo || ganador < -1 || ganador > 1) {
+            || uno < 0 || uno > maximo || dos < 0 || dos > maximo || ganador < -1 || ganador > 1
+            || Float.isNaN(tiempoRestante) || Float.isInfinite(tiempoRestante) || tiempoRestante < 0f
+            || Float.isNaN(tiempoMuerteSubita) || Float.isInfinite(tiempoMuerteSubita) || tiempoMuerteSubita < 0f) {
             return false;
         }
         destino.fase = fase;
@@ -110,6 +116,8 @@ final class CodecEstado {
         destino.rondasGanadasUno = uno;
         destino.rondasGanadasDos = dos;
         destino.ganadorDeLaRonda = ganador;
+        destino.tiempoRestante = tiempoRestante;
+        destino.tiempoMuerteSubita = tiempoMuerteSubita;
         return true;
     }
 

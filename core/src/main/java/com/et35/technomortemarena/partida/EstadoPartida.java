@@ -16,4 +16,8 @@ public final class EstadoPartida {
     public int rondasGanadasDos;
     /** Quien gano la ultima ronda: 0 el Jugador 1, 1 el Jugador 2, -1 si fue empate o todavia no hubo. */
     public int ganadorDeLaRonda = -1;
+    /** Tiempo restante en la ronda (segundos). */
+    public float tiempoRestante = RondasPartida.DURACION_RONDA;
+    /** Tiempo restante en muerte subita (segundos). */
+    public float tiempoMuerteSubita = RondasPartida.DURACION_MUERTE_SUBITA;
 }

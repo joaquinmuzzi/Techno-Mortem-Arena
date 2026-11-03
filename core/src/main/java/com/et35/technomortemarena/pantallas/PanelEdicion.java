@@ -7,7 +7,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entrada.EntradaJugador;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
@@ -47,8 +46,9 @@ final class PanelEdicion {
     PanelEdicion() {
         float total = EdicionNivel.OPCIONES * ANCHO_TARJETA + (EdicionNivel.OPCIONES - 1) * SEPARACION;
         float x0 = (ANCHO_UI - total) / 2f;
+        // Arriba, debajo del cartel: abajo taparian el piso, que es donde mas se coloca.
         for (int i = 0; i < tarjetas.length; i++) {
-            tarjetas[i] = new Rectangle(x0 + i * (ANCHO_TARJETA + SEPARACION), 14f, ANCHO_TARJETA, ALTO_TARJETA);
+            tarjetas[i] = new Rectangle(x0 + i * (ANCHO_TARJETA + SEPARACION), 264f, ANCHO_TARJETA, ALTO_TARJETA);
         }
     }
 
@@ -100,29 +100,28 @@ final class PanelEdicion {
      * Dibuja sobre el mapa (con el batch ya abierto y la proyeccion de la arena): las zonas prohibidas y, si
      * hay una pieza elegida, su vista previa.
      */
-    void dibujarEnElMundo(SpriteBatch batch, RecursosGraficos recursos, List<float[]> zonas,
+    void dibujarEnElMundo(SpriteBatch batch, Ui ui, List<float[]> zonas,
                           PiezaNivel pieza, int cursorColumna, int cursorFila, boolean valida) {
-        batch.setColor(ZONA);
+        // Con el pixel liso de la interfaz: la textura del piso es oscura y apagaba los colores.
         for (float[] zona : zonas) {
             float x0 = Math.max(0f, zona[0]) * Arena.CELDA;
             float y0 = Math.max(0f, zona[1]) * Arena.CELDA;
             float x1 = Math.min(Arena.COLUMNAS, zona[2]) * Arena.CELDA;
             float y1 = Math.min(Arena.FILAS, zona[3]) * Arena.CELDA;
-            batch.draw(recursos.piso, x0, y0, x1 - x0, y1 - y0);
+            ui.rectangulo(batch, rectAux.set(x0, y0, x1 - x0, y1 - y0), ZONA);
         }
         if (pieza != null) {
             int[] origen = ColocadorPiezas.origenPara(pieza, cursorColumna, cursorFila);
-            batch.setColor(valida ? VALIDA : INVALIDA);
+            Color color = valida ? VALIDA : INVALIDA;
             for (int dy = 0; dy < pieza.getAlto(); dy++) {
                 for (int dx = 0; dx < pieza.getAncho(); dx++) {
                     if (pieza.celda(dx, dy) != '.') {
-                        batch.draw(recursos.piso, (origen[0] + dx) * Arena.CELDA, (origen[1] + dy) * Arena.CELDA,
-                            Arena.CELDA, Arena.CELDA);
+                        rectAux.set((origen[0] + dx) * Arena.CELDA, (origen[1] + dy) * Arena.CELDA, Arena.CELDA, Arena.CELDA);
+                        ui.rectangulo(batch, rectAux, color);
                     }
                 }
             }
         }
-        batch.setColor(Color.WHITE);
     }
 
     /**

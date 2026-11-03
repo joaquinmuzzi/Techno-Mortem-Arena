@@ -17,7 +17,7 @@ import java.util.Random;
 public final class ColocadorPiezas {
 
     /** Celdas libres que se dejan alrededor del cuerpo de un jugador al aparecer. */
-    public static final int MARGEN_SPAWN = 6;
+    public static final int MARGEN_SPAWN = 4;
 
     private ColocadorPiezas() {
     }

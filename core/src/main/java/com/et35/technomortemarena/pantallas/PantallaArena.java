@@ -963,7 +963,7 @@ public class PantallaArena extends ScreenAdapter {
             columna = cliente.getEstadoPartida().cursorColumna;
             fila = cliente.getEstadoPartida().cursorFila;
         }
-        panelEdicion.dibujarEnElMundo(batch, recursos, zonasProhibidas, pieza, columna, fila,
+        panelEdicion.dibujarEnElMundo(batch, ui, zonasProhibidas, pieza, columna, fila,
             sePuedeColocar(pieza, columna, fila));
     }
 

@@ -53,9 +53,17 @@ public class Jugador {
     private static final float EMPUJE_CHOQUE = 0.2f * VELOCIDAD;
 
     /** Segundos que dura una estocada, de que sale la hoja hasta que vuelve. */
-    private static final float DURACION_ESTOCADA = 0.18f;
+    private static final float DURACION_ESTOCADA = 0.14f;
     /** Segundos desde que arranca una estocada hasta que se puede lanzar otra. */
-    private static final float RECARGA_ESTOCADA = 0.30f;
+    private static final float RECARGA_ESTOCADA = 0.08f;
+    /**
+     * Radianes por segundo que gira la espada hacia el cursor: es el retardo de la espada, no llega al
+     * cursor al instante. 12 equivale a 0,2 por fotograma a 60 FPS. Se mide en segundos para que el
+     * retardo sea el mismo con cualquier cantidad de fotogramas por segundo.
+     */
+    private static final float VELOCIDAD_GIRO = 12f;
+    /** Igual que {@link #VELOCIDAD_GIRO}, pero mientras un choque de hojas tiene bloqueado al jugador. */
+    private static final float VELOCIDAD_GIRO_BLOQUEADO = 3f;
     /** Altura del hombro (el pivote de la espada) sobre los pies. */
     private static final float ALTURA_HOMBRO = 56f * ESCALA;
     /** Cuanto se corre el hombro hacia el lado al que mira el jugador, desde el centro del cuerpo. */
@@ -78,10 +86,16 @@ public class Jugador {
 
     /** Hacia donde apunta la espada, en radianes (0 es hacia la derecha, positivo hacia arriba). */
     private float angulo;
+    /** Hacia donde quiere apuntar el jugador (el cursor); {@link #angulo} gira hacia ahi con retardo. */
+    private float anguloObjetivo;
     /** El angulo al empezar el fotograma, para barrer el tajo de un fotograma al siguiente. */
     private float anguloPrevio;
     /** Segundos que le quedan a la estocada en curso; 0 si no hay ninguna. */
     private float tiempoEstocada;
+    /** Segundos que le quedan de bloqueo tras un choque de hojas: se mueve, gira y estoca mas lento. */
+    private float bloqueadoTimer;
+    /** Duracion de la estocada en curso: dura mas si se lanzo estando bloqueado. */
+    private float duracionEstocadaActual = DURACION_ESTOCADA;
     private float recargaEstocada;
     /** Cuanto esta adelantada la hoja, de 0 (quieta) a 1 (en lo mas fuerte de la estocada). */
     private float extension;
@@ -135,6 +149,7 @@ public class Jugador {
         this.posicion.set(x, y);
         this.vidaInicial = vida;
         this.vida = vida;
+        this.anguloObjetivo = mirandoDerecha ? 0f : MathUtils.PI;
         this.angulo = mirandoDerecha ? 0f : MathUtils.PI;
         this.anguloPrevio = angulo;
         actualizarHoja();
@@ -161,7 +176,10 @@ public class Jugador {
         enElPiso = false;
         vivo = true;
         angulo = mirandoDerecha ? 0f : MathUtils.PI;
+        anguloObjetivo = mirandoDerecha ? 0f : MathUtils.PI;
         anguloPrevio = angulo;
+        bloqueadoTimer = 0f;
+        duracionEstocadaActual = DURACION_ESTOCADA;
         tiempoEstocada = 0f;
         recargaEstocada = 0f;
         extension = 0f;
@@ -197,12 +215,15 @@ public class Jugador {
         actualizarEstocada(delta);
         integrarFisica(delta, arena, oponente);
         // La hoja se coloca despues de mover al jugador, asi sigue al hombro y al cursor del fotograma.
-        apuntar();
+        apuntar(delta);
         actualizarHoja();
         resolverColisiones(arena, oponente);
         actualizarPiso(estabaEnPiso);
         if (tiempoRestanteFlash > 0f) {
             tiempoRestanteFlash -= delta;
+        }
+        if (bloqueadoTimer > 0f) {
+            bloqueadoTimer -= delta;
         }
     }
 
@@ -258,10 +279,13 @@ public class Jugador {
     }
 
     /**
-     * Gira la espada hacia el punto apuntado y hace que el jugador mire hacia ese lado. Si la entrada no
+     * Fija hacia donde quiere apuntar el jugador (el cursor), lo hace mirar hacia ese lado y gira la
+     * espada hacia ahi con retardo: como mucho {@link #VELOCIDAD_GIRO} radianes por segundo, siempre por
+     * el arco mas corto. El giro se hace antes de colocar la hoja, asi el barrido del tajo
+     * ({@link #golpea}) cubre todo el recorrido entre el angulo de antes y el de ahora. Si la entrada no
      * trae un punto (un blanco de prueba, o un jugador ya muerto), la espada se queda como estaba.
      */
-    private void apuntar() {
+    private void apuntar(float delta) {
         if (!vivo || !entrada.hayPuntero) {
             return;
         }
@@ -269,13 +293,22 @@ public class Jugador {
         float dx = entrada.apuntaX - pivoteX();
         float dy = entrada.apuntaY - pivoteY();
         if (dx * dx + dy * dy > 1f) {
-            angulo = (float) Math.atan2(dy, dx);
+            anguloObjetivo = (float) Math.atan2(dy, dx);
         }
+        float giroMaximo = (bloqueadoTimer > 0f ? VELOCIDAD_GIRO_BLOQUEADO : VELOCIDAD_GIRO) * delta;
+        float diferencia = Hoja.diferenciaAngular(angulo, anguloObjetivo);
+        angulo = normalizarAngulo(angulo + MathUtils.clamp(diferencia, -giroMaximo, giroMaximo));
+    }
+
+    /** Lleva un angulo al rango (-PI, PI], el mismo que devuelve {@code atan2}. */
+    private static float normalizarAngulo(float radianes) {
+        return Hoja.diferenciaAngular(0f, radianes);
     }
 
     /**
      * Lanza una estocada si se pidio una y la anterior ya termino y recargo. La hoja sale y vuelve
-     * siguiendo una curva suave: {@code extension} sube de 0 a 1 y baja a 0 en {@link #DURACION_ESTOCADA}.
+     * siguiendo una curva suave: {@code extension} sube de 0 a 1 y baja a 0 en {@link #duracionEstocadaActual}
+     * (siempre entre 0 y 1: es lo que viaja por la red).
      */
     private void actualizarEstocada(float delta) {
         if (recargaEstocada > 0f) {
@@ -285,11 +318,12 @@ public class Jugador {
             tiempoEstocada = Math.max(0f, tiempoEstocada - delta);
         }
         if (vivo && entrada.estocada && tiempoEstocada <= 0f && recargaEstocada <= 0f) {
-            tiempoEstocada = DURACION_ESTOCADA;
-            recargaEstocada = RECARGA_ESTOCADA;
+            duracionEstocadaActual = DURACION_ESTOCADA * (bloqueadoTimer > 0f ? 1.2f : 1f);
+            tiempoEstocada = duracionEstocadaActual;
+            recargaEstocada = RECARGA_ESTOCADA * (bloqueadoTimer > 0f ? 6f : 1f);
         }
         extension = tiempoEstocada > 0f
-            ? (float) Math.sin(Math.PI * (1f - tiempoEstocada / DURACION_ESTOCADA))
+            ? (float) Math.sin(Math.PI * (1f - tiempoEstocada / duracionEstocadaActual))
             : 0f;
     }
 
@@ -299,9 +333,9 @@ public class Jugador {
         entradaDerecha = entrada.derecha;
 
         if (entradaIzquierda && !entradaDerecha) {
-            velocidad.x += -(VELOCIDAD + velocidad.x);
+            velocidad.x += -(VELOCIDAD*(bloqueadoTimer > 0f ? 0.5f : 1f) + velocidad.x);
         } else if (entradaDerecha && !entradaIzquierda) {
-            velocidad.x += VELOCIDAD - velocidad.x;
+            velocidad.x += VELOCIDAD*(bloqueadoTimer > 0f ? 0.5f : 1f) - velocidad.x;
         }
 
         if (enElPiso && entrada.saltar) {
@@ -473,6 +507,7 @@ public class Jugador {
             if (penetracionX > 0f) {
                 float direccion = separarDe(oponente, penetracionX, arena);
                 empujar(direccion, EMPUJE_CHOQUE);
+                bloqueadoTimer = 1f;
             }
         }
 
@@ -653,6 +688,7 @@ public class Jugador {
         vivo = origen.vivo;
         corriendo = origen.corriendo;
         angulo = origen.anguloEspada;
+        anguloObjetivo = origen.anguloEspada;
         extension = origen.extension;
         tiempoRestanteFlash = origen.tiempoRestanteFlash;
         contadorGolpes = origen.contadorGolpes;

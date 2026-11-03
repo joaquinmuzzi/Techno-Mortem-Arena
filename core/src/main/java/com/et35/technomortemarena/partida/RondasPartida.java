@@ -14,16 +14,22 @@ package com.et35.technomortemarena.partida;
 public final class RondasPartida {
 
     /** Etapa de la partida: duelo activo, espera entre rondas o cartel de victoria. */
-    public enum Fase { RONDA, ENTRE_RONDAS, GANADOR }
+    public enum Fase { RONDA, MUERTE_SUBITA, ENTRE_RONDAS, GANADOR }
 
     /** Segundos entre que termina una ronda y arranca la siguiente, para alcanzar a leer el resultado. */
     public static final float DURACION_ENTRE_RONDAS = 2.5f;
+    /** Duracion de una ronda en segundos. Al agotarse el tiempo entra en muerte subita. */
+    public static final float DURACION_RONDA = 60f;
+    /** Tiempo extra en muerte subita antes de forzar una decision. */
+    public static final float DURACION_MUERTE_SUBITA = 5f;
 
     private final MarcadorPartida marcador = new MarcadorPartida();
     private Fase fase = Fase.RONDA;
     private int numeroRonda = 1;
     private float tiempoEntreRondas;
     private int ganadorDeLaRonda = -1;
+    private float tiempoRestante = DURACION_RONDA;
+    private float tiempoMuerteSubita = DURACION_MUERTE_SUBITA;
 
     /**
      * Avanza la partida un fotograma.
@@ -36,7 +42,26 @@ public final class RondasPartida {
     public boolean actualizar(float delta, boolean unoVivo, boolean dosVivo) {
         switch (fase) {
             case RONDA:
+                tiempoRestante -= delta;
                 if (!unoVivo || !dosVivo) {
+                    cerrarRonda(unoVivo, dosVivo);
+                    return false;
+                }
+                if (tiempoRestante <= 0f) {
+                    fase = Fase.MUERTE_SUBITA;
+                    tiempoMuerteSubita = DURACION_MUERTE_SUBITA;
+                    tiempoRestante = 0f;
+                    return true;
+                }
+                return false;
+            case MUERTE_SUBITA:
+                tiempoMuerteSubita -= delta;
+                if (!unoVivo || !dosVivo) {
+                    cerrarRonda(unoVivo, dosVivo);
+                    return false;
+                }
+                if (tiempoMuerteSubita <= 0f) {
+                    // Si siguen los dos vivos al agotarse la muerte subita, se declara empate y se repite la ronda
                     cerrarRonda(unoVivo, dosVivo);
                 }
                 return false;
@@ -45,6 +70,8 @@ public final class RondasPartida {
                 if (tiempoEntreRondas <= 0f) {
                     numeroRonda++;
                     fase = Fase.RONDA;
+                    tiempoRestante = DURACION_RONDA;
+                    tiempoMuerteSubita = DURACION_MUERTE_SUBITA;
                     return true;
                 }
                 return false;
@@ -53,12 +80,12 @@ public final class RondasPartida {
         }
     }
 
-    /** Anota el resultado: la ronda de quien siga vivo, o ninguna si cayeron los dos. */
+    /** Anota el resultado: la ronda de quien siga vivo, o ninguna si cayeron los dos o siguen ambos. */
     private void cerrarRonda(boolean unoVivo, boolean dosVivo) {
-        if (unoVivo) {
+        if (unoVivo && !dosVivo) {
             ganadorDeLaRonda = 0;
             marcador.registrarRondaGanada(true);
-        } else if (dosVivo) {
+        } else if (dosVivo && !unoVivo) {
             ganadorDeLaRonda = 1;
             marcador.registrarRondaGanada(false);
         } else {
@@ -79,6 +106,8 @@ public final class RondasPartida {
         numeroRonda = 1;
         tiempoEntreRondas = 0f;
         ganadorDeLaRonda = -1;
+        tiempoRestante = DURACION_RONDA;
+        tiempoMuerteSubita = DURACION_MUERTE_SUBITA;
     }
 
     /** Copia en {@code destino} lo que hay que mostrar: es lo que el anfitrion le manda a los clientes. */
@@ -88,14 +117,24 @@ public final class RondasPartida {
         destino.rondasGanadasUno = marcador.getRondasGanadasUno();
         destino.rondasGanadasDos = marcador.getRondasGanadasDos();
         destino.ganadorDeLaRonda = ganadorDeLaRonda;
+        destino.tiempoRestante = tiempoRestante;
+        destino.tiempoMuerteSubita = tiempoMuerteSubita;
     }
 
     /** Pisa esta partida con el estado que mando el anfitrion. Lo usa el cliente, que no lleva la cuenta. */
     public void importar(EstadoPartida origen) {
-        fase = Fase.values()[origen.fase];
+        if (origen.fase >= 0 && origen.fase < Fase.values().length) {
+            fase = Fase.values()[origen.fase];
+        }
         numeroRonda = origen.numeroRonda;
         marcador.restaurar(origen.rondasGanadasUno, origen.rondasGanadasDos);
         ganadorDeLaRonda = origen.ganadorDeLaRonda;
+        if (origen.tiempoRestante >= 0) {
+            tiempoRestante = origen.tiempoRestante;
+        }
+        if (origen.tiempoMuerteSubita >= 0) {
+            tiempoMuerteSubita = origen.tiempoMuerteSubita;
+        }
     }
 
     public Fase getFase() {
@@ -112,6 +151,18 @@ public final class RondasPartida {
 
     public int getRondasGanadasDos() {
         return marcador.getRondasGanadasDos();
+    }
+
+    public float getTiempoRestante() {
+        return tiempoRestante;
+    }
+
+    public float getTiempoMuerteSubita() {
+        return tiempoMuerteSubita;
+    }
+
+    public boolean enMuerteSubita() {
+        return fase == Fase.MUERTE_SUBITA;
     }
 
     /** Verdadero si el Jugador 1 se llevo la partida. Solo tiene sentido en la fase {@link Fase#GANADOR}. */

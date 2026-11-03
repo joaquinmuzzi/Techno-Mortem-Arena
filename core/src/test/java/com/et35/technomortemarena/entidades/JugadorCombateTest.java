@@ -88,7 +88,12 @@ class JugadorCombateTest {
         assertEquals(3, d.getVida());
         guionA.apuntar(1200f, HOMBRO_Y);
 
-        paso(a, d);
+        // la espada tarda unos fotogramas en girar hasta el rival
+        int fotogramas = 0;
+        while (d.getVida() == 3 && fotogramas < 60) {
+            paso(a, d);
+            fotogramas++;
+        }
 
         assertEquals(2, d.getVida());
         assertEquals(3, a.getVida());
@@ -132,7 +137,7 @@ class JugadorCombateTest {
         // un punto a 3 de ancho y 4 de alto del hombro (ver pivote: 1068, 240): angulo de 53.13 grados
         guionA.apuntar(1068f + 300f, HOMBRO_Y + 400f);
 
-        paso(a, d);
+        pasos(a, d, 30); // la espada tarda unos fotogramas en girar hasta el cursor
 
         assertEquals(Math.atan2(4, 3), a.getAngulo(), 0.001);
         assertEquals(a.getAngulo(), a.getHoja().getAngulo(), 0.0001f);
@@ -231,9 +236,12 @@ class JugadorCombateTest {
         // el rival esta en el aire, entre la hoja horizontal (abajo) y la vertical (a la izquierda)
         Jugador a = jugador(guionA, 1000f, PISO, true);
         Jugador d = blanco(1110f, PISO + 172f);
-        guionA.apuntar(1068f, HOMBRO_Y + 500f); // arriba, en un solo fotograma
+        guionA.apuntar(1068f, HOMBRO_Y + 500f); // arriba
 
-        a.actualizar(DT, arena, d);
+        // la espada tarda varios fotogramas en girar hasta alli, pero en el camino cruza al rival
+        for (int i = 0; i < 30; i++) {
+            a.actualizar(DT, arena, d);
+        }
 
         Rectangle cuerpoDelRival = new Rectangle(d.getPosicion().x, d.getPosicion().y, Jugador.ANCHO, Jugador.ALTO);
         assertFalse(a.getHoja().solapa(cuerpoDelRival), "la hoja final apunta al cielo y no lo toca");
@@ -277,6 +285,9 @@ class JugadorCombateTest {
         Jugador d = blanco(3000f, PISO);
         pasos(a, d, 5);
         guionA.apuntar(1300f, HOMBRO_Y + 250f);
+        // hasta que la espada termine de girar: el angulo exportado y la hoja dibujada tienen que
+        // coincidir, y eso recien pasa cuando el giro se fija en el cursor
+        pasos(a, d, 30);
         guionA.hacerClic();
         pasos(a, d, 4);
         EstadoJugador estado = new EstadoJugador();
@@ -308,5 +319,97 @@ class JugadorCombateTest {
         assertEquals(angulo, a.getAngulo(), 0.0001f);
         assertEquals(0f, a.getExtension());
         assertFalse(a.isVivo());
+    }
+
+    @Test
+    void laEspadaGiraPorElArcoMasCortoAlCruzarLosCientoOchentaGrados() {
+        // arriba a la izquierda (170 grados) y abajo a la izquierda (-170 grados) son vecinos: el giro correcto
+        // pasa por el costado izquierdo (180 grados), nunca por el derecho
+        Jugador a = jugador(guionA, 1000f, PISO, false);
+        Jugador d = blanco(3000f, PISO);
+        float pivoteX = 1068f - 40f;
+        double arriba = Math.toRadians(170);
+        guionA.apuntar(pivoteX + (float) Math.cos(arriba) * 300f, HOMBRO_Y + (float) Math.sin(arriba) * 300f);
+        pasos(a, d, 30);
+        double abajo = Math.toRadians(-170);
+        guionA.apuntar(pivoteX + (float) Math.cos(abajo) * 300f, HOMBRO_Y + (float) Math.sin(abajo) * 300f);
+
+        for (int i = 0; i < 30; i++) {
+            paso(a, d);
+            assertTrue(Math.cos(a.getAngulo()) < -0.9, "la espada se fue por el lado equivocado en el fotograma " + i);
+        }
+    }
+
+    @Test
+    void laEspadaNoGiraMasRapidoQueSuVelocidad() {
+        Jugador a = jugador(guionA, 1000f, PISO, true);
+        Jugador d = blanco(3000f, PISO);
+        guionA.apuntar(200f, HOMBRO_Y); // el lado opuesto: el giro mas largo posible
+
+        float anterior = a.getAngulo();
+        for (int i = 0; i < 6; i++) {
+            paso(a, d);
+            float giro = Math.abs(Hoja.diferenciaAngular(anterior, a.getAngulo()));
+            assertTrue(giro <= 12f * DT + 0.001f, "giro de " + giro + " rad en un fotograma");
+            anterior = a.getAngulo();
+        }
+        assertTrue(Math.abs(Hoja.diferenciaAngular(0f, a.getAngulo())) < Math.PI - 1f, "todavia no llego al otro lado");
+    }
+
+    @Test
+    void elRetardoDeLaEspadaNoDependeDeLosFotogramasPorSegundo() {
+        Jugador rapido = jugador(guionA, 1000f, PISO, true);
+        Jugador lento = jugador(guionD, 1000f, PISO, true);
+        Jugador lejos = blanco(3000f, PISO);
+        Jugador lejos2 = blanco(3000f, PISO);
+        guionA.apuntar(200f, HOMBRO_Y);
+        guionD.apuntar(200f, HOMBRO_Y);
+
+        for (int i = 0; i < 12; i++) { // 0,2 s a 60 FPS
+            rapido.actualizar(1f / 60f, arena, lejos);
+        }
+        for (int i = 0; i < 6; i++) { // 0,2 s a 30 FPS
+            lento.actualizar(1f / 30f, arena, lejos2);
+        }
+
+        assertEquals(rapido.getAngulo(), lento.getAngulo(), 0.02f);
+    }
+
+    @Test
+    void despuesDeUnChoqueDeHojasLaEspadaGiraMasLenta() {
+        Jugador a = jugador(guionA, 1000f, PISO, true);
+        Jugador d = jugador(guionD, 1100f, PISO, false);
+        pasos(a, d, 5);
+        guionA.apuntar(1400f, HOMBRO_Y);
+        guionD.apuntar(700f, HOMBRO_Y);
+        paso(a, d); // las hojas se cruzan y los dos quedan bloqueados un rato
+        guionA.apuntar(a.getPosicion().x - 400f, HOMBRO_Y + 300f);
+        float antes = a.getAngulo();
+
+        paso(a, d);
+
+        float giro = Math.abs(Hoja.diferenciaAngular(antes, a.getAngulo()));
+        assertTrue(giro <= 3f * DT + 0.001f, "bloqueado giro de " + giro + " rad en un fotograma");
+    }
+
+    @Test
+    void laExtensionDeLaEstocadaNuncaSeSaleDeCeroAUnoNiBloqueado() {
+        Jugador a = jugador(guionA, 1000f, PISO, true);
+        Jugador d = jugador(guionD, 1100f, PISO, false);
+        pasos(a, d, 5);
+        guionA.apuntar(1400f, HOMBRO_Y);
+        guionD.apuntar(700f, HOMBRO_Y);
+        paso(a, d); // choque: los dos bloqueados, la estocada dura 1,2 veces mas
+        guionA.apuntar(2000f, HOMBRO_Y + 50f);
+
+        guionA.hacerClic();
+        float maxima = 0f;
+        for (int i = 0; i < 40; i++) {
+            paso(a, d);
+            assertTrue(a.getExtension() >= 0f && a.getExtension() <= 1f,
+                "extension fuera de 0 a 1: " + a.getExtension() + " (no se podria mandar por la red)");
+            maxima = Math.max(maxima, a.getExtension());
+        }
+        assertTrue(maxima > 0.9f, "la estocada igual sale");
     }
 }

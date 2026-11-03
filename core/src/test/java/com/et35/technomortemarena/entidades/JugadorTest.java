@@ -62,7 +62,10 @@ class JugadorTest {
         Jugador rival = new Jugador(FuenteEntrada.NINGUNA, 1150f, PISO, false, Color.WHITE, 1);
         rival.setDesarmado(true);
 
-        atacante.actualizar(1f / 60f, arena, rival);
+        // la espada tarda unos fotogramas en girar hasta el rival
+        for (int i = 0; i < 60 && rival.isVivo(); i++) {
+            atacante.actualizar(1f / 60f, arena, rival);
+        }
 
         assertFalse(rival.isVivo());
         assertEquals(0, rival.getVida(), "el HUD tiene que mostrar las vidas vacias");

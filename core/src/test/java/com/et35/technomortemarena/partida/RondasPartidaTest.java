@@ -126,6 +126,32 @@ class RondasPartidaTest {
     }
 
     @Test
+    void alAgotarseElTiempoEntraEnMuerteSubita() {
+        rondas.actualizar(RondasPartida.DURACION_RONDA + 0.01f, true, true);
+
+        assertEquals(Fase.MUERTE_SUBITA, rondas.getFase());
+    }
+
+    @Test
+    void enMuerteSubitaSiUnJugadorMuereSeCierraLaRonda() {
+        rondas.actualizar(RondasPartida.DURACION_RONDA + 0.01f, true, true);
+        rondas.actualizar(0.016f, true, false);
+
+        assertEquals(Fase.ENTRE_RONDAS, rondas.getFase());
+        assertEquals(1, rondas.getRondasGanadasUno());
+    }
+
+    @Test
+    void enMuerteSubitaSiAmbosSiguenVivosYSeAgotaElTiempoHayEmpateYSerepite() {
+        rondas.actualizar(RondasPartida.DURACION_RONDA + 0.01f, true, true);
+        rondas.actualizar(RondasPartida.DURACION_MUERTE_SUBITA + 0.01f, true, true);
+
+        assertEquals(Fase.ENTRE_RONDAS, rondas.getFase());
+        assertEquals(0, rondas.getRondasGanadasUno());
+        assertEquals(0, rondas.getRondasGanadasDos());
+    }
+
+    @Test
     void elEstadoExportadoYImportadoCoincide() {
         rondas.actualizar(0.016f, true, false);
         esperarLaProximaRonda();

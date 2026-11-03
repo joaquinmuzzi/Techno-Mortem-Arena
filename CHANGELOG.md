@@ -64,6 +64,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- Retardo de la espada: la hoja ya no salta al ángulo del cursor, gira hacia él como mucho 12 radianes por
+  segundo (equivale a 0,2 por fotograma a 60 FPS), siempre por el arco más corto y con el mismo retardo a
+  cualquier cantidad de fotogramas por segundo. Al chocar dos hojas los duelistas quedan bloqueados 1 s: se
+  mueven, giran (3 rad/s) y estocan más lento. La estocada dura 0,14 s con 0,08 s de recarga y llega un poco
+  más lejos.
 - Protocolo de red versión 3: el estado que manda el anfitrión incluye el de la partida (etapa, ronda,
   marcador y ganador de la ronda). No es compatible con la versión 2.
 - `pantallas.PantallaArena`: corrige el dibujado con recursos ya liberados al salir de la pausa hacia el

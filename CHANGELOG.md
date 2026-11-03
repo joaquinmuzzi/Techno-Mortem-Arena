@@ -9,6 +9,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Edición del nivel entre rondas (en Multijugador): el perdedor recibe 3 objetos al azar de 8 (fila de pinchos, trampolín, bloque, rectángulo, esquina, cintas y pinchos con cintas), elige uno y lo coloca en 20 s; si se acaba el tiempo se coloca solo (donde estaba el cursor, o uno al azar). No se puede colocar cerca de los spawns. Protocolo de red versión 5.
 - Rodar con `Shift` izquierdo: una rodada corta (0,35 s, recarga de 0,9 s) en la dirección del movimiento
   o, si el jugador está quieto, hacia donde mira. Mientras rueda la caja de colisión mide la mitad y se
   va más rápido, pero no es invulnerable. Solo se puede desde el piso, y si encima hay un bloque sigue

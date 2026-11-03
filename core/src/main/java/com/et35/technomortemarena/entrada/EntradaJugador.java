@@ -17,6 +17,11 @@ public final class EntradaJugador {
     public boolean estocada;
     public boolean rodar;
 
+    /** Durante la edicion del nivel: el objeto elegido (0 a 2), o -1 si todavia no eligio. */
+    public int eleccionPieza = -1;
+    /** Durante la edicion del nivel: verdadero en el fotograma en que el editor pide colocar el objeto. */
+    public boolean colocarPieza;
+
     /** Verdadero si hay un punto apuntado. Los blancos de prueba y los jugadores muertos no apuntan. */
     public boolean hayPuntero;
     public float apuntaX;
@@ -28,6 +33,8 @@ public final class EntradaJugador {
         saltar = false;
         estocada = false;
         rodar = false;
+        eleccionPieza = -1;
+        colocarPieza = false;
         hayPuntero = false;
         apuntaX = 0f;
         apuntaY = 0f;

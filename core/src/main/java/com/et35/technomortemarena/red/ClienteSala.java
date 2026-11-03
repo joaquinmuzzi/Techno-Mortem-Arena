@@ -48,6 +48,7 @@ public final class ClienteSala implements AutoCloseable {
     private byte contadorSalto;
     private byte contadorEstocada;
     private byte contadorRodar;
+    private byte contadorColocar;
 
     private ClienteSala(DatagramChannel canal, SocketAddress servidor, LongSupplier reloj) {
         this.canal = canal;
@@ -186,11 +187,7 @@ public final class ClienteSala implements AutoCloseable {
         }
         copiar(uno, estados[0]);
         copiar(dos, estados[1]);
-        estadoPartida.fase = partida.fase;
-        estadoPartida.numeroRonda = partida.numeroRonda;
-        estadoPartida.rondasGanadasUno = partida.rondasGanadasUno;
-        estadoPartida.rondasGanadasDos = partida.rondasGanadasDos;
-        estadoPartida.ganadorDeLaRonda = partida.ganadorDeLaRonda;
+        estadoPartida.copiarDe(partida);
         hayEstado = true;
         ultimaSecuenciaEstado = secuencia;
         ultimoMensaje = reloj.getAsLong();
@@ -276,6 +273,9 @@ public final class ClienteSala implements AutoCloseable {
         if (entrada.rodar) {
             contadorRodar++;
         }
+        if (entrada.colocarPieza) {
+            contadorColocar++;
+        }
         ByteBuffer paquete = Protocolo.nuevo(Protocolo.ENTRADA);
         paquete.putInt(token);
         paquete.putInt(++secuenciaEntrada);
@@ -283,6 +283,8 @@ public final class ClienteSala implements AutoCloseable {
         paquete.put(contadorSalto);
         paquete.put(contadorEstocada);
         paquete.put(contadorRodar);
+        paquete.put((byte) entrada.eleccionPieza);
+        paquete.put(contadorColocar);
         // El punto apuntado va en pixeles del mundo, como entero de 16 bits: la arena mide menos de 4000.
         paquete.putShort(aCorto(entrada.apuntaX));
         paquete.putShort(aCorto(entrada.apuntaY));

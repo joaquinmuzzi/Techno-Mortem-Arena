@@ -13,6 +13,10 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.function.Supplier;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -26,7 +30,10 @@ import com.et35.technomortemarena.entrada.EntradaLocal;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
+import com.et35.technomortemarena.partida.ColocadorPiezas;
+import com.et35.technomortemarena.partida.EdicionNivel;
 import com.et35.technomortemarena.partida.EstadoPartida;
+import com.et35.technomortemarena.partida.PiezaNivel;
 import com.et35.technomortemarena.partida.RondasPartida;
 import com.et35.technomortemarena.red.ClienteSala;
 import com.et35.technomortemarena.red.ServidorSala;
@@ -114,7 +121,8 @@ public class PantallaArena extends ScreenAdapter {
 
     private final RecursosGraficos recursos;
     private final RecursosAudio audio;
-    private final Arena arena;
+    /** Cambia cuando el perdedor de una ronda coloca un objeto: se vuelve a armar desde la grilla. */
+    private Arena arena;
     private final Supplier<Screen> alReiniciar;
     private final SpriteBatch batch = new SpriteBatch();
     private final Viewport viewport;
@@ -142,8 +150,20 @@ public class PantallaArena extends ScreenAdapter {
     private int golpesSonados;
     private int aterrizajesSonados;
 
-    private final RondasPartida rondas = new RondasPartida();
+    private final RondasPartida rondas;
     private final EstadoPartida estadoPartida = new EstadoPartida();
+
+    /** El mapa tal como se eligio, sin los objetos colocados entre rondas. */
+    private final String[] filasOriginales;
+    /** Zonas {@code {x0, y0, x1, y1}} en celdas donde no se puede colocar nada: spawns y centro de la muerte subita. */
+    private final List<float[]> zonasProhibidas;
+    /** La edicion del nivel; solo la lleva el anfitrion. Nula si no hay anfitrion o el mapa no sale de una grilla. */
+    private final EdicionNivel edicion;
+    private final PanelEdicion panelEdicion = new PanelEdicion();
+    /** Piezas que el cliente ya tiene dibujadas en su copia del mapa. */
+    private List<int[]> piezasAplicadas = new ArrayList<>();
+    private RondasPartida.Fase faseAnterior = RondasPartida.Fase.RONDA;
+    private final Vector2 punteroEdicion = new Vector2();
 
     private boolean pausado;
     /** Verdadero despues de dispose(): si un boton de la pausa nos cambio de pantalla, no hay que seguir dibujando. */
@@ -193,6 +213,8 @@ public class PantallaArena extends ScreenAdapter {
         this.recursos = recursos;
         this.audio = audio;
         this.arena = arena;
+        this.filasOriginales = arena.getFilas();
+        this.rondas = new RondasPartida(servidor != null && filasOriginales.length > 0);
         this.alReiniciar = alReiniciar;
         this.servidor = servidor;
         this.cliente = cliente;
@@ -208,6 +230,9 @@ public class PantallaArena extends ScreenAdapter {
         Vector2 spawnDosMapa = arena.getSpawnDos();
         this.spawnUno = spawnUnoMapa != null ? spawnUnoMapa : new Vector2(xPorDefectoUno, yPiso);
         this.spawnDos = spawnDosMapa != null ? spawnDosMapa : new Vector2(xPorDefectoDos, yPiso);
+        this.zonasProhibidas = crearZonasProhibidas();
+        this.edicion = servidor != null && filasOriginales.length > 0
+            ? new EdicionNivel(filasOriginales, zonasProhibidas, new Random()) : null;
         armarJugadores();
     }
 
@@ -311,6 +336,10 @@ public class PantallaArena extends ScreenAdapter {
         // El reloj de la ayuda corre con la simulacion, no con la pausa: mientras el juego esta
         // pausado no se llama a actualizar(), asi el cartel se queda quieto y no se pierde.
         tiempoAyuda += paso;
+        if (rondas.getFase() == RondasPartida.Fase.EDICION && faseAnterior != RondasPartida.Fase.EDICION) {
+            panelEdicion.reiniciar();
+        }
+        faseAnterior = rondas.getFase();
         if (servidor != null) {
             actualizarComoAnfitrion(paso);
         } else if (cliente != null) {
@@ -347,12 +376,12 @@ public class PantallaArena extends ScreenAdapter {
         if (servidor.consumirDesconexion()) {
             // Si el cliente se va, la partida en curso termina: queda esperando a otro.
             jugadorDos = null;
-            rondas.reiniciar();
+            reiniciarRondasYNivel();
             jugadorUno.reiniciar(spawnUno.x, spawnUno.y, true);
         }
         if (jugadorDos == null && servidor.clienteListo()) {
             // Llega alguien: empieza una partida nueva desde cero.
-            rondas.reiniciar();
+            reiniciarRondasYNivel();
             jugadorUno.reiniciar(spawnUno.x, spawnUno.y, true);
             jugadorDos = new Jugador(servidor.getEntradaRemota(), spawnDos.x, spawnDos.y, false, TINTE_DOS, VIDAS_INICIALES);
         }
@@ -370,6 +399,9 @@ public class PantallaArena extends ScreenAdapter {
             // que el cliente haya mandado en el medio, para que no se disparen al arrancar la ronda.
             servidor.getEntradaRemota().leer(entradaAux);
         }
+        if (rondas.getFase() == RondasPartida.Fase.EDICION && edicion != null) {
+            atenderEdicionComoAnfitrion();
+        }
         if (rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA && !muerteSubitaActivada && jugadorUno != null && jugadorDos != null) {
             forzarMuerteSubita();
             muerteSubitaActivada = true;
@@ -381,6 +413,9 @@ public class PantallaArena extends ScreenAdapter {
         }
         jugadorUno.exportar(estadoUno);
         jugadorDos.exportar(estadoDos);
+        if (edicion != null) {
+            edicion.exportar(estadoPartida);
+        }
         rondas.exportar(estadoPartida);
         servidor.enviarEstado(estadoUno, estadoDos, estadoPartida);
     }
@@ -397,11 +432,15 @@ public class PantallaArena extends ScreenAdapter {
         }
         entradaLocal.setActiva(!pausado && rondas.getFase() == RondasPartida.Fase.RONDA);
         entradaLocal.leer(entradaAux);
+        if (rondas.getFase() == RondasPartida.Fase.EDICION && rondas.getEditor() == 1) {
+            panelEdicion.leer(viewport, viewportUi, entradaAux);
+        }
         cliente.enviarEntrada(entradaAux);
         if (cliente.hayEstado()) {
             jugadorUno.importar(cliente.getEstado(0));
             jugadorDos.importar(cliente.getEstado(1));
             rondas.importar(cliente.getEstadoPartida());
+            sincronizarNivelDelCliente();
             if (rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA && !muerteSubitaActivada && jugadorUno != null && jugadorDos != null) {
                 forzarMuerteSubita();
                 muerteSubitaActivada = true;
@@ -541,9 +580,28 @@ public class PantallaArena extends ScreenAdapter {
         }
     }
 
+    /** Marcador en cero, ronda 1 y el mapa como era antes de las piezas que se colocaron entre rondas. */
+    private void reiniciarRondasYNivel() {
+        rondas.reiniciar();
+        if (edicion != null) {
+            edicion.reiniciarNivel();
+            arena = Arena.desdeGrilla(filasOriginales);
+        }
+    }
+
+    /** Las zonas donde no se puede colocar nada: alrededor de cada spawn y del punto de la muerte subita. */
+    private List<float[]> crearZonasProhibidas() {
+        List<float[]> zonas = new ArrayList<>();
+        zonas.add(ColocadorPiezas.zonaDeSpawn(spawnUno.x, spawnUno.y, Jugador.ANCHO, Jugador.ALTO));
+        zonas.add(ColocadorPiezas.zonaDeSpawn(spawnDos.x, spawnDos.y, Jugador.ANCHO, Jugador.ALTO));
+        float yPiso = Arena.FILAS_PISO * Arena.CELDA;
+        zonas.add(ColocadorPiezas.zonaDeSpawn(arena.getAncho() / 2f - 80f, yPiso, 160f, Jugador.ALTO));
+        return zonas;
+    }
+
     /** Empieza una partida nueva: marcador en cero, ronda 1 y todos de vuelta en su lugar. */
     private void reiniciarPartida() {
-        rondas.reiniciar();
+        reiniciarRondasYNivel();
         armarJugadores();
     }
 
@@ -572,6 +630,9 @@ public class PantallaArena extends ScreenAdapter {
 
         batch.begin();
         dibujarBloques();
+        if (rondas.getFase() == RondasPartida.Fase.EDICION) {
+            dibujarEdicionEnElMundo();
+        }
         jugadorUno.dibujar(batch, recursos);
         if (jugadorDos != null) {
             jugadorDos.dibujar(batch, recursos);
@@ -599,6 +660,10 @@ public class PantallaArena extends ScreenAdapter {
             dibujarEntreRondas();
         } else if (rondas.getFase() == RondasPartida.Fase.GANADOR) {
             dibujarGanador();
+        }
+
+        if (rondas.getFase() == RondasPartida.Fase.EDICION) {
+            dibujarEdicionEnLaInterfaz();
         }
 
         if (pausado) {
@@ -811,6 +876,122 @@ public class PantallaArena extends ScreenAdapter {
         String titulo = "PAUSA";
         float x = (ANCHO_UI - ui.anchoTexto(titulo, 2.5f)) / 2f;
         ui.texto(batch, titulo, x, 468f, 2.5f, Color.WHITE);
+        batch.end();
+    }
+
+    /**
+     * El anfitrion lleva la edicion: el editor (el mismo anfitrion o el cliente, con la entrada que llega
+     * por la red) elige y coloca, y si se acaba el tiempo se coloca solo. Al terminar se rearma el mapa y
+     * la partida sigue con la ronda siguiente.
+     */
+    private void atenderEdicionComoAnfitrion() {
+        int editor = rondas.getEditor();
+        if (edicion.getEditor() != editor) {
+            edicion.iniciar(editor);
+        }
+        if (editor == 0) {
+            panelEdicion.leer(viewport, viewportUi, entradaAux);
+        }
+        if (entradaAux.hayPuntero) {
+            edicion.moverCursor(ColocadorPiezas.columnaDe(entradaAux.apuntaX), ColocadorPiezas.filaDe(entradaAux.apuntaY));
+        }
+        edicion.elegir(entradaAux.eleccionPieza);
+        boolean termino = entradaAux.colocarPieza && edicion.colocar();
+        if (!termino && rondas.edicionAgotada()) {
+            edicion.autocolocar();
+            termino = true;
+        }
+        if (termino) {
+            arena = Arena.desdeGrilla(edicion.getFilas());
+            edicion.terminar();
+            rondas.terminarEdicion();
+        }
+    }
+
+    /** El cliente rearma su copia del mapa cuando la lista de piezas que manda el anfitrion cambia. */
+    private void sincronizarNivelDelCliente() {
+        List<int[]> piezas = cliente.getEstadoPartida().piezas;
+        boolean igual = piezas.size() == piezasAplicadas.size();
+        for (int i = 0; igual && i < piezas.size(); i++) {
+            igual = Arrays.equals(piezas.get(i), piezasAplicadas.get(i));
+        }
+        if (!igual) {
+            arena = Arena.desdeGrilla(EdicionNivel.reconstruir(filasOriginales, piezas));
+            piezasAplicadas = new ArrayList<>();
+            for (int[] pieza : piezas) {
+                piezasAplicadas.add(pieza.clone());
+            }
+        }
+    }
+
+    /** Verdadero si esta instancia es la del jugador que edita el nivel ahora. */
+    private boolean soyElEditor() {
+        return enRed() && rondas.getEditor() == (servidor != null ? 0 : 1);
+    }
+
+    private PiezaNivel opcionDeEdicion(int indice) {
+        if (servidor != null) {
+            return edicion != null && edicion.getEditor() >= 0 ? edicion.getOpcion(indice) : null;
+        }
+        return PiezaNivel.porIndice(cliente.getEstadoPartida().opciones[indice]);
+    }
+
+    private int eleccionDeEdicion() {
+        if (soyElEditor()) {
+            return panelEdicion.getEleccionLocal();
+        }
+        return servidor != null ? (edicion != null ? edicion.getEleccion() : -1) : cliente.getEstadoPartida().eleccion;
+    }
+
+    /** Dibuja las zonas prohibidas y la vista previa de la pieza elegida, con la proyeccion de la arena. */
+    private void dibujarEdicionEnElMundo() {
+        PiezaNivel pieza = eleccionDeEdicion() >= 0 ? opcionDeEdicion(eleccionDeEdicion()) : null;
+        int columna;
+        int fila;
+        if (soyElEditor()) {
+            punteroEdicion.set(Gdx.input.getX(), Gdx.input.getY());
+            viewport.unproject(punteroEdicion);
+            columna = ColocadorPiezas.columnaDe(punteroEdicion.x);
+            fila = ColocadorPiezas.filaDe(punteroEdicion.y);
+            if (panelEdicion.cursorSobreTarjeta(viewportUi)) {
+                pieza = null;
+            }
+        } else if (servidor != null) {
+            columna = edicion != null ? edicion.getCursorColumna() : 0;
+            fila = edicion != null ? edicion.getCursorFila() : 0;
+        } else {
+            columna = cliente.getEstadoPartida().cursorColumna;
+            fila = cliente.getEstadoPartida().cursorFila;
+        }
+        panelEdicion.dibujarEnElMundo(batch, ui, zonasProhibidas, pieza, columna, fila,
+            sePuedeColocar(pieza, columna, fila));
+    }
+
+    private boolean sePuedeColocar(PiezaNivel pieza, int columnaCursor, int filaCursor) {
+        if (pieza == null) {
+            return false;
+        }
+        int[] origen = ColocadorPiezas.origenPara(pieza, columnaCursor, filaCursor);
+        return ColocadorPiezas.puedeColocar(arena.getFilas(), pieza, origen[0], origen[1], zonasProhibidas);
+    }
+
+    /** Cartel con el tiempo y las tres tarjetas de la edicion, con la proyeccion de la interfaz. */
+    private void dibujarEdicionEnLaInterfaz() {
+        viewportUi.apply();
+        batch.setProjectionMatrix(viewportUi.getCamera().combined);
+        PiezaNivel[] opciones = new PiezaNivel[EdicionNivel.OPCIONES];
+        for (int i = 0; i < opciones.length; i++) {
+            opciones[i] = opcionDeEdicion(i);
+        }
+        int editor = Math.max(0, rondas.getEditor());
+        PiezaNivel elegida = eleccionDeEdicion() >= 0 ? opciones[eleccionDeEdicion()] : null;
+        punteroEdicion.set(Gdx.input.getX(), Gdx.input.getY());
+        viewport.unproject(punteroEdicion);
+        boolean valida = elegida == null || sePuedeColocar(elegida,
+            ColocadorPiezas.columnaDe(punteroEdicion.x), ColocadorPiezas.filaDe(punteroEdicion.y));
+        batch.begin();
+        panelEdicion.dibujarEnLaInterfaz(batch, ui, opciones, eleccionDeEdicion(), soyElEditor(), editor,
+            editor == 0 ? TINTE_UNO : TINTE_DOS, rondas.getTiempoEdicion(), valida);
         batch.end();
     }
 

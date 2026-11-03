@@ -10,12 +10,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entrada.EntradaJugador;
 import com.et35.technomortemarena.mundo.Arena;
+import com.et35.technomortemarena.partida.ColocadorPiezas;
+import com.et35.technomortemarena.partida.EdicionNivel;
 import com.et35.technomortemarena.partida.EstadoPartida;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
@@ -101,6 +104,63 @@ class SalaLoopbackTest {
         Arena remota = Arena.desdeGrilla(cliente.getFilas());
 
         assertEquals(local.getBloques().size(), remota.getBloques().size());
+    }
+
+    @Test
+    void elClienteEligeYColocaUnObjetoYAmbosQuedanConElMismoMapa() throws Exception {
+        conectarCliente();
+        EdicionNivel edicion = new EdicionNivel(filas, new ArrayList<>(), new Random(7));
+        edicion.iniciar(1); // pierde el cliente: edita el Jugador 2
+
+        // el cliente elige la segunda tarjeta, apunta a una celda del aire y pide colocar
+        EntradaJugador mano = new EntradaJugador();
+        mano.hayPuntero = true;
+        mano.apuntaX = 50 * Arena.CELDA;
+        mano.apuntaY = 20 * Arena.CELDA;
+        mano.eleccionPieza = 1;
+        mano.colocarPieza = true;
+        cliente.enviarEntrada(mano);
+        EntradaJugador recibida = new EntradaJugador();
+        // leer() consume las acciones de una sola vez: se guarda lo que llego en la primera lectura que las trae
+        EntradaJugador conLaAccion = new EntradaJugador();
+        girarHasta(() -> {
+            servidor.getEntradaRemota().leer(recibida);
+            if (recibida.colocarPieza) {
+                conLaAccion.eleccionPieza = recibida.eleccionPieza;
+                conLaAccion.apuntaX = recibida.apuntaX;
+                conLaAccion.apuntaY = recibida.apuntaY;
+                conLaAccion.colocarPieza = true;
+            }
+            return conLaAccion.colocarPieza;
+        });
+        recibida.eleccionPieza = conLaAccion.eleccionPieza;
+        recibida.apuntaX = conLaAccion.apuntaX;
+        recibida.apuntaY = conLaAccion.apuntaY;
+
+        assertEquals(1, recibida.eleccionPieza);
+        assertEquals(50 * Arena.CELDA, recibida.apuntaX, 1f);
+        edicion.moverCursor(ColocadorPiezas.columnaDe(recibida.apuntaX), ColocadorPiezas.filaDe(recibida.apuntaY));
+        edicion.elegir(recibida.eleccionPieza);
+        assertTrue(edicion.colocar());
+        edicion.terminar();
+
+        // el anfitrion manda el estado con la lista de piezas y el cliente rearma el mismo mapa
+        EstadoPartida estado = new EstadoPartida();
+        edicion.exportar(estado);
+        girarHasta(() -> {
+            servidor.enviarEstado(new EstadoJugador(), new EstadoJugador(), estado);
+            return cliente.hayEstado() && cliente.getEstadoPartida().piezas.size() == 1;
+        });
+
+        assertArrayEquals(edicion.getFilas(), EdicionNivel.reconstruir(cliente.getFilas(), cliente.getEstadoPartida().piezas));
+        // y el cliente no vuelve a disparar la colocacion: es una accion de una sola vez
+        cliente.enviarEntrada(new EntradaJugador());
+        girarHasta(() -> {
+            servidor.getEntradaRemota().leer(recibida);
+            return recibida.eleccionPieza == -1;
+        });
+        servidor.getEntradaRemota().leer(recibida);
+        assertFalse(recibida.colocarPieza);
     }
 
     @Test
@@ -318,7 +378,7 @@ class SalaLoopbackTest {
         paquete.putInt(token);
         paquete.putInt(secuencia);
         paquete.put((byte) banderas);
-        paquete.put((byte) 0).put((byte) 0).put((byte) 0);
+        paquete.put((byte) 0).put((byte) 0).put((byte) 0).put((byte) -1).put((byte) 0);
         paquete.putShort((short) 0).putShort((short) 0);
         paquete.flip();
         return paquete;

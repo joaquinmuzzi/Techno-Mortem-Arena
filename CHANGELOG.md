@@ -9,6 +9,17 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Edición del nivel entre rondas (en Multijugador, al estilo *Ultimate Chicken Horse*): tras el resultado
+  de una ronda con ganador, el perdedor recibe 3 objetos al azar de los 8 de `partida.PiezaNivel` (fila de
+  pinchos, trampolín, bloque, rectángulo, esquina, cinta izquierda, cinta derecha y pinchos con cintas),
+  elige uno y lo coloca en 20 s. Si se acaba el tiempo se coloca solo: el elegido donde estaba el cursor
+  (o en el lugar válido más cercano), o uno al azar en un lugar al azar si no había elegido. No se puede
+  pisar lo que ya hay ni colocar a menos de 4 celdas de los spawns o del centro de la muerte súbita.
+  `partida.ColocadorPiezas` tiene las reglas, `partida.EdicionNivel` la lleva del lado del anfitrión y
+  `pantallas.PanelEdicion` dibuja las tarjetas, la vista previa (verde o roja) y las zonas prohibidas.
+  La revancha vuelve al mapa original.
+- Tests JUnit 5: `EdicionNivelTest` (formas, sorteo, reglas, autocolocado, fase de edición) y los de la
+  edición en el protocolo y por loopback.
 - Rodar con `Shift` izquierdo: una rodada corta (0,35 s, recarga de 0,9 s) en la dirección del movimiento
   o, si el jugador está quieto, hacia donde mira. Mientras rueda la caja de colisión mide la mitad y se
   va más rápido, pero no es invulnerable. Solo se puede desde el piso, y si encima hay un bloque sigue
@@ -78,6 +89,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
   cualquier cantidad de fotogramas por segundo. Al chocar dos hojas los duelistas quedan bloqueados 1 s: se
   mueven, giran (3 rad/s) y estocan más lento. La estocada dura 0,14 s con 0,08 s de recarga y llega un poco
   más lejos.
+- Protocolo de red versión 5: la entrada del cliente suma el objeto elegido y un contador de colocar, y
+  el estado de la partida la edición (editor, opciones, elección, cursor, tiempo y piezas colocadas).
+  No es compatible con la versión 4.
+- `red.ClienteSala` copia todo el estado de la partida que llega: antes no copiaba los tiempos de la ronda
+  y de la muerte súbita, y el cliente mostraba siempre los valores iniciales.
 - Protocolo de red versión 4: la entrada del cliente suma un contador de rodar y el estado del jugador
   una bandera de "rodando". No es compatible con la versión 3.
 - Protocolo de red versión 3: el estado que manda el anfitrión incluye el de la partida (etapa, ronda,

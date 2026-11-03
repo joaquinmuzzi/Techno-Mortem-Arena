@@ -14,7 +14,7 @@ package com.et35.technomortemarena.partida;
 public final class RondasPartida {
 
     /** Etapa de la partida: duelo activo, espera entre rondas o cartel de victoria. */
-    public enum Fase { RONDA, MUERTE_SUBITA, ENTRE_RONDAS, GANADOR }
+    public enum Fase { RONDA, MUERTE_SUBITA, ENTRE_RONDAS, GANADOR, EDICION }
 
     /** Segundos entre que termina una ronda y arranca la siguiente, para alcanzar a leer el resultado. */
     public static final float DURACION_ENTRE_RONDAS = 2.5f;
@@ -22,6 +22,8 @@ public final class RondasPartida {
     public static final float DURACION_RONDA = 60f;
     /** Tiempo extra en muerte subita antes de forzar una decision. */
     public static final float DURACION_MUERTE_SUBITA = 5f;
+    /** Segundos que tiene el perdedor de una ronda para colocar su objeto en el nivel. */
+    public static final float DURACION_EDICION = 20f;
 
     private final MarcadorPartida marcador = new MarcadorPartida();
     private Fase fase = Fase.RONDA;
@@ -30,6 +32,23 @@ public final class RondasPartida {
     private int ganadorDeLaRonda = -1;
     private float tiempoRestante = DURACION_RONDA;
     private float tiempoMuerteSubita = DURACION_MUERTE_SUBITA;
+    private final boolean conEdicion;
+    private float tiempoEdicion = DURACION_EDICION;
+    private int editor = -1;
+    private boolean edicionTerminada;
+
+    /** Una partida sin edicion del nivel: entre rondas solo se espera el resultado. */
+    public RondasPartida() {
+        this(false);
+    }
+
+    /**
+     * @param conEdicion si es {@code true}, despues del resultado de cada ronda con ganador el perdedor
+     *                   edita el nivel durante {@link #DURACION_EDICION} segundos
+     */
+    public RondasPartida(boolean conEdicion) {
+        this.conEdicion = conEdicion;
+    }
 
     /**
      * Avanza la partida un fotograma.
@@ -68,16 +87,35 @@ public final class RondasPartida {
             case ENTRE_RONDAS:
                 tiempoEntreRondas -= delta;
                 if (tiempoEntreRondas <= 0f) {
-                    numeroRonda++;
-                    fase = Fase.RONDA;
-                    tiempoRestante = DURACION_RONDA;
-                    tiempoMuerteSubita = DURACION_MUERTE_SUBITA;
+                    if (conEdicion && ganadorDeLaRonda >= 0) {
+                        fase = Fase.EDICION;
+                        editor = 1 - ganadorDeLaRonda;
+                        tiempoEdicion = DURACION_EDICION;
+                        edicionTerminada = false;
+                        return false;
+                    }
+                    empezarRondaNueva();
+                    return true;
+                }
+                return false;
+            case EDICION:
+                tiempoEdicion = Math.max(0f, tiempoEdicion - delta);
+                if (edicionTerminada) {
+                    editor = -1;
+                    empezarRondaNueva();
                     return true;
                 }
                 return false;
             default:
                 return false;
         }
+    }
+
+    private void empezarRondaNueva() {
+        numeroRonda++;
+        fase = Fase.RONDA;
+        tiempoRestante = DURACION_RONDA;
+        tiempoMuerteSubita = DURACION_MUERTE_SUBITA;
     }
 
     /** Anota el resultado: la ronda de quien siga vivo, o ninguna si cayeron los dos o siguen ambos. */
@@ -108,6 +146,9 @@ public final class RondasPartida {
         ganadorDeLaRonda = -1;
         tiempoRestante = DURACION_RONDA;
         tiempoMuerteSubita = DURACION_MUERTE_SUBITA;
+        tiempoEdicion = DURACION_EDICION;
+        editor = -1;
+        edicionTerminada = false;
     }
 
     /** Copia en {@code destino} lo que hay que mostrar: es lo que el anfitrion le manda a los clientes. */
@@ -119,6 +160,8 @@ public final class RondasPartida {
         destino.ganadorDeLaRonda = ganadorDeLaRonda;
         destino.tiempoRestante = tiempoRestante;
         destino.tiempoMuerteSubita = tiempoMuerteSubita;
+        destino.editor = editor;
+        destino.tiempoEdicion = tiempoEdicion;
     }
 
     /** Pisa esta partida con el estado que mando el anfitrion. Lo usa el cliente, que no lleva la cuenta. */
@@ -134,6 +177,10 @@ public final class RondasPartida {
         }
         if (origen.tiempoMuerteSubita >= 0) {
             tiempoMuerteSubita = origen.tiempoMuerteSubita;
+        }
+        editor = origen.editor;
+        if (origen.tiempoEdicion >= 0) {
+            tiempoEdicion = origen.tiempoEdicion;
         }
     }
 
@@ -159,6 +206,25 @@ public final class RondasPartida {
 
     public float getTiempoMuerteSubita() {
         return tiempoMuerteSubita;
+    }
+
+    /** Quien edita el nivel: 0 el Jugador 1, 1 el Jugador 2. Solo tiene sentido en la fase {@link Fase#EDICION}. */
+    public int getEditor() {
+        return editor;
+    }
+
+    public float getTiempoEdicion() {
+        return tiempoEdicion;
+    }
+
+    /** Verdadero si se esta editando el nivel y el tiempo del editor se acabo: hay que autocolocar y terminar. */
+    public boolean edicionAgotada() {
+        return fase == Fase.EDICION && tiempoEdicion <= 0f;
+    }
+
+    /** El editor ya coloco su objeto (o no habia donde): la proxima {@link #actualizar} arranca la ronda. */
+    public void terminarEdicion() {
+        edicionTerminada = true;
     }
 
     public boolean enMuerteSubita() {

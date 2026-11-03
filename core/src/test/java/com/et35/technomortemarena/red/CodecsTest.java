@@ -10,6 +10,7 @@ import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.partida.EstadoPartida;
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
@@ -150,7 +151,7 @@ class CodecsTest {
         partida.rondasGanadasUno = 3;
         partida.rondasGanadasDos = 1;
         partida.ganadorDeLaRonda = -1;
-        ByteBuffer buffer = ByteBuffer.allocate(16);
+        ByteBuffer buffer = ByteBuffer.allocate(128);
         CodecEstado.escribir(buffer, partida);
         assertEquals(CodecEstado.BYTES_PARTIDA, buffer.position());
         buffer.flip();
@@ -185,6 +186,79 @@ class CodecsTest {
             assertEquals(42, intacta.numeroRonda, "un estado rechazado no debe tocar el destino");
         }
         assertFalse(CodecEstado.leer(ByteBuffer.allocate(2), new EstadoPartida()));
+    }
+
+    @Test
+    void laEdicionDelNivelSobreviveAlViaje() {
+        EstadoPartida partida = new EstadoPartida();
+        partida.fase = 4;
+        partida.editor = 1;
+        partida.opciones[0] = 2;
+        partida.opciones[1] = 7;
+        partida.opciones[2] = 0;
+        partida.eleccion = 1;
+        partida.cursorColumna = 45;
+        partida.cursorFila = 12;
+        partida.tiempoEdicion = 13.5f;
+        partida.piezas.add(new int[] {3, 10, 3});
+        partida.piezas.add(new int[] {5, 80, 20});
+        ByteBuffer buffer = ByteBuffer.allocate(128);
+        CodecEstado.escribir(buffer, partida);
+        assertEquals(CodecEstado.BYTES_PARTIDA + 2 * CodecEstado.BYTES_POR_PIEZA, buffer.position());
+        buffer.flip();
+
+        EstadoPartida leida = new EstadoPartida();
+        assertTrue(CodecEstado.leer(buffer, leida));
+
+        assertEquals(4, leida.fase);
+        assertEquals(1, leida.editor);
+        assertArrayEquals(new int[] {2, 7, 0}, leida.opciones);
+        assertEquals(1, leida.eleccion);
+        assertEquals(45, leida.cursorColumna);
+        assertEquals(12, leida.cursorFila);
+        assertEquals(13.5f, leida.tiempoEdicion);
+        assertEquals(2, leida.piezas.size());
+        assertArrayEquals(new int[] {5, 80, 20}, leida.piezas.get(1));
+    }
+
+    @Test
+    void unaEdicionConValoresAbsurdosSeRechaza() {
+        Consumer<EstadoPartida>[] estropeadores = new Consumer[] {
+            (Consumer<EstadoPartida>) e -> e.editor = 5,
+            (Consumer<EstadoPartida>) e -> e.opciones[0] = 20,
+            (Consumer<EstadoPartida>) e -> e.eleccion = 3,
+            (Consumer<EstadoPartida>) e -> e.cursorColumna = Arena.COLUMNAS,
+            (Consumer<EstadoPartida>) e -> e.cursorFila = Arena.FILAS,
+            (Consumer<EstadoPartida>) e -> e.tiempoEdicion = Float.NaN,
+            (Consumer<EstadoPartida>) e -> e.tiempoEdicion = -1f,
+            (Consumer<EstadoPartida>) e -> e.piezas.add(new int[] {9, 0, 0}),
+            (Consumer<EstadoPartida>) e -> e.piezas.add(new int[] {0, Arena.COLUMNAS, 0}),
+            (Consumer<EstadoPartida>) e -> e.piezas.add(new int[] {0, 0, Arena.FILAS}),
+        };
+        for (Consumer<EstadoPartida> estropear : estropeadores) {
+            EstadoPartida mala = new EstadoPartida();
+            estropear.accept(mala);
+            ByteBuffer buffer = ByteBuffer.allocate(128);
+            CodecEstado.escribir(buffer, mala);
+            buffer.flip();
+            EstadoPartida intacta = new EstadoPartida();
+            intacta.numeroRonda = 42;
+            assertFalse(CodecEstado.leer(buffer, intacta));
+            assertEquals(42, intacta.numeroRonda, "un estado rechazado no debe tocar el destino");
+        }
+    }
+
+    @Test
+    void unaListaDePiezasTruncadaSeRechaza() {
+        EstadoPartida partida = new EstadoPartida();
+        partida.piezas.add(new int[] {1, 5, 5});
+        partida.piezas.add(new int[] {2, 9, 9});
+        ByteBuffer buffer = ByteBuffer.allocate(128);
+        CodecEstado.escribir(buffer, partida);
+        buffer.flip();
+        buffer.limit(buffer.limit() - 2);
+
+        assertFalse(CodecEstado.leer(buffer, new EstadoPartida()));
     }
 
     @Test

@@ -92,7 +92,10 @@ core/src/main/java/com/et35/technomortemarena/
 │   └── CodecEstado.java       Estado de un jugador a bytes
 ├── partida/
 │   ├── MarcadorPartida.java   Marcador al mejor de 5 rondas y ganador de la partida
-│   ├── RondasPartida.java     Ronda, espera entre rondas y victoria (lógica pura)
+│   ├── RondasPartida.java     Ronda, espera entre rondas, edición y victoria (lógica pura)
+│   ├── PiezaNivel.java        Los 8 objetos que se colocan entre rondas
+│   ├── ColocadorPiezas.java   Reglas para colocar: grilla, choques y zonas de los spawns
+│   ├── EdicionNivel.java      Sorteo, elección, colocación y autocolocado (anfitrión)
 │   └── EstadoPartida.java     Estado de la partida que viaja por la red
 ├── niveles/
 │   ├── MapaGuardado.java      Mapa con nombre creado en el editor
@@ -102,6 +105,7 @@ core/src/main/java/com/et35/technomortemarena/
     ├── PantallaMultijugador.java  Crear una sala o unirse a la de otro
     ├── PantallaSeleccionMapa.java Elección del mapa: predefinidos y "Mis mapas" del editor
     ├── PantallaArena.java         Modo de prueba, anfitrión o cliente: rondas, HUD, marcador y pausa
+    ├── PanelEdicion.java          Tarjetas y vista previa de la edición entre rondas
     ├── PantallaEditor.java        Editor de niveles
     └── Ui.java                    Interfaz común (botones, texto, rectángulos)
 ```
@@ -152,6 +156,25 @@ La partida es **al mejor de 5 rondas** (gana quien llega a 3): cuando alguien ca
 hay una pausa breve con el resultado y la siguiente arranca con los dos de vuelta en sus lugares. En
 empate la ronda se repite sin sumar. El HUD muestra las vidas de cada uno y el marcador, y al final
 aparece el cartel de victoria con la revancha (la pide el anfitrión).
+
+**Edición del nivel entre rondas** (al estilo *Ultimate Chicken Horse*): después del resultado, quien
+perdió la ronda recibe 3 objetos al azar y tiene 20 segundos para elegir uno (clic en la tarjeta o
+teclas `1`, `2` y `3`) y colocarlo con un clic en el mapa. La vista previa se ve verde donde se puede
+y roja donde no: no se puede pisar lo que ya hay ni colocar cerca de los spawns ni del centro de la
+muerte súbita (las zonas rojas). Si se acaba el tiempo, el objeto elegido se coloca donde estaba el
+cursor (o en el lugar válido más cercano) y, si no eligió ninguno, uno de los tres al azar en un lugar
+al azar. Las piezas se acumulan durante la partida y la revancha vuelve al mapa original. En empate no
+hay edición.
+
+| Objeto | Medidas (largo x alto, en celdas) |
+|---|---|
+| Fila de pinchos | 6 x 2 |
+| Trampolín | 4 x 2 |
+| Bloque | 8 x 8 |
+| Rectángulo | 10 x 4 |
+| Esquina | L de 10 de alto y 4 de largo abajo, brazos de 2 |
+| Cinta izquierda / derecha | 6 x 2 |
+| Pinchos con cintas | 16 x 2: cinta de 6 hacia la derecha, 4 de pinchos, cinta de 6 hacia la izquierda |
 
 El anfitrión simula todo el juego y le manda el estado al cliente, que solo manda sus teclas y
 dibuja lo que recibe. `R` reinicia la ronda solo en el anfitrión, y en red `ESC` abre el menú

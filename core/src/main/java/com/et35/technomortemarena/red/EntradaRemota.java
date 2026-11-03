@@ -25,6 +25,9 @@ public final class EntradaRemota implements FuenteEntrada {
     private byte ultimoSalto;
     private byte ultimaEstocada;
     private byte ultimoRodar;
+    private byte ultimoColocar;
+    private int eleccionPieza = -1;
+    private boolean colocarPendiente;
 
     private boolean saltoPendiente;
     private boolean estocadaPendiente;
@@ -36,7 +39,7 @@ public final class EntradaRemota implements FuenteEntrada {
      * @return {@code false} si era mas viejo que el ultimo ya recibido y se descarto
      */
     boolean aplicar(int secuencia, boolean izquierda, boolean derecha, boolean hayPuntero,
-                    byte contadorSalto, byte contadorEstocada, byte contadorRodar, float apuntaX, float apuntaY) {
+                    byte contadorSalto, byte contadorEstocada, byte contadorRodar, int eleccionPieza, byte contadorColocar, float apuntaX, float apuntaY) {
         if (huboPaquete && !Protocolo.esMasNueva(secuencia, ultimaSecuencia)) {
             return false;
         }
@@ -49,6 +52,9 @@ public final class EntradaRemota implements FuenteEntrada {
         this.apuntaY = apuntaY;
         saltoPendiente |= avanzo(contadorSalto, ultimoSalto);
         estocadaPendiente |= avanzo(contadorEstocada, ultimaEstocada);
+        this.eleccionPieza = eleccionPieza;
+        colocarPendiente |= avanzo(contadorColocar, ultimoColocar);
+        ultimoColocar = contadorColocar;
         rodarPendiente |= avanzo(contadorRodar, ultimoRodar);
         ultimoRodar = contadorRodar;
         ultimoSalto = contadorSalto;
@@ -73,9 +79,12 @@ public final class EntradaRemota implements FuenteEntrada {
         destino.saltar = saltoPendiente;
         destino.estocada = estocadaPendiente;
         destino.rodar = rodarPendiente;
+        destino.eleccionPieza = eleccionPieza;
+        destino.colocarPieza = colocarPendiente;
         // Las acciones de una sola vez se consumen: valen para un unico fotograma.
         saltoPendiente = false;
         estocadaPendiente = false;
         rodarPendiente = false;
+        colocarPendiente = false;
     }
 }

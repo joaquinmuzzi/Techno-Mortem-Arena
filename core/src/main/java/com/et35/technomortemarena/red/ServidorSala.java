@@ -28,8 +28,8 @@ import java.util.function.LongSupplier;
  */
 public final class ServidorSala implements AutoCloseable {
 
-    /** Bytes del cuerpo de una entrada: token, secuencia, banderas, contadores de salto, estocada y rodar, y el punto apuntado. */
-    private static final int LARGO_ENTRADA = 4 + 4 + 1 + 1 + 1 + 1 + 2 + 2;
+    /** Bytes del cuerpo de una entrada: token, secuencia, banderas, contadores de salto, estocada y rodar, objeto elegido y contador de colocar, y el punto apuntado. */
+    private static final int LARGO_ENTRADA = 4 + 4 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 2;
 
     private final DatagramChannel canal;
     private final byte[][] filasCodificadas;
@@ -186,10 +186,12 @@ public final class ServidorSala implements AutoCloseable {
         byte salto = paquete.get();
         byte estocada = paquete.get();
         byte rodar = paquete.get();
+        int eleccionPieza = paquete.get();
+        byte colocar = paquete.get();
         float apuntaX = paquete.getShort();
         float apuntaY = paquete.getShort();
         entrada.aplicar(secuencia, (banderas & 1) != 0, (banderas & 2) != 0, (banderas & 4) != 0,
-            salto, estocada, rodar, apuntaX, apuntaY);
+            salto, estocada, rodar, eleccionPieza, colocar, apuntaX, apuntaY);
         ultimoMensaje = reloj.getAsLong();
         listo = true;
     }

@@ -77,6 +77,21 @@ class CodecsTest {
     }
 
     @Test
+    void elEstadoRodandoSobreviveAlViaje() {
+        EstadoJugador estado = estadoDeEjemplo();
+        estado.rodando = true;
+        ByteBuffer buffer = ByteBuffer.allocate(64);
+        CodecEstado.escribir(buffer, estado);
+        buffer.flip();
+
+        EstadoJugador leido = new EstadoJugador();
+        assertTrue(CodecEstado.leer(buffer, leido));
+
+        assertTrue(leido.rodando);
+        assertFalse(leido.corriendo);
+    }
+
+    @Test
     void unEstadoSobreviveAlViaje() {
         ByteBuffer buffer = ByteBuffer.allocate(64);
         CodecEstado.escribir(buffer, estadoDeEjemplo());

@@ -318,7 +318,7 @@ class SalaLoopbackTest {
         paquete.putInt(token);
         paquete.putInt(secuencia);
         paquete.put((byte) banderas);
-        paquete.put((byte) 0).put((byte) 0);
+        paquete.put((byte) 0).put((byte) 0).put((byte) 0);
         paquete.putShort((short) 0).putShort((short) 0);
         paquete.flip();
         return paquete;

@@ -47,6 +47,7 @@ public final class ClienteSala implements AutoCloseable {
     private int secuenciaEntrada;
     private byte contadorSalto;
     private byte contadorEstocada;
+    private byte contadorRodar;
 
     private ClienteSala(DatagramChannel canal, SocketAddress servidor, LongSupplier reloj) {
         this.canal = canal;
@@ -260,7 +261,7 @@ public final class ClienteSala implements AutoCloseable {
 
     /**
      * Manda la entrada de este fotograma: teclas, punto apuntado y contadores. Las acciones de una sola
-     * vez (saltar, estocar) suben un contador, asi si este paquete se pierde el siguiente las lleva igual.
+     * vez (saltar, estocar, rodar) suben un contador, asi si este paquete se pierde el siguiente las lleva igual.
      */
     public void enviarEntrada(EntradaJugador entrada) {
         if (fase != Fase.JUGANDO) {
@@ -272,12 +273,16 @@ public final class ClienteSala implements AutoCloseable {
         if (entrada.estocada) {
             contadorEstocada++;
         }
+        if (entrada.rodar) {
+            contadorRodar++;
+        }
         ByteBuffer paquete = Protocolo.nuevo(Protocolo.ENTRADA);
         paquete.putInt(token);
         paquete.putInt(++secuenciaEntrada);
         paquete.put((byte) ((entrada.izquierda ? 1 : 0) | (entrada.derecha ? 2 : 0) | (entrada.hayPuntero ? 4 : 0)));
         paquete.put(contadorSalto);
         paquete.put(contadorEstocada);
+        paquete.put(contadorRodar);
         // El punto apuntado va en pixeles del mundo, como entero de 16 bits: la arena mide menos de 4000.
         paquete.putShort(aCorto(entrada.apuntaX));
         paquete.putShort(aCorto(entrada.apuntaY));

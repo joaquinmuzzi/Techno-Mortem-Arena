@@ -20,6 +20,7 @@ final class CodecEstado {
     private static final int BIT_MIRANDO = 1;
     private static final int BIT_VIVO = 2;
     private static final int BIT_CORRIENDO = 4;
+    private static final int BIT_RODANDO = 8;
 
     private CodecEstado() {
     }
@@ -30,7 +31,8 @@ final class CodecEstado {
         buffer.put((byte) estado.vida);
         int banderas = (estado.mirandoDerecha ? BIT_MIRANDO : 0)
             | (estado.vivo ? BIT_VIVO : 0)
-            | (estado.corriendo ? BIT_CORRIENDO : 0);
+            | (estado.corriendo ? BIT_CORRIENDO : 0)
+            | (estado.rodando ? BIT_RODANDO : 0);
         buffer.put((byte) banderas);
         buffer.putFloat(estado.anguloEspada);
         buffer.putFloat(estado.extension);
@@ -68,6 +70,7 @@ final class CodecEstado {
         destino.mirandoDerecha = (banderas & BIT_MIRANDO) != 0;
         destino.vivo = (banderas & BIT_VIVO) != 0;
         destino.corriendo = (banderas & BIT_CORRIENDO) != 0;
+        destino.rodando = (banderas & BIT_RODANDO) != 0;
         destino.anguloEspada = angulo;
         destino.extension = extension;
         destino.tiempoRestanteFlash = flash;

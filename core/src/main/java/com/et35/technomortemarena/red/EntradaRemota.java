@@ -8,7 +8,7 @@ import com.et35.technomortemarena.entrada.FuenteEntrada;
  * {@link Protocolo#ENTRADA} que van llegando.
  *
  * <p>Los estados (izquierda, derecha) y el punto apuntado se pisan con el ultimo paquete. Las acciones
- * de una sola vez (saltar, estocar) llegan como contadores que solo suben: una accion es nueva cuando
+ * de una sola vez (saltar, estocar, rodar) llegan como contadores que solo suben: una accion es nueva cuando
  * el contador avanzo respecto del ultimo visto. Asi un paquete duplicado no repite el salto, y uno
  * perdido se recupera con el siguiente, que trae el contador actualizado.
  */
@@ -24,9 +24,11 @@ public final class EntradaRemota implements FuenteEntrada {
     private boolean huboPaquete;
     private byte ultimoSalto;
     private byte ultimaEstocada;
+    private byte ultimoRodar;
 
     private boolean saltoPendiente;
     private boolean estocadaPendiente;
+    private boolean rodarPendiente;
 
     /**
      * Incorpora un paquete de entrada.
@@ -34,7 +36,7 @@ public final class EntradaRemota implements FuenteEntrada {
      * @return {@code false} si era mas viejo que el ultimo ya recibido y se descarto
      */
     boolean aplicar(int secuencia, boolean izquierda, boolean derecha, boolean hayPuntero,
-                    byte contadorSalto, byte contadorEstocada, float apuntaX, float apuntaY) {
+                    byte contadorSalto, byte contadorEstocada, byte contadorRodar, float apuntaX, float apuntaY) {
         if (huboPaquete && !Protocolo.esMasNueva(secuencia, ultimaSecuencia)) {
             return false;
         }
@@ -47,6 +49,8 @@ public final class EntradaRemota implements FuenteEntrada {
         this.apuntaY = apuntaY;
         saltoPendiente |= avanzo(contadorSalto, ultimoSalto);
         estocadaPendiente |= avanzo(contadorEstocada, ultimaEstocada);
+        rodarPendiente |= avanzo(contadorRodar, ultimoRodar);
+        ultimoRodar = contadorRodar;
         ultimoSalto = contadorSalto;
         ultimaEstocada = contadorEstocada;
         return true;
@@ -68,8 +72,10 @@ public final class EntradaRemota implements FuenteEntrada {
         destino.apuntaY = apuntaY;
         destino.saltar = saltoPendiente;
         destino.estocada = estocadaPendiente;
+        destino.rodar = rodarPendiente;
         // Las acciones de una sola vez se consumen: valen para un unico fotograma.
         saltoPendiente = false;
         estocadaPendiente = false;
+        rodarPendiente = false;
     }
 }

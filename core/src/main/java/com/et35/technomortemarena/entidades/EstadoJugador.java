@@ -14,6 +14,8 @@ public final class EstadoJugador {
     public boolean mirandoDerecha;
     public boolean vivo;
     public boolean corriendo;
+    /** Verdadero mientras rueda: la caja de colision es mas baja. */
+    public boolean rodando;
     /** Hacia donde apunta la espada, en radianes. */
     public float anguloEspada;
     /** Cuanto esta adelantada la hoja por la estocada, de 0 a 1. */

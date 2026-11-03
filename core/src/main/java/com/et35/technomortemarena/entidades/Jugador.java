@@ -64,6 +64,14 @@ public class Jugador {
     private static final float VELOCIDAD_GIRO = 12f;
     /** Igual que {@link #VELOCIDAD_GIRO}, pero mientras un choque de hojas tiene bloqueado al jugador. */
     private static final float VELOCIDAD_GIRO_BLOQUEADO = 3f;
+    /** Segundos que dura una rodada. */
+    private static final float DURACION_RODADA = 0.35f;
+    /** Segundos desde que arranca una rodada hasta que se puede hacer otra. */
+    private static final float RECARGA_RODADA = 0.9f;
+    /** Mientras rueda va mas rapido que corriendo. */
+    private static final float VELOCIDAD_RODADA = 1.8f * VELOCIDAD;
+    /** Alto de la caja de colision rodando: la mitad, sin invulnerabilidad. */
+    public static final float ALTO_RODANDO = ALTO / 2f;
     /** Altura del hombro (el pivote de la espada) sobre los pies. */
     private static final float ALTURA_HOMBRO = 56f * ESCALA;
     /** Cuanto se corre el hombro hacia el lado al que mira el jugador, desde el centro del cuerpo. */
@@ -99,6 +107,11 @@ public class Jugador {
     private float recargaEstocada;
     /** Cuanto esta adelantada la hoja, de 0 (quieta) a 1 (en lo mas fuerte de la estocada). */
     private float extension;
+    /** Verdadero mientras rueda: dura {@link #DURACION_RODADA} y sigue hasta tener lugar para pararse. */
+    private boolean rodando;
+    private float tiempoRodada;
+    private float recargaRodada;
+    private float direccionRodada;
     private final Hoja hoja = new Hoja();
     private final Hoja hojaDeBarrido = new Hoja();
     private final Rectangle limitesPropios = new Rectangle();
@@ -185,6 +198,9 @@ public class Jugador {
         extension = 0f;
         entradaIzquierda = false;
         entradaDerecha = false;
+        rodando = false;
+        tiempoRodada = 0f;
+        recargaRodada = 0f;
         corriendo = false;
         enVuelo = false;
         acabaDeAterrizar = false;
@@ -210,7 +226,7 @@ public class Jugador {
         boolean estabaEnPiso = enElPiso;
         anguloPrevio = angulo;
         if (vivo) {
-            leerEntrada();
+            leerEntrada(arena, delta);
         }
         actualizarEstocada(delta);
         integrarFisica(delta, arena, oponente);
@@ -271,7 +287,7 @@ public class Jugador {
     }
 
     private float pivoteY() {
-        return posicion.y + ALTURA_HOMBRO;
+        return posicion.y + (rodando ? ALTURA_HOMBRO / 2f : ALTURA_HOMBRO);
     }
 
     private void actualizarHoja() {
@@ -327,7 +343,7 @@ public class Jugador {
             : 0f;
     }
 
-    private void leerEntrada() {
+    private void leerEntrada(Arena arena, float delta) {
         fuente.leer(entrada);
         entradaIzquierda = entrada.izquierda;
         entradaDerecha = entrada.derecha;
@@ -338,9 +354,53 @@ public class Jugador {
             velocidad.x += VELOCIDAD*(bloqueadoTimer > 0f ? 0.5f : 1f) - velocidad.x;
         }
 
-        if (enElPiso && entrada.saltar) {
+        actualizarRodada(arena, delta);
+        if (rodando) {
+            velocidad.x = direccionRodada * VELOCIDAD_RODADA;
+        } else if (enElPiso && entrada.saltar) {
             impulsar(IMPULSO_SALTO);
         }
+    }
+
+    /**
+     * Empieza una rodada si se pidio una, esta apoyado y la anterior ya recargo; la direccion es la del
+     * movimiento y, si esta quieto, hacia donde mira. Rodando la caja es mas baja y va mas rapido, pero
+     * los golpes lo hieren igual. Al terminar el tiempo sigue agachado mientras no haya lugar para pararse.
+     */
+    private void actualizarRodada(Arena arena, float delta) {
+        if (recargaRodada > 0f) {
+            recargaRodada -= delta;
+        }
+        if (rodando) {
+            tiempoRodada -= delta;
+            if (tiempoRodada <= 0f && hayLugarParaPararse(arena)) {
+                rodando = false;
+            }
+        } else if (entrada.rodar && enElPiso && recargaRodada <= 0f) {
+            rodando = true;
+            tiempoRodada = DURACION_RODADA;
+            recargaRodada = RECARGA_RODADA;
+            if (entradaIzquierda != entradaDerecha) {
+                direccionRodada = entradaDerecha ? 1f : -1f;
+            } else {
+                direccionRodada = mirandoDerecha ? 1f : -1f;
+            }
+        }
+    }
+
+    private boolean hayLugarParaPararse(Arena arena) {
+        Rectangle parado = new Rectangle(posicion.x, posicion.y, ANCHO, ALTO);
+        for (Bloque bloque : arena.getBloques()) {
+            if (bloque.getArea().overlaps(parado)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Alto de la caja de colision ahora: {@link #ALTO}, o la mitad rodando. */
+    private float altoActual() {
+        return rodando ? ALTO_RODANDO : ALTO;
     }
 
     private void integrarFisica(float delta, Arena arena, Jugador oponente) {
@@ -425,7 +485,7 @@ public class Jugador {
             }
             bloque.alTocar(this);
             boolean estabaArriba = yAnterior >= caja.y + caja.height;
-            boolean estabaAbajo = yAnterior + ALTO <= caja.y;
+            boolean estabaAbajo = yAnterior + altoActual() <= caja.y;
             if (estabaArriba || (!estabaAbajo && velocidad.y <= 0f)) {
                 posicion.y = caja.y + caja.height;
                 velocidad.y = 0f;
@@ -435,7 +495,7 @@ public class Jugador {
                     bloque.alAterrizar(this);
                 }
             } else {
-                posicion.y = caja.y - ALTO;
+                posicion.y = caja.y - altoActual();
                 velocidad.y = 0f;
             }
         }
@@ -469,7 +529,7 @@ public class Jugador {
     }
 
     private Rectangle cuerpo() {
-        return new Rectangle(posicion.x, posicion.y, ANCHO, ALTO);
+        return new Rectangle(posicion.x, posicion.y, ANCHO, altoActual());
     }
 
     private void resolverColisiones(Arena arena, Jugador oponente) {
@@ -479,8 +539,8 @@ public class Jugador {
         Rectangle miCaja = cuerpo();
         Rectangle cajaOponente = oponente.cuerpo();
         if (miCaja.overlaps(cajaOponente)) {
-            float miY0 = posicion.y, miY1 = posicion.y + ALTO;
-            float suY0 = oponente.posicion.y, suY1 = oponente.posicion.y + ALTO;
+            float miY0 = posicion.y, miY1 = posicion.y + altoActual();
+            float suY0 = oponente.posicion.y, suY1 = oponente.posicion.y + oponente.altoActual();
             boolean seCruzanEnY = miY0 < suY1 && suY0 < miY1;
             float miX0 = posicion.x, miX1 = posicion.x + ANCHO;
             float suX0 = oponente.posicion.x, suX1 = oponente.posicion.x + ANCHO;
@@ -576,7 +636,7 @@ public class Jugador {
     	    colorActual = tinte;
     	}
     	batch.setColor(colorActual);
-        dibujarSprite(batch, recursos.jugador, posicion.x, posicion.y, ANCHO, ALTO);
+        dibujarSprite(batch, recursos.jugador, posicion.x, posicion.y, ANCHO, altoActual());
         if (!desarmado) {
             dibujarBrazo(batch, recursos);
             dibujarEspada(batch, recursos);
@@ -652,6 +712,11 @@ public class Jugador {
         return corriendo;
     }
 
+    /** Verdadero mientras el jugador rueda: su caja de colision es mas baja. */
+    public boolean estaRodando() {
+        return rodando;
+    }
+
     /** Verdadero solo en el fotograma en que la espada toca el cuerpo del rival y le hace dano. */
     public boolean acabaDeGolpear() {
         return acabaDeGolpear;
@@ -670,6 +735,7 @@ public class Jugador {
         destino.mirandoDerecha = mirandoDerecha;
         destino.vivo = vivo;
         destino.corriendo = corriendo;
+        destino.rodando = rodando;
         destino.anguloEspada = angulo;
         destino.extension = extension;
         destino.tiempoRestanteFlash = tiempoRestanteFlash;
@@ -687,6 +753,7 @@ public class Jugador {
         mirandoDerecha = origen.mirandoDerecha;
         vivo = origen.vivo;
         corriendo = origen.corriendo;
+        rodando = origen.rodando;
         angulo = origen.anguloEspada;
         anguloObjetivo = origen.anguloEspada;
         extension = origen.extension;

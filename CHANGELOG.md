@@ -9,6 +9,10 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Rodar con `Shift` izquierdo: una rodada corta (0,35 s, recarga de 0,9 s) en la dirección del movimiento
+  o, si el jugador está quieto, hacia donde mira. Mientras rueda la caja de colisión mide la mitad y se
+  va más rápido, pero no es invulnerable. Solo se puede desde el piso, y si encima hay un bloque sigue
+  agachado hasta tener lugar para pararse. `entrada.EntradaJugador.rodar` y `entidades.Jugador.estaRodando()`.
 - Estructura de partida al mejor de 5 rondas (por PR de @juarezmateo, integrada con el combate con mouse
   y la red). `partida.MarcadorPartida` lleva el conteo de rondas ganadas y termina la partida cuando
   alguien llega a 3; `partida.RondasPartida` es la lógica pura de la ronda, la espera entre rondas y la
@@ -74,6 +78,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
   cualquier cantidad de fotogramas por segundo. Al chocar dos hojas los duelistas quedan bloqueados 1 s: se
   mueven, giran (3 rad/s) y estocan más lento. La estocada dura 0,14 s con 0,08 s de recarga y llega un poco
   más lejos.
+- Protocolo de red versión 4: la entrada del cliente suma un contador de rodar y el estado del jugador
+  una bandera de "rodando". No es compatible con la versión 3.
 - Protocolo de red versión 3: el estado que manda el anfitrión incluye el de la partida (etapa, ronda,
   marcador y ganador de la ronda). No es compatible con la versión 2.
 - `pantallas.PantallaArena`: corrige el dibujado con recursos ya liberados al salir de la pausa hacia el

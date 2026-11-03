@@ -85,6 +85,7 @@ public class PantallaArena extends ScreenAdapter {
     private static final String[] LINEAS_AYUDA = {
         "MOVER: A / D",
         "SALTAR: W",
+        "RODAR: SHIFT",
         "APUNTAR: MOUSE",
         "ESTOCADA: CLIC",
     };

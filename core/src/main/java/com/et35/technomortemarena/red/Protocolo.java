@@ -17,7 +17,7 @@ import java.util.function.LongSupplier;
  * <ul>
  *   <li>el cliente repite {@link #HELLO} hasta tener el mapa completo;
  *   <li>las entradas y los estados llevan un numero de secuencia y los viejos se descartan;
- *   <li>las acciones de una sola vez (saltar, subir o bajar la guardia) viajan como contadores, asi
+ *   <li>las acciones de una sola vez (saltar, estocar, rodar) viajan como contadores, asi
  *       un paquete perdido o duplicado no pierde ni repite la accion.
  * </ul>
  */
@@ -25,7 +25,7 @@ public final class Protocolo {
 
     /** "TM" de Techno Mortem. */
     public static final short MAGIA = 0x544D;
-    public static final byte VERSION = 3;
+    public static final byte VERSION = 4;
 
     public static final int PUERTO_POR_DEFECTO = 7777;
 

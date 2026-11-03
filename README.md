@@ -112,8 +112,13 @@ core/src/main/java/com/et35/technomortemarena/
 |---|---|
 | Mover izquierda / derecha | `A` / `D` |
 | Saltar | `W` |
+| Rodar | `Shift` izquierdo (en la dirección en que corrés, o hacia donde mirás si estás quieto) |
 | Apuntar la espada | Mover el mouse: la espada gira hacia el cursor |
 | Estocada | Clic izquierdo |
+
+Al rodar (solo desde el piso, 0,35 s y con una recarga de 0,9 s) el cuerpo se achica a la mitad de
+alto y va más rápido que corriendo, pero no es invulnerable: la espada rival lo hiere igual. Si hay un
+techo bajo, sigue agachado hasta tener lugar para pararse.
 
 La espada es una caja rotada y lo que se ve es lo que choca: cualquier contacto de la hoja con el
 cuerpo del rival lo hiere, y el choque entre dos hojas empuja a los dos. La estocada adelanta la hoja

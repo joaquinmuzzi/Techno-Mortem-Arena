@@ -67,6 +67,7 @@ public class PantallaMultijugador extends ScreenAdapter {
         this.recursos = recursos;
         this.audio = audio;
         this.aviso = aviso;
+        ui.setAudio(audio);
     }
 
     @Override
@@ -118,14 +119,17 @@ public class PantallaMultijugador extends ScreenAdapter {
         boolean toque = Gdx.input.justTouched();
 
         if (toque && sobreCrear) {
+            ui.clic();
             crearSala();
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || (toque && sobreUnirse)) {
+            ui.clic();
             unirse();
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (toque && sobreVolver)) {
+            ui.clic();
             cambiarA(new PantallaMenu(recursos, audio));
             return;
         }
@@ -229,6 +233,7 @@ public class PantallaMultijugador extends ScreenAdapter {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)
             || (Gdx.input.justTouched() && botonVolver.contains(viewport.unproject(
                 new Vector2(Gdx.input.getX(), Gdx.input.getY()))))) {
+            ui.clic();
             cliente.close();
             cliente = null;
             aviso = "";

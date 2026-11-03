@@ -86,6 +86,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
         this.audio = audio;
         this.alElegir = alElegir;
         this.alVolver = alVolver;
+        ui.setAudio(audio);
         this.mapasGuardados = RepositorioMapas.cargarTodos();
     }
 
@@ -102,31 +103,38 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
         actualizarScroll();
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || (Gdx.input.justTouched() && sobreClasica)) {
+            ui.clic();
             jugarEn(Arena.porDefecto());
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2) || (Gdx.input.justTouched() && sobreAgujero)) {
+            ui.clic();
             jugarEn(Arena.conAgujero());
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3) || (Gdx.input.justTouched() && sobrePlataformas)) {
+            ui.clic();
             jugarEn(Arena.conPlataformas());
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_4) || (Gdx.input.justTouched() && sobreTrampolin)) {
+            ui.clic();
             jugarEn(Arena.conTrampolin());
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_5) || (Gdx.input.justTouched() && sobreCintas)) {
+            ui.clic();
             jugarEn(Arena.conCintasYPinchos());
             return;
         }
         int indiceGuardado = indiceMapaGuardadoEn(mouse);
         if (Gdx.input.justTouched() && indiceGuardado >= 0) {
+            ui.clic();
             jugarEn(Arena.desdeGrilla(mapasGuardados.get(indiceGuardado).getFilas()));
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (Gdx.input.justTouched() && sobreVolver)) {
+            ui.clic();
             cambiarA(alVolver.get());
             return;
         }
@@ -236,7 +244,8 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
             // El nombre se corta con puntos si es mas ancho que el boton, para no salirse del rectangulo.
             areaMapaGuardado.set(520f, y, ANCHO_BOTON, ALTO_BOTON);
             String nombre = nombreAcotado(mapasGuardados.get(indice).getNombre());
-            ui.boton(batch, areaMapaGuardado, fila == filaGuardadoResaltada, nombre, 1.3f);
+            // Las filas comparten el mismo Rectangle, por eso la identidad del sonido es el indice del mapa.
+            ui.boton(batch, areaMapaGuardado, fila == filaGuardadoResaltada, nombre, 1.3f, indice);
             y -= SEPARACION_BOTON;
         }
         if (mapasGuardados.size() > MAPAS_VISIBLES) {

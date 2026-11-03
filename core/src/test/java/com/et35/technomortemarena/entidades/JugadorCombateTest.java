@@ -320,4 +320,96 @@ class JugadorCombateTest {
         assertEquals(0f, a.getExtension());
         assertFalse(a.isVivo());
     }
+
+    @Test
+    void laEspadaGiraPorElArcoMasCortoAlCruzarLosCientoOchentaGrados() {
+        // arriba a la izquierda (170 grados) y abajo a la izquierda (-170 grados) son vecinos: el giro correcto
+        // pasa por el costado izquierdo (180 grados), nunca por el derecho
+        Jugador a = jugador(guionA, 1000f, PISO, false);
+        Jugador d = blanco(3000f, PISO);
+        float pivoteX = 1068f - 40f;
+        double arriba = Math.toRadians(170);
+        guionA.apuntar(pivoteX + (float) Math.cos(arriba) * 300f, HOMBRO_Y + (float) Math.sin(arriba) * 300f);
+        pasos(a, d, 30);
+        double abajo = Math.toRadians(-170);
+        guionA.apuntar(pivoteX + (float) Math.cos(abajo) * 300f, HOMBRO_Y + (float) Math.sin(abajo) * 300f);
+
+        for (int i = 0; i < 30; i++) {
+            paso(a, d);
+            assertTrue(Math.cos(a.getAngulo()) < -0.9, "la espada se fue por el lado equivocado en el fotograma " + i);
+        }
+    }
+
+    @Test
+    void laEspadaNoGiraMasRapidoQueSuVelocidad() {
+        Jugador a = jugador(guionA, 1000f, PISO, true);
+        Jugador d = blanco(3000f, PISO);
+        guionA.apuntar(200f, HOMBRO_Y); // el lado opuesto: el giro mas largo posible
+
+        float anterior = a.getAngulo();
+        for (int i = 0; i < 6; i++) {
+            paso(a, d);
+            float giro = Math.abs(Hoja.diferenciaAngular(anterior, a.getAngulo()));
+            assertTrue(giro <= 12f * DT + 0.001f, "giro de " + giro + " rad en un fotograma");
+            anterior = a.getAngulo();
+        }
+        assertTrue(Math.abs(Hoja.diferenciaAngular(0f, a.getAngulo())) < Math.PI - 1f, "todavia no llego al otro lado");
+    }
+
+    @Test
+    void elRetardoDeLaEspadaNoDependeDeLosFotogramasPorSegundo() {
+        Jugador rapido = jugador(guionA, 1000f, PISO, true);
+        Jugador lento = jugador(guionD, 1000f, PISO, true);
+        Jugador lejos = blanco(3000f, PISO);
+        Jugador lejos2 = blanco(3000f, PISO);
+        guionA.apuntar(200f, HOMBRO_Y);
+        guionD.apuntar(200f, HOMBRO_Y);
+
+        for (int i = 0; i < 12; i++) { // 0,2 s a 60 FPS
+            rapido.actualizar(1f / 60f, arena, lejos);
+        }
+        for (int i = 0; i < 6; i++) { // 0,2 s a 30 FPS
+            lento.actualizar(1f / 30f, arena, lejos2);
+        }
+
+        assertEquals(rapido.getAngulo(), lento.getAngulo(), 0.02f);
+    }
+
+    @Test
+    void despuesDeUnChoqueDeHojasLaEspadaGiraMasLenta() {
+        Jugador a = jugador(guionA, 1000f, PISO, true);
+        Jugador d = jugador(guionD, 1100f, PISO, false);
+        pasos(a, d, 5);
+        guionA.apuntar(1400f, HOMBRO_Y);
+        guionD.apuntar(700f, HOMBRO_Y);
+        paso(a, d); // las hojas se cruzan y los dos quedan bloqueados un rato
+        guionA.apuntar(a.getPosicion().x - 400f, HOMBRO_Y + 300f);
+        float antes = a.getAngulo();
+
+        paso(a, d);
+
+        float giro = Math.abs(Hoja.diferenciaAngular(antes, a.getAngulo()));
+        assertTrue(giro <= 3f * DT + 0.001f, "bloqueado giro de " + giro + " rad en un fotograma");
+    }
+
+    @Test
+    void laExtensionDeLaEstocadaNuncaSeSaleDeCeroAUnoNiBloqueado() {
+        Jugador a = jugador(guionA, 1000f, PISO, true);
+        Jugador d = jugador(guionD, 1100f, PISO, false);
+        pasos(a, d, 5);
+        guionA.apuntar(1400f, HOMBRO_Y);
+        guionD.apuntar(700f, HOMBRO_Y);
+        paso(a, d); // choque: los dos bloqueados, la estocada dura 1,2 veces mas
+        guionA.apuntar(2000f, HOMBRO_Y + 50f);
+
+        guionA.hacerClic();
+        float maxima = 0f;
+        for (int i = 0; i < 40; i++) {
+            paso(a, d);
+            assertTrue(a.getExtension() >= 0f && a.getExtension() <= 1f,
+                "extension fuera de 0 a 1: " + a.getExtension() + " (no se podria mandar por la red)");
+            maxima = Math.max(maxima, a.getExtension());
+        }
+        assertTrue(maxima > 0.9f, "la estocada igual sale");
+    }
 }

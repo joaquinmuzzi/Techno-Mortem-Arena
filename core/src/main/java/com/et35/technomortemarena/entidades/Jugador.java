@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entrada.EntradaJugador;
@@ -64,6 +66,17 @@ public class Jugador {
     private static final float VELOCIDAD_GIRO = 12f;
     /** Igual que {@link #VELOCIDAD_GIRO}, pero mientras un choque de hojas tiene bloqueado al jugador. */
     private static final float VELOCIDAD_GIRO_BLOQUEADO = 3f;
+    /** Un corazon se divide en tercios: la espada saca uno entero y una bala un tercio. */
+    public static final int TERCIOS_POR_CORAZON = 3;
+    /** Segundos que tarda en aparecer una espada nueva en la mano despues de tirar el arma. */
+    public static final float REAPARICION_ARMA = 1.5f;
+    /** Segundos entre un disparo de pistola y el siguiente. */
+    private static final float RECARGA_DISPARO = 0.22f;
+    /** Invulnerabilidad despues de una bala: corta, para que una rafaga lastime pero no mate de golpe. */
+    private static final float FLASH_BALA = 0.25f;
+    private static final float EMPUJE_BALA = 0.08f * VELOCIDAD;
+    /** Distancia desde el hombro hasta la boca de la pistola, de donde sale la bala. */
+    private static final float LARGO_PISTOLA = 36f * ESCALA;
     /** Segundos que dura una rodada. */
     private static final float DURACION_RODADA = 0.35f;
     /** Segundos desde que arranca una rodada hasta que se puede hacer otra. */
@@ -112,6 +125,13 @@ public class Jugador {
     private float tiempoRodada;
     private float recargaRodada;
     private float direccionRodada;
+    /** Lo que tiene en la mano; {@code null} mientras espera la espada nueva despues de tirar el arma. */
+    private TipoArma arma = TipoArma.ESPADA;
+    private int balas;
+    private float tiempoReaparicionArma;
+    private float recargaDisparo;
+    /** Balas y armas tiradas en este fotograma: las junta {@link ArmasEnJuego}. */
+    private final List<Proyectil> lanzados = new ArrayList<>();
     private final Hoja hoja = new Hoja();
     private final Hoja hojaDeBarrido = new Hoja();
     private final Rectangle limitesPropios = new Rectangle();
@@ -146,6 +166,10 @@ public class Jugador {
     public static final float ANCHO_ESPADA = Hoja.LARGO;
     public static final float ALTO_ESPADA = Hoja.GROSOR;
 
+    private static final float ANCHO_PISTOLA = 30f * ESCALA;
+    private static final float ALTO_PISTOLA = 12f * ESCALA;
+    private static final Color COLOR_PISTOLA = new Color(0.55f, 0.58f, 0.65f, 1f);
+
     private static final float ANCHO_BRAZO = 22f * ESCALA;
     private static final float ALTO_BRAZO = 8f * ESCALA;
 
@@ -160,8 +184,8 @@ public class Jugador {
         this.tinte = tinte;
         this.mirandoDerecha = mirandoDerecha;
         this.posicion.set(x, y);
-        this.vidaInicial = vida;
-        this.vida = vida;
+        this.vidaInicial = vida * TERCIOS_POR_CORAZON;
+        this.vida = vidaInicial;
         this.anguloObjetivo = mirandoDerecha ? 0f : MathUtils.PI;
         this.angulo = mirandoDerecha ? 0f : MathUtils.PI;
         this.anguloPrevio = angulo;
@@ -201,6 +225,11 @@ public class Jugador {
         rodando = false;
         tiempoRodada = 0f;
         recargaRodada = 0f;
+        arma = TipoArma.ESPADA;
+        balas = 0;
+        tiempoReaparicionArma = 0f;
+        recargaDisparo = 0f;
+        lanzados.clear();
         corriendo = false;
         enVuelo = false;
         acabaDeAterrizar = false;
@@ -232,6 +261,7 @@ public class Jugador {
         integrarFisica(delta, arena, oponente);
         // La hoja se coloca despues de mover al jugador, asi sigue al hombro y al cursor del fotograma.
         apuntar(delta);
+        actualizarArma(delta);
         actualizarHoja();
         resolverColisiones(arena, oponente);
         actualizarPiso(estabaEnPiso);
@@ -333,7 +363,13 @@ public class Jugador {
         if (tiempoEstocada > 0f) {
             tiempoEstocada = Math.max(0f, tiempoEstocada - delta);
         }
-        if (vivo && entrada.estocada && tiempoEstocada <= 0f && recargaEstocada <= 0f) {
+        if (recargaDisparo > 0f) {
+            recargaDisparo -= delta;
+        }
+        if (vivo && arma == TipoArma.PISTOLA && entrada.estocada && recargaDisparo <= 0f && balas > 0) {
+            disparar();
+        }
+        if (vivo && arma == TipoArma.ESPADA && entrada.estocada && tiempoEstocada <= 0f && recargaEstocada <= 0f) {
             duracionEstocadaActual = DURACION_ESTOCADA * (bloqueadoTimer > 0f ? 1.2f : 1f);
             tiempoEstocada = duracionEstocadaActual;
             recargaEstocada = RECARGA_ESTOCADA * (bloqueadoTimer > 0f ? 6f : 1f);
@@ -341,6 +377,48 @@ public class Jugador {
         extension = tiempoEstocada > 0f
             ? (float) Math.sin(Math.PI * (1f - tiempoEstocada / duracionEstocadaActual))
             : 0f;
+    }
+
+    /** Con la pistola, el clic dispara una bala hacia donde apunta. Sin balas vuelve a la espada. */
+    private void disparar() {
+        float x = pivoteX() + (float) Math.cos(angulo) * LARGO_PISTOLA;
+        float y = pivoteY() + (float) Math.sin(angulo) * LARGO_PISTOLA;
+        lanzados.add(new Proyectil(Proyectil.Tipo.BALA, this, x, y, angulo, Proyectil.VELOCIDAD_BALA));
+        balas--;
+        recargaDisparo = RECARGA_DISPARO;
+        if (balas <= 0) {
+            arma = TipoArma.ESPADA;
+        }
+    }
+
+    /**
+     * El clic derecho tira lo que tiene en la mano hacia donde apunta: vuela, cae y hiere si toca al
+     * rival. Sin arma no puede atacar hasta que, a los {@link #REAPARICION_ARMA} segundos, le aparece una
+     * espada nueva en la mano.
+     */
+    private void actualizarArma(float delta) {
+        if (arma == null) {
+            tiempoReaparicionArma -= delta;
+            if (tiempoReaparicionArma <= 0f) {
+                arma = TipoArma.ESPADA;
+            }
+            return;
+        }
+        if (!vivo || desarmado || !entrada.lanzar) {
+            return;
+        }
+        Proyectil.Tipo tipo = arma == TipoArma.ESPADA ? Proyectil.Tipo.ESPADA_LANZADA : Proyectil.Tipo.PISTOLA_LANZADA;
+        lanzados.add(new Proyectil(tipo, this, pivoteX(), pivoteY(), angulo, Proyectil.VELOCIDAD_LANZADA));
+        arma = null;
+        balas = 0;
+        tiempoEstocada = 0f;
+        extension = 0f;
+        tiempoReaparicionArma = REAPARICION_ARMA;
+    }
+
+    /** Verdadero si tiene la espada en la mano: solo ahi la hoja hiere, choca y empuja. */
+    private boolean tieneEspada() {
+        return !desarmado && arma == TipoArma.ESPADA;
     }
 
     private void leerEntrada(Arena arena, float delta) {
@@ -554,7 +632,7 @@ public class Jugador {
         }
 
         // La hoja del rival empuja a mi cuerpo: no se puede atravesar una espada parado.
-        if (!oponente.desarmado && hojaOponente.solapa(miCaja)) {
+        if (oponente.tieneEspada() && hojaOponente.solapa(miCaja)) {
             float penetracionX = penetracionEnX(hojaOponente.limites(limitesAjenos), miCaja);
             if (penetracionX > 0f) {
                 separarDe(oponente, penetracionX, arena);
@@ -562,7 +640,7 @@ public class Jugador {
         }
 
         // Choque de hojas: los dos se empujan para separarse.
-        if (!desarmado && !oponente.desarmado && hoja.solapa(hojaOponente)) {
+        if (tieneEspada() && oponente.tieneEspada() && hoja.solapa(hojaOponente)) {
             float penetracionX = penetracionEnX(hoja.limites(limitesPropios), hojaOponente.limites(limitesAjenos));
             if (penetracionX > 0f) {
                 float direccion = separarDe(oponente, penetracionX, arena);
@@ -573,10 +651,9 @@ public class Jugador {
 
         // Cualquier contacto de mi hoja con el cuerpo del rival lo hiere, y si gire rapido tambien cuenta
         // lo que la hoja barrio entre este fotograma y el anterior.
-        if (!desarmado && !(oponente.tiempoRestanteFlash > 0f) && vivo && golpea(cajaOponente)) {
+        if (tieneEspada() && !(oponente.tiempoRestanteFlash > 0f) && vivo && golpea(cajaOponente)) {
             oponente.activarFlash(1f, this);
-            acabaDeGolpear = true;
-            contadorGolpes++;
+            registrarGolpe();
         }
         if (posicion.y < -ALTO) {
             vivo = false;
@@ -639,7 +716,12 @@ public class Jugador {
         dibujarSprite(batch, recursos.jugador, posicion.x, posicion.y, ANCHO, altoActual());
         if (!desarmado) {
             dibujarBrazo(batch, recursos);
-            dibujarEspada(batch, recursos);
+            if (arma == TipoArma.ESPADA) {
+                dibujarEspada(batch, recursos);
+            } else if (arma == TipoArma.PISTOLA) {
+                batch.setColor(COLOR_PISTOLA);
+                dibujarGirado(batch, recursos.brazo, ANCHO_PISTOLA, ALTO_PISTOLA);
+            }
         }
         batch.setColor(Color.WHITE);
     }
@@ -660,13 +742,79 @@ public class Jugador {
 	    float direccion = (miCentro < suCentro) ? -1f : 1f;
 	    empujar(direccion, EMPUJE_GOLPE);
 	    velocidad.y += 400f * ESCALA;
-    	if(vida > 1) {
-    		vida -= 1;
-    	}
-    	else {
-    		vida = 0;
-    		vivo = false;
-    	}
+	    quitarVida(TERCIOS_POR_CORAZON);
+    }
+
+    private void quitarVida(int tercios) {
+        vida = Math.max(0, vida - tercios);
+        if (vida == 0) {
+            vivo = false;
+        }
+    }
+
+    /**
+     * Lo hiere algo que no es la hoja: una bala o un arma tirada.
+     *
+     * @param tercios cuanto saca, en tercios de corazon
+     * @param direccion hacia donde lo empuja (-1 izquierda, 1 derecha)
+     * @param esBala una bala empuja poco y deja una invulnerabilidad corta
+     * @return {@code false} si no le hizo nada (muerto o todavia invulnerable por el golpe anterior)
+     */
+    public boolean recibirDanio(int tercios, float direccion, boolean esBala) {
+        if (!vivo || tiempoRestanteFlash > 0f) {
+            return false;
+        }
+        tiempoRestanteFlash = esBala ? FLASH_BALA : 1f;
+        empujar(direccion, esBala ? EMPUJE_BALA : EMPUJE_GOLPE);
+        if (!esBala) {
+            velocidad.y += 400f * ESCALA;
+        }
+        quitarVida(tercios);
+        return true;
+    }
+
+    /** Anota que este jugador acaba de herir al rival: suena el golpe, aca y en el cliente. */
+    void registrarGolpe() {
+        acabaDeGolpear = true;
+        contadorGolpes++;
+    }
+
+    /** Agarra un arma del mapa: reemplaza lo que tenia en la mano. La pistola viene cargada. */
+    public void equipar(TipoArma nueva) {
+        arma = nueva;
+        balas = nueva == TipoArma.PISTOLA ? TipoArma.BALAS_PISTOLA : 0;
+        tiempoReaparicionArma = 0f;
+        tiempoEstocada = 0f;
+        extension = 0f;
+    }
+
+    /** Pasa a {@code destino} las balas y armas que tiro desde la ultima vez. */
+    public void tomarLanzados(List<Proyectil> destino) {
+        destino.addAll(lanzados);
+        lanzados.clear();
+    }
+
+    /** Lo que tiene en la mano, o {@code null} si acaba de tirar el arma. */
+    public TipoArma getArma() {
+        return arma;
+    }
+
+    public int getBalas() {
+        return balas;
+    }
+
+    /** La caja de colision del cuerpo, en coordenadas del mundo. Es una copia. */
+    public Rectangle getCaja() {
+        return cuerpo();
+    }
+
+    public boolean isDesarmado() {
+        return desarmado;
+    }
+
+    /** Vida en tercios de corazon. */
+    public int getTercios() {
+        return vida;
     }
 
     /** Dibuja el antebrazo y la espada: salen de la base de la hoja y giran con ella hacia el cursor. */
@@ -736,6 +884,8 @@ public class Jugador {
         destino.vivo = vivo;
         destino.corriendo = corriendo;
         destino.rodando = rodando;
+        destino.arma = TipoArma.codigoDe(arma);
+        destino.balas = balas;
         destino.anguloEspada = angulo;
         destino.extension = extension;
         destino.tiempoRestanteFlash = tiempoRestanteFlash;
@@ -754,6 +904,8 @@ public class Jugador {
         vivo = origen.vivo;
         corriendo = origen.corriendo;
         rodando = origen.rodando;
+        arma = TipoArma.porCodigo(origen.arma);
+        balas = origen.balas;
         angulo = origen.anguloEspada;
         anguloObjetivo = origen.anguloEspada;
         extension = origen.extension;
@@ -773,8 +925,9 @@ public class Jugador {
         return contadorAterrizajes;
     }
 
+    /** Corazones que le quedan, contando como entero uno que esta por la mitad. */
     public int getVida() {
-        return vida;
+        return (vida + TERCIOS_POR_CORAZON - 1) / TERCIOS_POR_CORAZON;
     }
 
     /** Quita o devuelve la espada. El blanco del modo de prueba esta desarmado. */

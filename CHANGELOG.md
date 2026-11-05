@@ -9,6 +9,15 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Armas. La vida pasa a contarse en tercios de corazón (3 corazones = 9 tercios): la espada saca un
+  corazón y una bala un tercio, y el HUD llena cada corazón por tercios. Con clic derecho se tira el arma
+  hacia el cursor (`entidades.Proyectil`): vuela, cae y hiere si toca al rival; a los 1,5 s aparece una
+  espada nueva en la mano. `entidades.ArmasEnJuego` hace aparecer una pistola cada 8 s en un lugar al
+  azar sobre un bloque (como mucho 2, fuera de las zonas de los spawns); se agarra pasando por encima y
+  reemplaza lo que se tenía. La pistola (`entidades.TipoArma`) trae 6 balas, dispara con el clic
+  izquierdo y sin balas vuelve a la espada. Funciona en el modo de prueba y en red.
+- Tests JUnit 5: `ArmasTest` (tercios, tirar, reaparición, pistola, balas, aparición y recogida) y los de
+  las armas en el protocolo.
 - Edición del nivel entre rondas (en Multijugador, al estilo *Ultimate Chicken Horse*): tras el resultado
   de una ronda con ganador, el perdedor recibe 3 objetos al azar de los 8 de `partida.PiezaNivel` (fila de
   pinchos, trampolín, bloque, rectángulo, esquina, cinta izquierda, cinta derecha y pinchos con cintas),
@@ -89,6 +98,9 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
   cualquier cantidad de fotogramas por segundo. Al chocar dos hojas los duelistas quedan bloqueados 1 s: se
   mueven, giran (3 rad/s) y estocan más lento. La estocada dura 0,14 s con 0,08 s de recarga y llega un poco
   más lejos.
+- Protocolo de red versión 6: la entrada del cliente suma un contador de tirar el arma; el estado de cada
+  jugador, el arma en la mano y las balas (y la vida va en tercios); y el paquete de estado, los
+  proyectiles y las armas en el suelo. No es compatible con la versión 5.
 - Protocolo de red versión 5: la entrada del cliente suma el objeto elegido y un contador de colocar, y
   el estado de la partida la edición (editor, opciones, elección, cursor, tiempo y piezas colocadas).
   No es compatible con la versión 4.

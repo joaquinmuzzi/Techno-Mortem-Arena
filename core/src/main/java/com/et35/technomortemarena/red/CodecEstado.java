@@ -1,6 +1,9 @@
 package com.et35.technomortemarena.red;
 
+import com.et35.technomortemarena.entidades.EstadoArmas;
 import com.et35.technomortemarena.entidades.EstadoJugador;
+import com.et35.technomortemarena.entidades.Proyectil;
+import com.et35.technomortemarena.entidades.TipoArma;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.partida.EdicionNivel;
 import com.et35.technomortemarena.partida.EstadoPartida;
@@ -15,7 +18,12 @@ import java.nio.ByteBuffer;
  */
 final class CodecEstado {
 
-    static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4;
+    static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 1 + 1;
+
+    /** Lo minimo de las armas fuera de las manos: las dos cantidades. Cada proyectil y cada arma suma lo suyo. */
+    static final int BYTES_ARMAS = 2;
+    static final int BYTES_POR_PROYECTIL = 1 + 4 + 4 + 4;
+    static final int BYTES_POR_ARMA_EN_EL_SUELO = 1 + 4 + 4;
 
     /**
      * Lo fijo del estado de la partida: etapa, numero de ronda, rondas ganadas de cada uno y ganador de la
@@ -49,6 +57,8 @@ final class CodecEstado {
         buffer.putFloat(estado.tiempoRestanteFlash);
         buffer.putInt(estado.contadorGolpes);
         buffer.putInt(estado.contadorAterrizajes);
+        buffer.put((byte) estado.arma);
+        buffer.put((byte) estado.balas);
     }
 
     /**
@@ -70,6 +80,11 @@ final class CodecEstado {
         float flash = buffer.getFloat();
         int golpes = buffer.getInt();
         int aterrizajes = buffer.getInt();
+        int arma = buffer.get();
+        int balas = buffer.get();
+        if (arma < 0 || arma > TipoArma.values().length || balas < 0 || balas > TipoArma.BALAS_PISTOLA) {
+            return false;
+        }
         if (!finito(x) || !finito(y) || !finito(angulo) || !finito(extension) || !finito(flash)
             || vida < 0 || extension < 0f || extension > 1f) {
             return false;
@@ -86,6 +101,8 @@ final class CodecEstado {
         destino.tiempoRestanteFlash = flash;
         destino.contadorGolpes = golpes;
         destino.contadorAterrizajes = aterrizajes;
+        destino.arma = arma;
+        destino.balas = balas;
         return true;
     }
 
@@ -184,6 +201,74 @@ final class CodecEstado {
         destino.piezas.clear();
         for (int[] pieza : piezas) {
             destino.piezas.add(pieza);
+        }
+        return true;
+    }
+
+    static void escribir(ByteBuffer buffer, EstadoArmas armas) {
+        int proyectiles = Math.min(armas.proyectiles.size(), EstadoArmas.MAX_PROYECTILES);
+        buffer.put((byte) proyectiles);
+        for (int i = 0; i < proyectiles; i++) {
+            float[] p = armas.proyectiles.get(i);
+            buffer.put((byte) p[0]);
+            buffer.putFloat(p[1]);
+            buffer.putFloat(p[2]);
+            buffer.putFloat(p[3]);
+        }
+        int enElSuelo = Math.min(armas.enElSuelo.size(), EstadoArmas.MAX_EN_EL_SUELO);
+        buffer.put((byte) enElSuelo);
+        for (int i = 0; i < enElSuelo; i++) {
+            float[] a = armas.enElSuelo.get(i);
+            buffer.put((byte) a[0]);
+            buffer.putFloat(a[1]);
+            buffer.putFloat(a[2]);
+        }
+    }
+
+    /**
+     * Lee los proyectiles y las armas en el suelo.
+     *
+     * @return {@code false} si faltan bytes, hay mas de los que entran o algun valor no tiene sentido (un
+     *         tipo que no existe, un numero no finito): en ese caso {@code destino} no se toca
+     */
+    static boolean leer(ByteBuffer buffer, EstadoArmas destino) {
+        if (buffer.remaining() < 1) {
+            return false;
+        }
+        int proyectiles = buffer.get();
+        if (proyectiles < 0 || proyectiles > EstadoArmas.MAX_PROYECTILES
+            || buffer.remaining() < proyectiles * BYTES_POR_PROYECTIL + 1) {
+            return false;
+        }
+        float[][] leidos = new float[proyectiles][];
+        for (int i = 0; i < proyectiles; i++) {
+            int tipo = buffer.get();
+            leidos[i] = new float[] {tipo, buffer.getFloat(), buffer.getFloat(), buffer.getFloat()};
+            if (tipo < 0 || tipo >= Proyectil.Tipo.values().length
+                || !finito(leidos[i][1]) || !finito(leidos[i][2]) || !finito(leidos[i][3])) {
+                return false;
+            }
+        }
+        int enElSuelo = buffer.get();
+        if (enElSuelo < 0 || enElSuelo > EstadoArmas.MAX_EN_EL_SUELO
+            || buffer.remaining() < enElSuelo * BYTES_POR_ARMA_EN_EL_SUELO) {
+            return false;
+        }
+        float[][] armas = new float[enElSuelo][];
+        for (int i = 0; i < enElSuelo; i++) {
+            int tipo = buffer.get();
+            armas[i] = new float[] {tipo, buffer.getFloat(), buffer.getFloat()};
+            if (TipoArma.porCodigo(tipo) == null || !finito(armas[i][1]) || !finito(armas[i][2])) {
+                return false;
+            }
+        }
+        destino.proyectiles.clear();
+        for (float[] p : leidos) {
+            destino.proyectiles.add(p);
+        }
+        destino.enElSuelo.clear();
+        for (float[] a : armas) {
+            destino.enElSuelo.add(a);
         }
         return true;
     }

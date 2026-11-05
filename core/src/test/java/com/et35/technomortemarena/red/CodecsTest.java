@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.et35.technomortemarena.entidades.EstadoArmas;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.partida.EstadoPartida;
@@ -259,6 +260,67 @@ class CodecsTest {
         buffer.limit(buffer.limit() - 2);
 
         assertFalse(CodecEstado.leer(buffer, new EstadoPartida()));
+    }
+
+    @Test
+    void lasArmasSobrevivenAlViaje() {
+        EstadoArmas armas = new EstadoArmas();
+        armas.proyectiles.add(new float[] {0, 100.5f, 200.25f, 1.5f});
+        armas.proyectiles.add(new float[] {1, 300f, 400f, -2f});
+        armas.enElSuelo.add(new float[] {2, 512f, 128f});
+        ByteBuffer buffer = ByteBuffer.allocate(256);
+        CodecEstado.escribir(buffer, armas);
+        assertEquals(CodecEstado.BYTES_ARMAS + 2 * CodecEstado.BYTES_POR_PROYECTIL + CodecEstado.BYTES_POR_ARMA_EN_EL_SUELO,
+            buffer.position());
+        buffer.flip();
+
+        EstadoArmas leidas = new EstadoArmas();
+        assertTrue(CodecEstado.leer(buffer, leidas));
+        assertEquals(2, leidas.proyectiles.size());
+        assertArrayEquals(new float[] {1, 300f, 400f, -2f}, leidas.proyectiles.get(1));
+        assertArrayEquals(new float[] {2, 512f, 128f}, leidas.enElSuelo.get(0));
+    }
+
+    @Test
+    void unasArmasAbsurdasSeRechazan() {
+        float[][][] malas = {
+            {{9, 0, 0, 0}},          // un proyectil que no existe
+            {{0, Float.NaN, 0, 0}},  // una posicion no finita
+        };
+        for (float[][] proyectiles : malas) {
+            EstadoArmas armas = new EstadoArmas();
+            armas.proyectiles.add(proyectiles[0]);
+            ByteBuffer buffer = ByteBuffer.allocate(256);
+            CodecEstado.escribir(buffer, armas);
+            buffer.flip();
+            assertFalse(CodecEstado.leer(buffer, new EstadoArmas()));
+        }
+        EstadoArmas conArmaInexistente = new EstadoArmas();
+        conArmaInexistente.enElSuelo.add(new float[] {0, 1f, 1f}); // 0 es "sin arma": no se puede tirar en el suelo
+        ByteBuffer buffer = ByteBuffer.allocate(256);
+        CodecEstado.escribir(buffer, conArmaInexistente);
+        buffer.flip();
+        assertFalse(CodecEstado.leer(buffer, new EstadoArmas()));
+    }
+
+    @Test
+    void elArmaDelJugadorViajaYUnaAbsurdaSeRechaza() {
+        EstadoJugador estado = estadoDeEjemplo();
+        estado.arma = 2;
+        estado.balas = 4;
+        ByteBuffer buffer = ByteBuffer.allocate(64);
+        CodecEstado.escribir(buffer, estado);
+        buffer.flip();
+        EstadoJugador leido = new EstadoJugador();
+        assertTrue(CodecEstado.leer(buffer, leido));
+        assertEquals(2, leido.arma);
+        assertEquals(4, leido.balas);
+
+        estado.balas = 99;
+        buffer = ByteBuffer.allocate(64);
+        CodecEstado.escribir(buffer, estado);
+        buffer.flip();
+        assertFalse(CodecEstado.leer(buffer, new EstadoJugador()));
     }
 
     @Test

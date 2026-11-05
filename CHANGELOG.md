@@ -108,6 +108,12 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- Escopeta: los perdigones de un mismo disparo ya no se frenan con la invulnerabilidad que deja el primero
+  (cada disparo tiene su número y los demás perdigones de ese disparo la atraviesan), así un escopetazo de
+  cerca pega con los cinco. El abanico es más cerrado (unos 17 grados), cada perdigón sale corrido un poco
+  al azar en ángulo y velocidad, y llegan más lejos (0,55 s de vuelo, antes 0,35 s).
+- La espada en la mano se dibuja en blanco, como las armas de fuego, en lugar de teñirse con el color del
+  jugador.
 - El arma tirada rebota mucho menos (conserva un 25 % por pique) y, si le pega al rival, cae casi recta a
   sus pies. Solo se queda quieta apoyada sobre un bloque: ya no se congela en el aire después de un
   rebote alto. Se tira más despacio, para que sea un último recurso y no mejor que la estocada.

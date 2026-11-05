@@ -159,16 +159,26 @@ class EdicionNivelTest {
     }
 
     @Test
-    void noSePuedeColocarSobreElPisoNiSobreOtraPieza() {
+    void sePuedeColocarSobreElPisoYSobreOtraPieza() {
         String[] filas = mapa();
-        // el piso mide 3 filas: una pieza apoyada en la fila 2 lo pisa
-        assertFalse(ColocadorPiezas.puedeColocar(filas, PiezaNivel.BLOQUE, 40, 0, new ArrayList<>()));
-        assertFalse(ColocadorPiezas.puedeColocar(filas, PiezaNivel.BLOQUE, 40, 2, new ArrayList<>()));
-        assertTrue(ColocadorPiezas.puedeColocar(filas, PiezaNivel.BLOQUE, 40, 3, new ArrayList<>()));
+        List<float[]> sin = new ArrayList<>();
+        // el piso mide 3 filas: una pieza apoyada en la fila 0 lo pisa, y se puede
+        assertTrue(ColocadorPiezas.puedeColocar(filas, PiezaNivel.FILA_DE_PINCHOS, 40, 0, sin));
+        String[] con = ColocadorPiezas.aplicar(filas, PiezaNivel.FILA_DE_PINCHOS, 40, 1);
+        assertEquals('X', ColocadorPiezas.celdaDe(con, 40, 1), "los pinchos reemplazan al piso");
+        assertEquals('X', ColocadorPiezas.celdaDe(con, 45, 2));
 
-        String[] con = ColocadorPiezas.aplicar(filas, PiezaNivel.BLOQUE, 40, 3);
-        assertFalse(ColocadorPiezas.puedeColocar(con, PiezaNivel.RECTANGULO, 38, 5, new ArrayList<>()));
-        assertTrue(ColocadorPiezas.puedeColocar(con, PiezaNivel.RECTANGULO, 48, 5, new ArrayList<>()));
+        String[] conBloque = ColocadorPiezas.aplicar(filas, PiezaNivel.BLOQUE, 40, 3);
+        assertTrue(ColocadorPiezas.puedeColocar(conBloque, PiezaNivel.TRAMPOLIN, 41, 5, sin), "y sobre otra pieza");
+        String[] encima = ColocadorPiezas.aplicar(conBloque, PiezaNivel.TRAMPOLIN, 41, 5);
+        assertEquals('T', ColocadorPiezas.celdaDe(encima, 42, 6));
+    }
+
+    @Test
+    void elHuecoDeLaEsquinaNoBorraLoQueHabia() {
+        String[] conBloque = ColocadorPiezas.aplicar(mapa(), PiezaNivel.BLOQUE, 40, 3);
+        String[] conEsquina = ColocadorPiezas.aplicar(conBloque, PiezaNivel.ESQUINA, 40, 3);
+        assertEquals('#', ColocadorPiezas.celdaDe(conEsquina, 43, 8), "el hueco de la L deja el bloque");
     }
 
     @Test
@@ -301,15 +311,13 @@ class EdicionNivelTest {
     }
 
     @Test
-    void sinLugarEnElMapaNoColocaNada() {
-        String[] lleno = new String[Arena.FILAS];
-        for (int i = 0; i < lleno.length; i++) {
-            lleno[i] = piso();
-        }
-        EdicionNivel e = new EdicionNivel(lleno, new ArrayList<>(), new Random(1));
+    void sinLugarFueraDeLasZonasNoColocaNada() {
+        List<float[]> todo = new ArrayList<>();
+        todo.add(new float[] {-1f, -1f, Arena.COLUMNAS + 1f, Arena.FILAS + 1f}); // una zona que tapa todo el mapa
+        EdicionNivel e = new EdicionNivel(mapa(), todo, new Random(1));
         e.iniciar(0);
         assertFalse(e.autocolocar());
-        assertNull(ColocadorPiezas.buscarValidaCerca(lleno, PiezaNivel.TRAMPOLIN, 5, 5, new ArrayList<>()));
+        assertNull(ColocadorPiezas.buscarValidaCerca(mapa(), PiezaNivel.TRAMPOLIN, 5, 5, todo));
     }
 
     // ---- la fase de edicion en la partida

@@ -9,6 +9,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Menú principal: los dos duelistas (del color de cada jugador) en guardia a los costados de los botones,
+  con las espadas apuntándose y un vaivén suave, parados sobre una franja de piso.
 - Armas. La vida pasa a contarse en tercios de corazón (3 corazones = 9 tercios): la espada saca un
   corazón y una bala un tercio, y el HUD llena cada corazón por tercios. Con clic derecho se tira el arma
   hacia el cursor (`entidades.Proyectil`): vuela, cae y hiere si toca al rival; a los 1,5 s aparece una

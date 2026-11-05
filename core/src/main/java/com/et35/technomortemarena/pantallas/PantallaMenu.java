@@ -6,7 +6,9 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -15,9 +17,11 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
+import com.et35.technomortemarena.entidades.Jugador;
 
 /**
- * Menu principal: titulo del juego y los botones Modo de prueba, Multijugador, Editor de niveles y Salir.
+ * Menu principal: titulo del juego, los dos duelistas en guardia a los costados y los botones Modo de
+ * prueba, Multijugador, Editor de niveles y Salir.
  *
  * <p>Usa el mismo mundo de 960x540 que la interfaz de las demas pantallas para que la escala no "salte"
  * al cambiar de pantalla.
@@ -34,6 +38,15 @@ public class PantallaMenu extends ScreenAdapter {
     private final Ui ui = new Ui();
     private final Viewport viewport = new FitViewport(ANCHO_MUNDO, ALTO_MUNDO, new OrthographicCamera());
 
+    /** Los duelistas del menu: el doble de su sprite, parados sobre una franja de piso. */
+    private static final float ESCALA_DUELISTA = 2f;
+    private static final float Y_PISO_MENU = 70f;
+    private static final float X_DUELISTA_UNO = 150f;
+    private static final float X_DUELISTA_DOS = ANCHO_MUNDO - 150f - 48f * ESCALA_DUELISTA;
+
+    /** Segundos desde que se abrio el menu: mueve un poco las espadas, como si estuvieran en guardia. */
+    private float tiempo;
+
     private final Rectangle botonJugar = new Rectangle(ANCHO_MUNDO / 2f - 120f, 330f, 240f, 60f);
     private final Rectangle botonMultijugador = new Rectangle(ANCHO_MUNDO / 2f - 120f, 255f, 240f, 60f);
     private final Rectangle botonEditor = new Rectangle(ANCHO_MUNDO / 2f - 120f, 180f, 240f, 60f);
@@ -47,6 +60,7 @@ public class PantallaMenu extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
+        tiempo += delta;
         Vector2 mouse = viewport.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
         boolean sobreJugar = botonJugar.contains(mouse);
         boolean sobreMultijugador = botonMultijugador.contains(mouse);
@@ -92,6 +106,7 @@ public class PantallaMenu extends ScreenAdapter {
         batch.setProjectionMatrix(viewport.getCamera().combined);
 
         batch.begin();
+        dibujarDuelistas();
         ui.boton(batch, botonJugar, sobreJugar, "MODO DE PRUEBA", 1.3f);
         ui.boton(batch, botonMultijugador, sobreMultijugador, "MULTIJUGADOR", 1.3f);
         ui.boton(batch, botonEditor, sobreEditor, "EDITOR DE NIVELES", 1.3f);
@@ -100,6 +115,39 @@ public class PantallaMenu extends ScreenAdapter {
         float x = (ANCHO_MUNDO - ui.anchoTexto(titulo, 3f)) / 2f;
         ui.texto(batch, titulo, x, ALTO_MUNDO - 100f, 3f, Color.WHITE);
         batch.end();
+    }
+
+    /** Los dos duelistas a los costados, mirandose con la espada en guardia hacia el centro. */
+    private void dibujarDuelistas() {
+        batch.setColor(0.35f, 0.38f, 0.45f, 1f);
+        batch.draw(recursos.piso, 0f, Y_PISO_MENU - 24f, ANCHO_MUNDO, 24f);
+        float vaiven = 0.12f * MathUtils.sin(tiempo * 1.6f);
+        dibujarDuelista(X_DUELISTA_UNO, true, Jugador.TINTE_UNO, 0.45f + vaiven);
+        dibujarDuelista(X_DUELISTA_DOS, false, Jugador.TINTE_DOS, MathUtils.PI - 0.45f + vaiven);
+        batch.setColor(Color.WHITE);
+    }
+
+    private void dibujarDuelista(float x, boolean mirandoDerecha, Color tinte, float angulo) {
+        float ancho = 48f * ESCALA_DUELISTA;
+        float alto = 96f * ESCALA_DUELISTA;
+        Texture cuerpo = recursos.jugador;
+        batch.setColor(tinte);
+        batch.draw(cuerpo, x, Y_PISO_MENU, ancho, alto, 0, 0, cuerpo.getWidth(), cuerpo.getHeight(), !mirandoDerecha, false);
+        // el hombro, como en el juego: corrido hacia donde mira, a 56 del piso en la escala del sprite
+        float hombroX = x + ancho / 2f + (mirandoDerecha ? 10f : -10f) * ESCALA_DUELISTA;
+        float hombroY = Y_PISO_MENU + 56f * ESCALA_DUELISTA;
+        dibujarGirado(recursos.brazo, hombroX, hombroY, 22f * ESCALA_DUELISTA, 8f * ESCALA_DUELISTA, angulo);
+        batch.setColor(Color.WHITE);
+        float manoX = hombroX + MathUtils.cos(angulo) * 16f * ESCALA_DUELISTA;
+        float manoY = hombroY + MathUtils.sin(angulo) * 16f * ESCALA_DUELISTA;
+        dibujarGirado(recursos.espada, manoX, manoY, 56f * ESCALA_DUELISTA, 10f * ESCALA_DUELISTA, angulo);
+    }
+
+    /** Una textura que mira a la derecha, girada alrededor de su extremo izquierdo (espejada si apunta a la izquierda). */
+    private void dibujarGirado(Texture textura, float x, float y, float ancho, float alto, float angulo) {
+        boolean haciaLaIzquierda = MathUtils.cos(angulo) < 0f;
+        batch.draw(textura, x, y - alto / 2f, 0f, alto / 2f, ancho, alto, 1f, 1f, angulo * MathUtils.radiansToDegrees,
+            0, 0, textura.getWidth(), textura.getHeight(), false, haciaLaIzquierda);
     }
 
     @Override

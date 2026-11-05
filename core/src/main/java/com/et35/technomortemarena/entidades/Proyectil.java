@@ -3,34 +3,50 @@ package com.et35.technomortemarena.entidades;
 import com.badlogic.gdx.math.Rectangle;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Algo que vuela por la arena: una bala, un perdigon de escopeta o un arma tirada.
+ * Algo que vuela por la arena: una bala, un perdigon, un rayo laser, un cohete, un arma tirada o la
+ * explosion de un cohete (que solo se dibuja).
  *
- * <p>Todos caen con gravedad: las balas un poco (de lejos hay que apuntar mas arriba), las armas tiradas
- * bastante. Un arma tirada rebota poco en el piso y las paredes y, cuando se frena apoyada sobre un bloque,
- * queda en el mapa para que cualquiera la agarre ({@link #dejaArmaEnElSuelo}), con las balas que tenia. Un
- * arma de fuego sin balas se rompe al chocar. Las balas y perdigones se destruyen al tocar un bloque.
+ * <p>Casi todos caen con gravedad: las balas un poco (de lejos hay que apuntar mas arriba), el cohete muy
+ * poco, las armas tiradas bastante (la espada laser menos, para tiros mas largos). El rayo laser no cae. Un
+ * arma tirada rebota poco en el piso y las paredes y, cuando se frena apoyada sobre un bloque, queda en el
+ * mapa para que cualquiera la agarre ({@link #dejaArmaEnElSuelo}), con las balas que tenia. Un arma de fuego
+ * sin balas se rompe al chocar. Las balas, perdigones y rayos se destruyen al tocar un bloque, y el cohete
+ * explota ({@link #exploto}).
  *
  * <p>Hiere al primer duelista que toca que no sea quien lo lanzo, salvo que sea inofensivo: la espada que
- * sale volando por un desarme no lastima a nadie.
+ * sale volando por un desarme no lastima a nadie. Las balas, perdigones y cohetes que tocan una hoja en la
+ * mano de alguien rebotan espejados contra la hoja y pasan a ser de quien los reflejo; el rayo laser no.
  */
 public final class Proyectil {
 
     /** Que es: define como se mueve, como se dibuja y cuanto dano hace. */
-    public enum Tipo { BALA, PERDIGON, ESPADA_LANZADA, PISTOLA_LANZADA, ESCOPETA_LANZADA }
+    public enum Tipo {
+        BALA, PERDIGON, ESPADA_LANZADA, PISTOLA_LANZADA, ESCOPETA_LANZADA,
+        LASER, COHETE, RIFLE_LASER_LANZADA, LANZACOHETES_LANZADA, ESPADA_LASER_LANZADA, EXPLOSION
+    }
 
     private static final float ESCALA = Arena.ESCALA;
     public static final float VELOCIDAD_BALA = 1500f * ESCALA;
     public static final float VELOCIDAD_PERDIGON = 1300f * ESCALA;
+    public static final float VELOCIDAD_LASER = 3000f * ESCALA;
+    public static final float VELOCIDAD_COHETE = 700f * ESCALA;
     /** Tirar el arma es un ultimo recurso: sale mas despacio que una estocada de lejos. */
     public static final float VELOCIDAD_LANZADA = 1200f * ESCALA;
     /** Las balas caen poco: a media pantalla bajan como medio cuerpo. */
     static final float GRAVEDAD_BALA = -250f * ESCALA;
+    /** El cohete apenas cae. */
+    static final float GRAVEDAD_COHETE = -150f * ESCALA;
     /** Un arma tirada cae bastante: hay que tirarla en arco para llegar lejos. */
     static final float GRAVEDAD_LANZADA = -1100f * ESCALA;
+    /** La espada laser tirada cae menos: llega mas lejos. */
+    static final float GRAVEDAD_ESPADA_LASER = -500f * ESCALA;
     /** Segundos que vuela un perdigon antes de perderse: la escopeta es de corto alcance. */
     static final float VIDA_PERDIGON = 0.55f;
+    /** Segundos que se ve la explosion de un cohete. */
+    static final float DURACION_EXPLOSION = 0.4f;
     /** Cuanto de la velocidad conserva al rebotar: poco, para que un rebote no sirva de ataque. */
     private static final float REBOTE = 0.25f;
     /** Cuanto de la velocidad horizontal le queda en cada pique contra el piso. */
@@ -45,13 +61,19 @@ public final class Proyectil {
     private static final float GIRO_LANZADA = 14f;
     /** Lado de la caja con que choca: la bala es chica, el arma tirada mas grande. */
     private static final float LADO_BALA = 8f * ESCALA;
+    private static final float LADO_COHETE = 14f * ESCALA;
     static final float LADO_LANZADA = 28f * ESCALA;
     /** Pasos de la simulacion por fotograma como mucho de este largo: asi una bala rapida no atraviesa una celda. */
     private static final float PASO_MAXIMO = 10f * ESCALA;
+    /** Una espada comun refleja perdiendo algo de velocidad y con un desvio al azar; la laser, perfecto. */
+    static final float VELOCIDAD_REFLEJO_ESPADA = 0.8f;
+    static final float DESVIO_REFLEJO_ESPADA = 0.12f;
+    /** Despues de reflejarse no vuelve a reflejarse enseguida en la misma hoja (todavia la esta tocando). */
+    private static final float ESPERA_REFLEJO = 0.1f;
 
     private final Tipo tipo;
-    /** Quien lo lanzo: no se hiere a si mismo. Nulo en las copias que solo se dibujan (el cliente). */
-    private final Jugador duenio;
+    /** Quien lo lanzo (o el ultimo que lo reflejo): no se hiere a si mismo. Nulo en las copias del cliente. */
+    private Jugador duenio;
     private float x;
     private float y;
     private float vx;
@@ -62,10 +84,13 @@ public final class Proyectil {
     /** Un arma tirada hiere una sola vez: despues de tocar a alguien sigue cayendo sin herir. */
     private boolean yaHirio;
     private boolean dejaArma;
+    /** Si es un cohete que choco: quien lo maneja tiene que hacer la explosion en {@link #getX}, {@link #getY}. */
+    private boolean exploto;
     /** Si en este fotograma quedo apoyada sobre un bloque. */
     private boolean apoyada;
     /** Las balas que le quedan a un arma de fuego tirada: con balas queda en el mapa, sin balas se rompe. */
     private int balas;
+    private float esperaReflejo;
     private final Rectangle caja = new Rectangle();
 
     public Proyectil(Tipo tipo, Jugador duenio, float x, float y, float angulo, float velocidad) {
@@ -81,6 +106,11 @@ public final class Proyectil {
     /** Una copia que solo se dibuja: la manda el anfitrion y no se simula. */
     public static Proyectil paraDibujar(Tipo tipo, float x, float y, float angulo) {
         return new Proyectil(tipo, null, x, y, angulo, 0f);
+    }
+
+    /** La explosion de un cohete, que solo se dibuja: crece y se apaga en {@link #DURACION_EXPLOSION}. */
+    static Proyectil explosion(float x, float y) {
+        return new Proyectil(Tipo.EXPLOSION, null, x, y, 0f, 0f);
     }
 
     /**
@@ -108,12 +138,18 @@ public final class Proyectil {
                 return Tipo.ESPADA_LANZADA;
             case PISTOLA:
                 return Tipo.PISTOLA_LANZADA;
-            default:
+            case ESCOPETA:
                 return Tipo.ESCOPETA_LANZADA;
+            case RIFLE_LASER:
+                return Tipo.RIFLE_LASER_LANZADA;
+            case LANZACOHETES:
+                return Tipo.LANZACOHETES_LANZADA;
+            default:
+                return Tipo.ESPADA_LASER_LANZADA;
         }
     }
 
-    /** El arma que es, si es un arma tirada; {@code null} para balas y perdigones. */
+    /** El arma que es, si es un arma tirada; {@code null} para lo que se dispara y la explosion. */
     public TipoArma getArma() {
         switch (tipo) {
             case ESPADA_LANZADA:
@@ -122,30 +158,62 @@ public final class Proyectil {
                 return TipoArma.PISTOLA;
             case ESCOPETA_LANZADA:
                 return TipoArma.ESCOPETA;
+            case RIFLE_LASER_LANZADA:
+                return TipoArma.RIFLE_LASER;
+            case LANZACOHETES_LANZADA:
+                return TipoArma.LANZACOHETES;
+            case ESPADA_LASER_LANZADA:
+                return TipoArma.ESPADA_LASER;
             default:
                 return null;
         }
     }
 
-    /** Partes de corazon que saca al tocar a un duelista. */
+    /** Partes de corazon que saca al tocar a un duelista (el cohete saca con la explosion). */
     public int getDanio() {
         switch (tipo) {
             case BALA:
                 return TipoArma.DANIO_BALA;
             case PERDIGON:
                 return TipoArma.DANIO_PERDIGON;
+            case LASER:
+                return TipoArma.DANIO_LASER;
+            case COHETE:
+            case EXPLOSION:
+                return 0;
             default:
                 return getArma().getDanioLanzada();
         }
     }
 
     private boolean esDisparo() {
-        return tipo == Tipo.BALA || tipo == Tipo.PERDIGON;
+        return tipo == Tipo.BALA || tipo == Tipo.PERDIGON || tipo == Tipo.LASER || tipo == Tipo.COHETE;
     }
 
-    /** La espada siempre queda en el mapa; un arma de fuego solo si le quedan balas. */
+    /** Lo que se refleja en una hoja: todo lo que se dispara menos el rayo laser. */
+    private boolean seRefleja() {
+        return tipo == Tipo.BALA || tipo == Tipo.PERDIGON || tipo == Tipo.COHETE;
+    }
+
+    /** Las espadas siempre quedan en el mapa; un arma de fuego solo si le quedan balas. */
     private boolean rebota() {
-        return tipo == Tipo.ESPADA_LANZADA || (!esDisparo() && balas > 0);
+        return tipo == Tipo.ESPADA_LANZADA || tipo == Tipo.ESPADA_LASER_LANZADA || (!esDisparo() && balas > 0);
+    }
+
+    private float gravedad() {
+        switch (tipo) {
+            case BALA:
+            case PERDIGON:
+                return GRAVEDAD_BALA;
+            case LASER:
+                return 0f;
+            case COHETE:
+                return GRAVEDAD_COHETE;
+            case ESPADA_LASER_LANZADA:
+                return GRAVEDAD_ESPADA_LASER;
+            default:
+                return GRAVEDAD_LANZADA;
+        }
     }
 
     /**
@@ -158,11 +226,18 @@ public final class Proyectil {
             return null;
         }
         tiempoDeVuelo += delta;
+        if (tipo == Tipo.EXPLOSION) {
+            // solo se dibuja: el angulo lleva cuanto va de la explosion, de 0 a 1, para que el cliente la vea crecer
+            angulo = Math.min(1f, tiempoDeVuelo / DURACION_EXPLOSION);
+            activo = tiempoDeVuelo < DURACION_EXPLOSION;
+            return null;
+        }
         if (tipo == Tipo.PERDIGON && tiempoDeVuelo >= VIDA_PERDIGON) {
             activo = false;
             return null;
         }
-        vy += (esDisparo() ? GRAVEDAD_BALA : GRAVEDAD_LANZADA) * delta;
+        esperaReflejo = Math.max(0f, esperaReflejo - delta);
+        vy += gravedad() * delta;
         if (esDisparo()) {
             angulo = (float) Math.atan2(vy, vx);
         } else if (!apoyada) {
@@ -177,11 +252,15 @@ public final class Proyectil {
             if (rebota()) {
                 moverRebotando(delta / pasos, arena);
             } else {
-                x += dx / pasos;
-                y += dy / pasos;
+                // con la velocidad de ahora: si se reflejo en este fotograma, el resto va para el otro lado
+                x += vx * delta / pasos;
+                y += vy * delta / pasos;
                 if (chocaConBloque(arena)) {
-                    activo = false;
+                    terminarContraAlgo();
                 }
+            }
+            if (activo && seRefleja() && esperaReflejo <= 0f && (reflejarEn(uno) || reflejarEn(dos))) {
+                continue;
             }
             if (!yaHirio && activo) {
                 Jugador tocado = tocaA(uno);
@@ -203,15 +282,62 @@ public final class Proyectil {
                 quedarEnElSuelo();
             }
         }
-        if (!rebota() && !esDisparo() && (x < -LADO_LANZADA || x > arena.getAncho() + LADO_LANZADA)) {
+        if (!rebota() && (x < -LADO_LANZADA || x > arena.getAncho() + LADO_LANZADA || y > arena.getAlto() * 2f)) {
             activo = false;
         }
         return herido;
     }
 
+    /** Se termina contra un bloque o un cuerpo: el cohete explota, lo demas desaparece. */
+    private void terminarContraAlgo() {
+        activo = false;
+        if (tipo == Tipo.COHETE) {
+            exploto = true;
+        }
+    }
+
+    /**
+     * Si toca la hoja que {@code jugador} tiene en la mano, rebota espejado contra la hoja: la velocidad se
+     * da vuelta en la direccion perpendicular a la hoja y se conserva a lo largo de ella, como una pelota
+     * contra una pared inclinada. Con la espada comun pierde algo de velocidad y se desvia un poco; con la
+     * laser rebota perfecto. Pasa a ser de quien lo reflejo, asi puede herir al que lo disparo.
+     */
+    private boolean reflejarEn(Jugador jugador) {
+        if (jugador == null || jugador == duenio || !jugador.isVivo() || !jugador.tieneHoja()
+            || !jugador.getHoja().solapa(getCaja())) {
+            return false;
+        }
+        float a = jugador.getHoja().getAngulo();
+        float nx = (float) -Math.sin(a);
+        float ny = (float) Math.cos(a);
+        float punto = vx * nx + vy * ny;
+        float rx = vx - 2f * punto * nx;
+        float ry = vy - 2f * punto * ny;
+        if (jugador.getArma() != TipoArma.ESPADA_LASER) {
+            float desvio = (float) ((ThreadLocalRandom.current().nextDouble() * 2.0 - 1.0) * DESVIO_REFLEJO_ESPADA);
+            float c = (float) Math.cos(desvio);
+            float s = (float) Math.sin(desvio);
+            float girado = rx * c - ry * s;
+            ry = (rx * s + ry * c) * VELOCIDAD_REFLEJO_ESPADA;
+            rx = girado * VELOCIDAD_REFLEJO_ESPADA;
+        }
+        vx = rx;
+        vy = ry;
+        duenio = jugador;
+        esperaReflejo = ESPERA_REFLEJO;
+        if (tipo == Tipo.PERDIGON) {
+            tiempoDeVuelo = 0f; // el perdigon reflejado llega tan lejos como uno nuevo
+        }
+        return true;
+    }
+
     private void herir(Jugador tocado) {
+        if (tipo == Tipo.COHETE) {
+            terminarContraAlgo(); // el dano lo hace la explosion
+            return;
+        }
         float direccion = vx >= 0f ? 1f : -1f;
-        boolean hirio = tipo == Tipo.PERDIGON
+        boolean hirio = tipo == Tipo.PERDIGON || tipo == Tipo.LASER
             ? tocado.recibirPerdigon(getDanio(), direccion)
             : tocado.recibirDanio(getDanio(), direccion, esDisparo());
         if (hirio && duenio != null) {
@@ -268,6 +394,16 @@ public final class Proyectil {
         return dejaArma;
     }
 
+    /** Verdadero si es un cohete que choco: hay que hacer la explosion donde esta. */
+    public boolean exploto() {
+        return exploto;
+    }
+
+    /** Quien lo lanzo o lo reflejo por ultima vez. */
+    Jugador getDuenio() {
+        return duenio;
+    }
+
     /** Las balas que le quedan al arma de fuego tirada. */
     public int getBalas() {
         return balas;
@@ -292,7 +428,7 @@ public final class Proyectil {
 
     /** La caja con que choca, centrada en la posicion. */
     public Rectangle getCaja() {
-        float lado = esDisparo() ? LADO_BALA : LADO_LANZADA;
+        float lado = tipo == Tipo.COHETE ? LADO_COHETE : esDisparo() ? LADO_BALA : LADO_LANZADA;
         return caja.set(x - lado / 2f, y - lado / 2f, lado, lado);
     }
 
@@ -310,6 +446,14 @@ public final class Proyectil {
 
     public float getY() {
         return y;
+    }
+
+    public float getVx() {
+        return vx;
+    }
+
+    public float getVy() {
+        return vy;
     }
 
     public float getAngulo() {

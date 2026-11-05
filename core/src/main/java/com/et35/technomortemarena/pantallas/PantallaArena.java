@@ -181,6 +181,8 @@ public class PantallaArena extends ScreenAdapter {
     private final PanelEdicion panelEdicion = new PanelEdicion();
     /** Piezas que el cliente ya tiene dibujadas en su copia del mapa. */
     private List<int[]> piezasAplicadas = new ArrayList<>();
+    /** Cuantas celdas rotas por los cohetes tiene ya sacadas el mapa: cuando cambia la lista, se rearma. */
+    private int celdasRotasAplicadas;
     private RondasPartida.Fase faseAnterior = RondasPartida.Fase.RONDA;
     private final Vector2 punteroEdicion = new Vector2();
     /** Sigue a los duelistas y se aleja cuando se separan; en la edicion entre rondas muestra el mapa entero. */
@@ -383,6 +385,7 @@ public class PantallaArena extends ScreenAdapter {
             armas.actualizar(paso, arena, jugadorUno, jugadorDos);
             reaparecerBlanco(paso);
         }
+        aplicarCeldasRotas();
         actualizarSonidos();
     }
 
@@ -842,8 +845,28 @@ public class PantallaArena extends ScreenAdapter {
         batch.setColor(1f, 1f, 1f, 0.85f);
         batch.draw(recursos.brillo, x + 4f, abajo + 4f, ANCHO_CUADRO_ARMA - 8f, ALTO_CUADRO_ARMA - 8f);
         batch.setColor(Color.WHITE);
-        Texture textura = arma == TipoArma.ESPADA ? recursos.espada
-            : arma == TipoArma.ESCOPETA ? recursos.escopeta : recursos.pistola;
+        Texture textura;
+        switch (arma) {
+            case ESPADA:
+            case ESPADA_LASER:
+                textura = recursos.espada;
+                break;
+            case ESCOPETA:
+                textura = recursos.escopeta;
+                break;
+            case RIFLE_LASER:
+                textura = recursos.rifleLaser;
+                break;
+            case LANZACOHETES:
+                textura = recursos.lanzacohetes;
+                break;
+            default:
+                textura = recursos.pistola;
+                break;
+        }
+        if (arma == TipoArma.ESPADA_LASER) {
+            batch.setColor(Jugador.COLOR_ESPADA_LASER);
+        }
         // el arma entra en el cuadro sin deformarse
         float maximoAncho = ANCHO_CUADRO_ARMA - 16f;
         float maximoAlto = ALTO_CUADRO_ARMA - 16f;
@@ -851,12 +874,17 @@ public class PantallaArena extends ScreenAdapter {
         float ancho = textura.getWidth() * escala;
         float alto = textura.getHeight() * escala;
         batch.draw(textura, x + (ANCHO_CUADRO_ARMA - ancho) / 2f, abajo + (ALTO_CUADRO_ARMA - alto) / 2f, ancho, alto);
+        batch.setColor(Color.WHITE);
         int maximo = arma.getBalasIniciales();
+        // con muchas balas (el rifle laser) se achican para entrar debajo del cuadro
+        float separacion = maximo > 10 ? 2f : SEPARACION_BALA_HUD;
+        float anchoBala = maximo == 0 ? ANCHO_BALA_HUD
+            : Math.min(ANCHO_BALA_HUD, (ANCHO_CUADRO_ARMA - (maximo - 1) * separacion) / maximo);
         for (int i = 0; i < maximo; i++) {
             float bx = aLaIzquierda
-                ? x + i * (ANCHO_BALA_HUD + SEPARACION_BALA_HUD)
-                : x + ANCHO_CUADRO_ARMA - ANCHO_BALA_HUD - i * (ANCHO_BALA_HUD + SEPARACION_BALA_HUD);
-            rectAux.set(bx, abajo - 6f - ALTO_BALA_HUD, ANCHO_BALA_HUD, ALTO_BALA_HUD);
+                ? x + i * (anchoBala + separacion)
+                : x + ANCHO_CUADRO_ARMA - anchoBala - i * (anchoBala + separacion);
+            rectAux.set(bx, abajo - 6f - ALTO_BALA_HUD, anchoBala, ALTO_BALA_HUD);
             ui.rectangulo(batch, rectAux, i < jugador.getBalas() ? tinte : COLOR_VIDA_PERDIDA);
         }
     }
@@ -1057,6 +1085,27 @@ public class PantallaArena extends ScreenAdapter {
         }
     }
 
+    /**
+     * Si los cohetes rompieron bloques (o, al empezar la ronda, se vacio la lista), rearma el mapa desde el de
+     * la ronda sin ellos. En el cliente, el mapa de la ronda es el original con las piezas que mando el anfitrion.
+     */
+    private void aplicarCeldasRotas() {
+        List<int[]> rotas = armas.getCeldasRotas();
+        if (rotas.size() == celdasRotasAplicadas) {
+            return;
+        }
+        String[] base;
+        if (cliente != null) {
+            base = EdicionNivel.reconstruir(filasOriginales, piezasAplicadas);
+        } else {
+            base = edicion != null ? edicion.getFilas() : filasOriginales;
+        }
+        if (base.length > 0) {
+            arena = Arena.desdeGrilla(base).sinCeldas(rotas);
+        }
+        celdasRotasAplicadas = rotas.size();
+    }
+
     /** El cliente rearma su copia del mapa cuando la lista de piezas que manda el anfitrion cambia. */
     private void sincronizarNivelDelCliente() {
         List<int[]> piezas = cliente.getEstadoPartida().piezas;
@@ -1066,6 +1115,7 @@ public class PantallaArena extends ScreenAdapter {
         }
         if (!igual) {
             arena = Arena.desdeGrilla(EdicionNivel.reconstruir(filasOriginales, piezas));
+            celdasRotasAplicadas = 0; // el mapa nuevo viene entero: si hay celdas rotas, se vuelven a sacar
             piezasAplicadas = new ArrayList<>();
             for (int[] pieza : piezas) {
                 piezasAplicadas.add(pieza.clone());

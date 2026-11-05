@@ -22,6 +22,8 @@ public final class EstadoArmas {
     public static final int MAX_POWER_UPS = 4;
     /** Cada una como {@code {indice de PowerUp, x, y}}. */
     public final List<float[]> powerUps = new ArrayList<>();
+    /** Las celdas que rompieron los cohetes en la ronda, como {@code {columna, fila}} contando desde abajo. */
+    public final List<int[]> celdasRotas = new ArrayList<>();
 
     public void copiarDe(EstadoArmas origen) {
         proyectiles.clear();
@@ -35,6 +37,10 @@ public final class EstadoArmas {
         powerUps.clear();
         for (float[] m : origen.powerUps) {
             powerUps.add(m.clone());
+        }
+        celdasRotas.clear();
+        for (int[] c : origen.celdasRotas) {
+            celdasRotas.add(c.clone());
         }
     }
 }

@@ -9,6 +9,23 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Rifle láser (`TipoArma.RIFLE_LASER`, `sprites/rifle_laser.png`): 20 rayos largos y muy rápidos, sin caída,
+  de un sexto de corazón cada uno; no respetan la invulnerabilidad después de un golpe y no se reflejan.
+- Lanzacohetes (`TipoArma.LANZACOHETES`, `sprites/lanzacohetes.png` y `sprites/cohete.png`): un cohete medio
+  lento con poca caída que explota al chocar contra un bloque o un cuerpo. La explosión se ve crecer y
+  apagarse, saca un corazón a todos los que tengan el cuerpo a menos de 4 celdas (también al que lo tiró) y
+  rompe los bloques de la celda del impacto y las ocho de alrededor (`Arena.sinCeldas`), menos las paredes de
+  los costados y la fila de abajo de todo. Los bloques vuelven al empezar la ronda siguiente.
+- Espada láser roja (`TipoArma.ESPADA_LASER`): pega un corazón y un tercio, no se puede desarmar (ni con la
+  hoja ni con un puñetazo), atraviesa a la espada común sin chocar ni empujar y, tirada, le afecta menos la
+  gravedad. Es muy rara: una de cada 12 armas que caen solas, y nunca dos a la vez.
+- Reflejar con la hoja: las balas, los perdigones y los cohetes que tocan la hoja de una espada rebotan
+  espejados según su ángulo (la velocidad a lo largo de la hoja se conserva y la perpendicular se da vuelta)
+  y pasan a ser de quien los reflejó. Con la espada común pierden un 20 % de velocidad y se desvían un poco
+  al azar; con la láser rebotan perfecto.
+- Las armas que caen solas ahora se reparten entre pistola, escopeta, rifle láser y lanzacohetes (la que haya
+  menos en el suelo). En la interfaz, las balas se achican para que entren las 20 del rifle. Protocolo de red
+  versión 10 (no es compatible con la 9): viajan los proyectiles nuevos, la explosión y las celdas rotas.
 - Mejoras (`entidades.PowerUp`): cada 12 s cae del cielo una (como mucho 2 en el mapa) y la agarra quien pasa
   por encima, tenga o no un arma. Duran 10 s: VELOCIDAD corre y rueda un 40 % más rápido, SALTO salta un
   35 % más alto y PUNTERIA dispara más seguido y casi no abre los perdigones de la escopeta. Cada una tiene

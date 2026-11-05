@@ -180,6 +180,31 @@ public class Arena {
         return new Arena(ANCHO_MUNDO, ALTO_MUNDO, bloques, spawnUno, spawnDos, filas);
     }
 
+    /**
+     * Una copia de esta arena con esas celdas vacias, como {@code {columna, fila}} contando las filas desde
+     * abajo: asi quedan los bloques que rompio un cohete. Si la arena no salio de una grilla, devuelve esta.
+     */
+    public Arena sinCeldas(List<int[]> celdas) {
+        if (filas.length == 0 || celdas.isEmpty()) {
+            return this;
+        }
+        char[][] grilla = new char[filas.length][];
+        for (int i = 0; i < filas.length; i++) {
+            grilla[i] = filas[i].toCharArray();
+        }
+        for (int[] celda : celdas) {
+            int indice = filas.length - 1 - celda[1];
+            if (celda[0] >= 0 && celda[0] < COLUMNAS && indice >= 0 && indice < filas.length) {
+                grilla[indice][celda[0]] = '.';
+            }
+        }
+        String[] nuevas = new String[filas.length];
+        for (int i = 0; i < filas.length; i++) {
+            nuevas[i] = new String(grilla[i]);
+        }
+        return desdeGrilla(nuevas);
+    }
+
     /** Copia de las filas de texto de la grilla, la primera la de arriba. Vacia si la arena no salio de una grilla. */
     public String[] getFilas() {
         return filas.clone();

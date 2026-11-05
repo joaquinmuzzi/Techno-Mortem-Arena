@@ -636,14 +636,39 @@ class ArmasTest {
 
     @Test
     void apareceElTipoQueFaltaEnElSuelo() {
-        armas.dejarEnElSuelo(TipoArma.PISTOLA, 500f, PISO, 0f);
-        armas.aparecerArma(arena);
-        assertEquals(TipoArma.codigoDe(TipoArma.ESCOPETA), (int) armas.getEnElSuelo().get(1)[0]);
+        // con una de cada una menos la escopeta, la que aparece es la escopeta (salvo la espada laser, que es rara)
+        for (int semilla = 0; semilla < 20; semilla++) {
+            ArmasEnJuego otras = new ArmasEnJuego(new Random(semilla), new ArrayList<>());
+            otras.dejarEnElSuelo(TipoArma.PISTOLA, 500f, PISO, 0f);
+            otras.dejarEnElSuelo(TipoArma.RIFLE_LASER, 700f, PISO, 0f);
+            otras.dejarEnElSuelo(TipoArma.LANZACOHETES, 900f, PISO, 0f);
+            otras.aparecerArma(arena);
+            TipoArma nueva = TipoArma.porCodigo((int) otras.getEnElSuelo().get(3)[0]);
+            assertTrue(nueva == TipoArma.ESCOPETA || nueva == TipoArma.ESPADA_LASER, "aparecio " + nueva);
+        }
+    }
 
-        ArmasEnJuego otras = new ArmasEnJuego(new Random(1), new ArrayList<>());
-        otras.dejarEnElSuelo(TipoArma.ESCOPETA, 500f, PISO, 0f);
-        otras.aparecerArma(arena);
-        assertEquals(TipoArma.codigoDe(TipoArma.PISTOLA), (int) otras.getEnElSuelo().get(1)[0]);
+    @Test
+    void laEspadaLaserApareceMuyDeVezEnCuandoYNuncaDosALaVez() {
+        int laser = 0;
+        int total = 1200;
+        for (int semilla = 0; semilla < total; semilla++) {
+            ArmasEnJuego otras = new ArmasEnJuego(new Random(semilla), new ArrayList<>());
+            otras.aparecerArma(arena);
+            if (TipoArma.porCodigo((int) otras.getEnElSuelo().get(0)[0]) == TipoArma.ESPADA_LASER) {
+                laser++;
+                for (int i = 0; i < 30; i++) {
+                    otras.aparecerArma(arena);
+                }
+                int espadas = 0;
+                for (float[] arma : otras.getEnElSuelo()) {
+                    espadas += TipoArma.porCodigo((int) arma[0]) == TipoArma.ESPADA_LASER ? 1 : 0;
+                }
+                assertTrue(espadas <= 1, "nunca dos espadas laser a la vez");
+            }
+        }
+        float esperada = total / (float) ArmasEnJuego.CHANCE_ESPADA_LASER;
+        assertTrue(laser > esperada * 0.6f && laser < esperada * 1.4f, "salieron " + laser);
     }
 
     @Test

@@ -75,6 +75,10 @@ class CodecsTest {
         estado.tiempoRestanteFlash = 0.25f;
         estado.contadorGolpes = 7;
         estado.contadorAterrizajes = 9;
+        estado.contadorDisparosPistola = 11;
+        estado.contadorDisparosEscopeta = 13;
+        estado.contadorEspadasEquipadas = 15;
+        estado.contadorArmasDeFuegoEquipadas = 17;
         return estado;
     }
 
@@ -114,6 +118,10 @@ class CodecsTest {
         assertEquals(0.25f, leido.tiempoRestanteFlash);
         assertEquals(7, leido.contadorGolpes);
         assertEquals(9, leido.contadorAterrizajes);
+        assertEquals(11, leido.contadorDisparosPistola);
+        assertEquals(13, leido.contadorDisparosEscopeta);
+        assertEquals(15, leido.contadorEspadasEquipadas);
+        assertEquals(17, leido.contadorArmasDeFuegoEquipadas);
     }
 
     @Test
@@ -268,6 +276,7 @@ class CodecsTest {
         armas.proyectiles.add(new float[] {0, 100.5f, 200.25f, 1.5f});
         armas.proyectiles.add(new float[] {1, 300f, 400f, -2f});
         armas.enElSuelo.add(new float[] {2, 512f, 128f});
+        armas.contadorEspadasAlCaer = 5;
         ByteBuffer buffer = ByteBuffer.allocate(256);
         CodecEstado.escribir(buffer, armas);
         assertEquals(CodecEstado.BYTES_ARMAS + 2 * CodecEstado.BYTES_POR_PROYECTIL + CodecEstado.BYTES_POR_ARMA_EN_EL_SUELO,
@@ -279,6 +288,7 @@ class CodecsTest {
         assertEquals(2, leidas.proyectiles.size());
         assertArrayEquals(new float[] {1, 300f, 400f, -2f}, leidas.proyectiles.get(1));
         assertArrayEquals(new float[] {2, 512f, 128f}, leidas.enElSuelo.get(0));
+        assertEquals(5, leidas.contadorEspadasAlCaer);
     }
 
     @Test
@@ -299,6 +309,13 @@ class CodecsTest {
         conArmaInexistente.enElSuelo.add(new float[] {0, 1f, 1f}); // 0 es "sin arma": no se puede tirar en el suelo
         ByteBuffer buffer = ByteBuffer.allocate(256);
         CodecEstado.escribir(buffer, conArmaInexistente);
+        buffer.flip();
+        assertFalse(CodecEstado.leer(buffer, new EstadoArmas()));
+
+        EstadoArmas conContadorNegativo = new EstadoArmas();
+        conContadorNegativo.contadorEspadasAlCaer = -1;
+        buffer = ByteBuffer.allocate(256);
+        CodecEstado.escribir(buffer, conContadorNegativo);
         buffer.flip();
         assertFalse(CodecEstado.leer(buffer, new EstadoArmas()));
     }

@@ -27,6 +27,21 @@ public class RecursosAudio implements Disposable {
     /** Aterrizaje despues de un salto o una caida. */
     public final Sound aterrizar;
 
+    /** Disparo de la pistola. */
+    public final Sound pistolazo;
+
+    /** Disparo de la escopeta. */
+    public final Sound escopetazo;
+
+    /** Espada que se recoge del suelo. */
+    public final Sound espadaEquipada;
+
+    /** Espada tirada que toca el piso. */
+    public final Sound espadaCae;
+
+    /** Pistola o escopeta que se recoge del suelo. */
+    public final Sound armaEquipada;
+
     /** Sonido de interfaz al pasar el cursor por encima de un boton. */
     public final Sound boton;
 
@@ -37,6 +52,11 @@ public class RecursosAudio implements Disposable {
         correr = cargar("sounds/Running.mp3");
         golpe = cargar("sounds/Bloody Sword Hit Sound Effect.mp3");
         aterrizar = cargar("sounds/Landing.wav");
+        pistolazo = cargar("sounds/pistol-shot.mp3");
+        escopetazo = cargar("sounds/shotgun-blast.mp3");
+        espadaEquipada = cargar("sounds/sword-equipped.mp3");
+        espadaCae = cargar("sounds/sword-falling.mp3");
+        armaEquipada = cargar("sounds/Weapon-Equip.mp3");
         boton = cargar("sounds/Boton.wav");
         botonSeleccionado = cargar("sounds/Boton Seleccionado.mp3");
     }
@@ -57,6 +77,11 @@ public class RecursosAudio implements Disposable {
         correr.dispose();
         golpe.dispose();
         aterrizar.dispose();
+        pistolazo.dispose();
+        escopetazo.dispose();
+        espadaEquipada.dispose();
+        espadaCae.dispose();
+        armaEquipada.dispose();
         boton.dispose();
         botonSeleccionado.dispose();
     }

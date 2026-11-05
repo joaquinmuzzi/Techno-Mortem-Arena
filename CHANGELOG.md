@@ -5,7 +5,10 @@ Todos los cambios significativos de **Techno Mortem Arena** se documentan en est
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto adhiere a
 [Versionado Semántico](https://semver.org/lang/es/).
 
-## [No publicado]
+## [0.5.0] - 2026-11-05
+
+Armas de fuego y espada láser, mejoras que caen del cielo, mapa el doble de grande, fuentes pixeladas
+y efectos de sonido de las armas.
 
 ### Añadido
 
@@ -83,6 +86,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
   azar sobre un bloque (como mucho 2, fuera de las zonas de los spawns); se agarra pasando por encima y
   reemplaza lo que se tenía. La pistola (`entidades.TipoArma`) trae 6 balas, dispara con el clic
   izquierdo y sin balas vuelve a la espada. Funciona en el modo de prueba y en red.
+- Efectos de sonido de las armas: `pistol-shot.mp3` y `shotgun-blast.mp3` al disparar la pistola y la
+  escopeta, `sword-equipped.mp3` al recoger la espada, `Weapon-Equip.mp3` al recoger un arma de fuego y
+  `sword-falling.mp3` cada vez que la espada tirada toca el piso, también en los rebotes. La espada con
+  la que arranca la ronda no suena porque no se recoge del suelo. Los eventos viajan por la red, así el
+  cliente también escucha lo que hace el otro jugador.
 - Tests JUnit 5: `ArmasTest` (tercios, tirar, reaparición, pistola, balas, aparición y recogida) y los de
   las armas en el protocolo.
 - Edición del nivel entre rondas (en Multijugador, al estilo *Ultimate Chicken Horse*): tras el resultado
@@ -160,6 +168,9 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- Protocolo de red versión 11: el estado de cada jugador suma los contadores de disparos de pistola y de
+  escopeta y los de armas recogidas (espada y armas de fuego), y el de las armas fuera de las manos suma el
+  de espadas que tocan el piso. No es compatible con la versión 10.
 - Botones: fondo apenas marcado y una raya abajo, azul con el mouse encima y gris si no.
 - En los mapas que no marcan los spawns, cada duelista aparece a 15 celdas de su pared, parado sobre lo que
   haya ahí (en la escalera, sobre el escalón bajo).
@@ -431,7 +442,8 @@ Primera pre-entrega: configuración inicial del proyecto y del repositorio.
 - Título de la ventana del juego: de `TechnoMortemArena` (nombre técnico del módulo) a
   `Techno Mortem Arena`.
 
-[No publicado]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.4.1...HEAD
+[No publicado]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.2.2...v0.3.0

@@ -82,6 +82,11 @@ public class PantallaArena extends ScreenAdapter {
     private static final float VOLUMEN_CORRER = 0.6f;
     private static final float VOLUMEN_GOLPE = 1.0f;
     private static final float VOLUMEN_ATERRIZAR = 0.8f;
+    private static final float VOLUMEN_DISPARO_PISTOLA = 0.8f;
+    private static final float VOLUMEN_DISPARO_ESCOPETA = 0.8f;
+    private static final float VOLUMEN_EQUIPAR_ESPADA = 0.7f;
+    private static final float VOLUMEN_EQUIPAR_ARMA = 0.7f;
+    private static final float VOLUMEN_ESPADA_CAE = 0.8f;
 
     // Cartel de controles que aparece al empezar la ronda. Se muestran los del Jugador 1 arriba a
     // la izquierda y los del Jugador 2 arriba a la derecha, para que nadie arranque perdido.
@@ -168,6 +173,13 @@ public class PantallaArena extends ScreenAdapter {
     /** Cuentas de golpes y aterrizajes ya sonados, para disparar cada sonido una sola vez. */
     private int golpesSonados;
     private int aterrizajesSonados;
+    /** Cuentas de disparos y armas recogidas ya sonadas. */
+    private int disparosPistolaSonados;
+    private int disparosEscopetaSonados;
+    private int espadasEquipadasSonadas;
+    private int armasDeFuegoEquipadasSonadas;
+    /** Veces que ya sono la espada tirada al caer. */
+    private int espadasCaidasSonadas;
 
     private final RondasPartida rondas;
     private final EstadoPartida estadoPartida = new EstadoPartida();
@@ -303,6 +315,13 @@ public class PantallaArena extends ScreenAdapter {
         }
         golpesSonados = 0;
         aterrizajesSonados = 0;
+        disparosPistolaSonados = 0;
+        disparosEscopetaSonados = 0;
+        espadasEquipadasSonadas = 0;
+        armasDeFuegoEquipadasSonadas = 0;
+        // El contador de espadas caidas es de las armas, que no se recrean: se toma el valor actual
+        // para no sonar por caidas de la partida anterior.
+        espadasCaidasSonadas = armas.getContadorEspadasAlCaer();
         muerteSubitaActivada = false;
     }
 
@@ -518,6 +537,35 @@ public class PantallaArena extends ScreenAdapter {
             audio.aterrizar.play(VOLUMEN_ATERRIZAR);
         }
         aterrizajesSonados = aterrizajes;
+        int disparosPistola = jugadorUno.getContadorDisparosPistola()
+            + (jugadorDos != null ? jugadorDos.getContadorDisparosPistola() : 0);
+        if (disparosPistola > disparosPistolaSonados) {
+            audio.pistolazo.play(VOLUMEN_DISPARO_PISTOLA);
+        }
+        disparosPistolaSonados = disparosPistola;
+        int disparosEscopeta = jugadorUno.getContadorDisparosEscopeta()
+            + (jugadorDos != null ? jugadorDos.getContadorDisparosEscopeta() : 0);
+        if (disparosEscopeta > disparosEscopetaSonados) {
+            audio.escopetazo.play(VOLUMEN_DISPARO_ESCOPETA);
+        }
+        disparosEscopetaSonados = disparosEscopeta;
+        int espadasEquipadas = jugadorUno.getContadorEspadasEquipadas()
+            + (jugadorDos != null ? jugadorDos.getContadorEspadasEquipadas() : 0);
+        if (espadasEquipadas > espadasEquipadasSonadas) {
+            audio.espadaEquipada.play(VOLUMEN_EQUIPAR_ESPADA);
+        }
+        espadasEquipadasSonadas = espadasEquipadas;
+        int armasDeFuegoEquipadas = jugadorUno.getContadorArmasDeFuegoEquipadas()
+            + (jugadorDos != null ? jugadorDos.getContadorArmasDeFuegoEquipadas() : 0);
+        if (armasDeFuegoEquipadas > armasDeFuegoEquipadasSonadas) {
+            audio.armaEquipada.play(VOLUMEN_EQUIPAR_ARMA);
+        }
+        armasDeFuegoEquipadasSonadas = armasDeFuegoEquipadas;
+        int espadasCaidas = armas.getContadorEspadasAlCaer();
+        if (espadasCaidas > espadasCaidasSonadas) {
+            audio.espadaCae.play(VOLUMEN_ESPADA_CAE);
+        }
+        espadasCaidasSonadas = espadasCaidas;
     }
 
     /** Apaga el bucle del sonido de correr si estaba sonando. Se usa al pausar y al salir de la ronda. */

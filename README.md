@@ -345,15 +345,13 @@ Para reemplazarlos por arte propio basta sobrescribir el `.png` respetando el no
 medidas, hay que ajustar `Jugador.ANCHO` y `Jugador.ALTO`.
 
 Los efectos de sonido de la ronda en `assets/sounds/` son `Running.mp3` (pisada corta al correr),
-`Bloody Sword Hit Sound Effect.mp3` (el golpe de la espada contra el cuerpo del rival) y
-`Landing.wav` (el aterrizaje de un salto). `RecursosAudio` los carga una sola vez como `Sound` (se
-reproducen desde memoria, sin cortes) y `PantallaArena` los dispara según lo que informa cada
-`Jugador`.
-
-A esos se suman los dos sonidos de interfaz, `Boton.wav` (pasar el cursor por encima) y
-`Boton Seleccionado.mp3` (hacer clic). Los dispara `pantallas.Ui` desde el propio dibujo del botón, así
-que cada pantalla solo tiene que habilitarlos con `Ui.setAudio`; el editor de niveles no lo hace y por
-eso queda en silencio.
+`Bloody Sword Hit Sound Effect.mp3` (el golpe de la espada contra el cuerpo del rival), `Landing.wav` (el
+aterrizaje de un salto), `pistol-shot.mp3` y `shotgun-blast.mp3` (el disparo de la pistola y de la
+escopeta), `sword-equipped.mp3` (al recoger la espada), `Weapon-Equip.mp3` (al recoger una pistola o una
+escopeta) y `sword-falling.mp3` (cada vez que la espada tirada toca el piso, también en los rebotes).
+`RecursosAudio` los carga una sola vez como `Sound` (se reproducen desde memoria, sin cortes) y
+`PantallaArena` los dispara según lo que informan cada `Jugador` y `ArmasEnJuego`. Esos eventos también
+viajan por la red, así el cliente escucha lo que hace el otro jugador.
 
 A esos se suman los dos sonidos de interfaz, `Boton.wav` (pasar el cursor por encima) y
 `Boton Seleccionado.mp3` (hacer clic). Los dispara `pantallas.Ui` desde el propio dibujo del botón, así

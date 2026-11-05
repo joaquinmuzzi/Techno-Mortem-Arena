@@ -88,6 +88,10 @@ public final class Proyectil {
     private boolean exploto;
     /** Si en este fotograma quedo apoyada sobre un bloque. */
     private boolean apoyada;
+    /** Verdadero mientras la espada tirada esta tocando el piso; evita contar el mismo apoyo en cada fotograma. */
+    private boolean tocandoPiso;
+    /** Veces que esta espada tirada toco el piso: las junta {@link ArmasEnJuego}. */
+    private int caidasAlPiso;
     /** Las balas que le quedan a un arma de fuego tirada: con balas queda en el mapa, sin balas se rompe. */
     private int balas;
     private float esperaReflejo;
@@ -360,6 +364,10 @@ public final class Proyectil {
      * hacen rebotar.
      */
     private void moverRebotando(float paso, Arena arena) {
+        if (vy > 0f) {
+            // volvio a subir despues de un rebote: el proximo golpe contra el piso es otro
+            tocandoPiso = false;
+        }
         // con la velocidad de ahora: si ya reboto en este fotograma, el resto del fotograma va para el otro lado
         float dx = vx * paso;
         float dy = vy * paso;
@@ -371,9 +379,18 @@ public final class Proyectil {
         y += dy;
         if (chocaConBloque(arena)) {
             y -= dy;
-            if (vy < 0f && -vy < VELOCIDAD_PARA_REBOTAR) {
-                vy = 0f; // apoyada: ya no pica
-                apoyada = true;
+            if (vy < 0f) {
+                if ((tipo == Tipo.ESPADA_LANZADA || tipo == Tipo.ESPADA_LASER_LANZADA) && !tocandoPiso) {
+                    caidasAlPiso++;
+                }
+                tocandoPiso = true;
+                if (-vy < VELOCIDAD_PARA_REBOTAR) {
+                    vy = 0f; // apoyada: ya no pica
+                    apoyada = true;
+                } else {
+                    vy = -vy * REBOTE;
+                    vx *= ROCE;
+                }
             } else {
                 vy = -vy * REBOTE;
                 vx *= ROCE;
@@ -402,6 +419,16 @@ public final class Proyectil {
     /** Quien lo lanzo o lo reflejo por ultima vez. */
     Jugador getDuenio() {
         return duenio;
+    }
+
+    /**
+     * Cuantas veces esta espada tirada toco el piso desde la ultima vez, y lo reinicia. Las espadas
+     * cuentan cada rebote; las balas y los perdigones no cuentan.
+     */
+    int tomarCaidasAlPiso() {
+        int caidas = caidasAlPiso;
+        caidasAlPiso = 0;
+        return caidas;
     }
 
     /** Las balas que le quedan al arma de fuego tirada. */

@@ -20,13 +20,13 @@ import java.nio.ByteBuffer;
  */
 final class CodecEstado {
 
-    static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 1 + 1 + PowerUp.values().length;
+    static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 1 + 1 + PowerUp.values().length + 4 + 4 + 4 + 4;
 
     /**
      * Lo minimo de las armas fuera de las manos: las cuatro cantidades (proyectiles, armas en el suelo, mejoras y
-     * celdas rotas). Cada uno suma lo suyo.
+     * celdas rotas) y el contador de espadas caidas. Cada uno suma lo suyo.
      */
-    static final int BYTES_ARMAS = 4;
+    static final int BYTES_ARMAS = 4 + 4;
     /** Columna y fila de una celda que rompio un cohete. */
     static final int BYTES_POR_CELDA_ROTA = 2;
     static final int BYTES_POR_POWER_UP = 1 + 4 + 4;
@@ -71,6 +71,10 @@ final class CodecEstado {
         for (float tiempo : estado.tiempoPowerUp) {
             buffer.put((byte) Math.max(0, Math.min(255, Math.round(tiempo * 10f))));
         }
+        buffer.putInt(estado.contadorDisparosPistola);
+        buffer.putInt(estado.contadorDisparosEscopeta);
+        buffer.putInt(estado.contadorEspadasEquipadas);
+        buffer.putInt(estado.contadorArmasDeFuegoEquipadas);
     }
 
     /**
@@ -98,7 +102,14 @@ final class CodecEstado {
         for (int i = 0; i < tiempos.length; i++) {
             tiempos[i] = (buffer.get() & 0xFF) / 10f;
         }
+        int disparosPistola = buffer.getInt();
+        int disparosEscopeta = buffer.getInt();
+        int espadasEquipadas = buffer.getInt();
+        int armasDeFuegoEquipadas = buffer.getInt();
         if (arma < 0 || arma > TipoArma.values().length || balas < 0 || balas > TipoArma.MAX_BALAS) {
+            return false;
+        }
+        if (disparosPistola < 0 || disparosEscopeta < 0 || espadasEquipadas < 0 || armasDeFuegoEquipadas < 0) {
             return false;
         }
         if (!finito(x) || !finito(y) || !finito(angulo) || !finito(extension) || !finito(flash)
@@ -120,6 +131,10 @@ final class CodecEstado {
         destino.arma = arma;
         destino.balas = balas;
         System.arraycopy(tiempos, 0, destino.tiempoPowerUp, 0, tiempos.length);
+        destino.contadorDisparosPistola = disparosPistola;
+        destino.contadorDisparosEscopeta = disparosEscopeta;
+        destino.contadorEspadasEquipadas = espadasEquipadas;
+        destino.contadorArmasDeFuegoEquipadas = armasDeFuegoEquipadas;
         return true;
     }
 
@@ -255,6 +270,7 @@ final class CodecEstado {
             buffer.put((byte) celda[0]);
             buffer.put((byte) celda[1]);
         }
+        buffer.putInt(armas.contadorEspadasAlCaer);
     }
 
     /**
@@ -269,7 +285,7 @@ final class CodecEstado {
         }
         int proyectiles = buffer.get();
         if (proyectiles < 0 || proyectiles > EstadoArmas.MAX_PROYECTILES
-            || buffer.remaining() < proyectiles * BYTES_POR_PROYECTIL + 1) {
+            || buffer.remaining() < proyectiles * BYTES_POR_PROYECTIL + 1 + 4) {
             return false;
         }
         float[][] leidos = new float[proyectiles][];
@@ -283,7 +299,7 @@ final class CodecEstado {
         }
         int enElSuelo = buffer.get();
         if (enElSuelo < 0 || enElSuelo > EstadoArmas.MAX_EN_EL_SUELO
-            || buffer.remaining() < enElSuelo * BYTES_POR_ARMA_EN_EL_SUELO) {
+            || buffer.remaining() < enElSuelo * BYTES_POR_ARMA_EN_EL_SUELO + 4) {
             return false;
         }
         float[][] armas = new float[enElSuelo][];
@@ -324,6 +340,13 @@ final class CodecEstado {
                 return false;
             }
         }
+        if (buffer.remaining() < 4) {
+            return false;
+        }
+        int espadasAlCaer = buffer.getInt();
+        if (espadasAlCaer < 0) {
+            return false;
+        }
         destino.celdasRotas.clear();
         for (int[] celda : rotas) {
             destino.celdasRotas.add(celda);
@@ -340,6 +363,7 @@ final class CodecEstado {
         for (float[] a : armas) {
             destino.enElSuelo.add(a);
         }
+        destino.contadorEspadasAlCaer = espadasAlCaer;
         return true;
     }
 

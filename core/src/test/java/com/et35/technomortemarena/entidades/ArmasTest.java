@@ -550,6 +550,62 @@ class ArmasTest {
     }
 
     @Test
+    void losContadoresDeArmasSubenAlEquiparYNoSeReinician() {
+        Jugador a = tirador(1000f);
+        assertEquals(0, a.getContadorEspadasEquipadas());
+        assertEquals(0, a.getContadorArmasDeFuegoEquipadas());
+
+        a.equipar(TipoArma.PISTOLA);
+        assertEquals(1, a.getContadorArmasDeFuegoEquipadas());
+        assertEquals(0, a.getContadorEspadasEquipadas());
+
+        a.equipar(TipoArma.ESCOPETA);
+        assertEquals(2, a.getContadorArmasDeFuegoEquipadas());
+
+        a.equipar(TipoArma.ESPADA);
+        assertEquals(1, a.getContadorEspadasEquipadas());
+
+        a.reiniciar(1000f, PISO, true);
+        assertEquals(1, a.getContadorEspadasEquipadas(), "el reinicio no borra el contador");
+        assertEquals(2, a.getContadorArmasDeFuegoEquipadas(), "el reinicio no borra el contador");
+        assertEquals(TipoArma.ESPADA, a.getArma(), "la espada inicial del reinicio no cuenta como recogida");
+    }
+
+    @Test
+    void cadaDisparoSumaElContadorDeSuArma() {
+        Jugador a = tirador(1000f);
+        Jugador d = blanco(3000f);
+        a.equipar(TipoArma.PISTOLA);
+        apuntarALaDerecha();
+        guion.clic = true;
+        pasos(a, d, 1);
+        assertEquals(1, a.getContadorDisparosPistola());
+        assertEquals(0, a.getContadorDisparosEscopeta());
+
+        Jugador b = tirador(1000f);
+        b.equipar(TipoArma.ESCOPETA);
+        guion.clic = true;
+        pasos(b, d, 1);
+        assertEquals(0, b.getContadorDisparosPistola(), "la escopeta no suma al contador de la pistola");
+        assertEquals(1, b.getContadorDisparosEscopeta());
+    }
+
+    @Test
+    void elContadorDeEspadasAlCaerSumaCadaToqueDelPiso() {
+        // cae desde alto y rebota varias veces antes de quedarse apoyada
+        Proyectil espada = Proyectil.inofensiva(Proyectil.Tipo.ESPADA_LANZADA, null, 1500f, PISO + 400f, 0f, 0f);
+        armas.getProyectiles().add(espada);
+        Jugador a = tirador(1000f);
+        Jugador d = blanco(3000f);
+        for (int i = 0; i < 600 && !armas.getProyectiles().isEmpty(); i++) {
+            armas.actualizar(DT, arena, a, d);
+        }
+        assertEquals(1, armas.getEnElSuelo().size(), "termina apoyada en el mapa");
+        assertTrue(armas.getContadorEspadasAlCaer() >= 2,
+            "cuenta el primer golpe y los rebotes: " + armas.getContadorEspadasAlCaer());
+    }
+
+    @Test
     void elArmaYLasBalasViajanAlCliente() {
         Jugador a = tirador(1000f);
         a.equipar(TipoArma.ESCOPETA);

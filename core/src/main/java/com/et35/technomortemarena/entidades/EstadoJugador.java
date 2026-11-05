@@ -31,4 +31,10 @@ public final class EstadoJugador {
     /** Cuantos golpes dio y cuantos aterrizajes hizo, para que el cliente dispare los sonidos. */
     public int contadorGolpes;
     public int contadorAterrizajes;
+    /** Disparos de pistola y de escopeta, para los sonidos del cliente. */
+    public int contadorDisparosPistola;
+    public int contadorDisparosEscopeta;
+    /** Armas recogidas del suelo, separadas por el sonido que les corresponde. */
+    public int contadorEspadasEquipadas;
+    public int contadorArmasDeFuegoEquipadas;
 }

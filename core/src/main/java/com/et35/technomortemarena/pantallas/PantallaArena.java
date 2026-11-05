@@ -607,9 +607,15 @@ public class PantallaArena extends ScreenAdapter {
         }
     }
 
-    /** Marcador en cero, ronda 1 y el mapa como era antes de las piezas que se colocaron entre rondas. */
+    /**
+     * Marcador en cero, ronda 1, el mapa sin las piezas que se colocaron entre rondas y sin armas tiradas:
+     * una partida nueva de verdad. Se usa al irse o llegar un jugador y en la revancha.
+     */
     private void reiniciarRondasYNivel() {
         rondas.reiniciar();
+        // sin esto, las armas del suelo y las que volaban pasaban a la partida nueva (al irse o llegar un
+        // jugador) hasta el primer reinicio de ronda
+        armas.limpiar();
         if (edicion != null) {
             edicion.reiniciarNivel();
             arena = Arena.desdeGrilla(filasOriginales);

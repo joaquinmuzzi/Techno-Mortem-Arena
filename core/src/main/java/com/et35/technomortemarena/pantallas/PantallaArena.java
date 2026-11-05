@@ -97,7 +97,7 @@ public class PantallaArena extends ScreenAdapter {
         "SALTAR: W",
         "RODAR: SHIFT",
         "APUNTAR: MOUSE",
-        "ESTOCADA / DISPARO: CLIC",
+        "ATACAR: CLIC (SIN ARMA, GOLPE)",
         "TIRAR EL ARMA: CLIC DERECHO",
     };
 
@@ -723,21 +723,21 @@ public class PantallaArena extends ScreenAdapter {
      */
     private void dibujarVidas(Jugador jugador, Color tinte, float xAncla, boolean haciaLaIzquierda) {
         // Un duelista muerto muestra las vidas vacias: el contador es "lo que queda por perder".
-        // Cada corazon se llena por tercios: una bala saca un tercio, la espada uno entero.
-        int tercios = jugador.isVivo() ? jugador.getTercios() : 0;
+        // Cada corazon se llena por sextos: la espada saca uno entero, una bala un tercio y un punetazo un sexto.
+        int partes = jugador.isVivo() ? jugador.getPartes() : 0;
         for (int i = 0; i < VIDAS_INICIALES; i++) {
             float x = haciaLaIzquierda
                 ? xAncla - TAMANO_VIDA - i * (TAMANO_VIDA + SEPARACION_VIDA)
                 : xAncla + i * (TAMANO_VIDA + SEPARACION_VIDA);
             float y = ALTO_UI - MARGEN_HUD - TAMANO_VIDA;
             ui.rectangulo(batch, rectAux.set(x, y, TAMANO_VIDA, TAMANO_VIDA), COLOR_VIDA_PERDIDA);
-            int enEste = MathUtils.clamp(tercios - i * Jugador.TERCIOS_POR_CORAZON, 0, Jugador.TERCIOS_POR_CORAZON);
+            int enEste = MathUtils.clamp(partes - i * Jugador.PARTES_POR_CORAZON, 0, Jugador.PARTES_POR_CORAZON);
             if (enEste > 0) {
-                float ancho = TAMANO_VIDA * enEste / Jugador.TERCIOS_POR_CORAZON;
+                float ancho = TAMANO_VIDA * enEste / Jugador.PARTES_POR_CORAZON;
                 ui.rectangulo(batch, rectAux.set(x, y, ancho, TAMANO_VIDA), tinte);
             }
         }
-        if (jugador.getArma() == TipoArma.PISTOLA) {
+        if (jugador.getArma() != null && jugador.getArma().esDeFuego()) {
             String texto = "BALAS " + jugador.getBalas();
             float ancho = ui.anchoTexto(texto, 1f);
             float x = haciaLaIzquierda ? xAncla - ancho : xAncla;

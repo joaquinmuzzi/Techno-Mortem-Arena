@@ -8,6 +8,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entrada.EntradaJugador;
@@ -66,12 +67,24 @@ public class Jugador {
     private static final float VELOCIDAD_GIRO = 12f;
     /** Igual que {@link #VELOCIDAD_GIRO}, pero mientras un choque de hojas tiene bloqueado al jugador. */
     private static final float VELOCIDAD_GIRO_BLOQUEADO = 3f;
-    /** Un corazon se divide en tercios: la espada saca uno entero y una bala un tercio. */
-    public static final int TERCIOS_POR_CORAZON = 3;
-    /** Segundos que tarda en aparecer una espada nueva en la mano despues de tirar el arma. */
-    public static final float REAPARICION_ARMA = 1.5f;
-    /** Segundos entre un disparo de pistola y el siguiente. */
-    private static final float RECARGA_DISPARO = 0.22f;
+    /**
+     * Un corazon se divide en sextos: la espada saca uno entero, una bala un tercio y un perdigon o un
+     * punetazo un sexto.
+     */
+    public static final int PARTES_POR_CORAZON = 6;
+    /** Segundos entre un disparo y el siguiente: la escopeta tarda mas en recargar. */
+    private static final float RECARGA_PISTOLA = 0.22f;
+    private static final float RECARGA_ESCOPETA = 0.6f;
+    /** Abertura total del abanico de perdigones de la escopeta, en radianes. */
+    private static final float ABANICO_ESCOPETA = 0.5f;
+    /** El punetazo sin arma: corto, con recarga, empuja y a veces desarma. */
+    private static final float DURACION_PUNIO = 0.16f;
+    private static final float RECARGA_PUNIO = 0.35f;
+    private static final float EMPUJE_PUNIO = 0.35f * VELOCIDAD;
+    /** Lado de la caja con que pega el puno, adelante de la mano. */
+    private static final float LADO_PUNIO = 36f * ESCALA;
+    /** Uno de cada tantos punetazos que conectan le hace soltar el arma al rival. */
+    static final int CHANCE_DESARME = 3;
     /** Invulnerabilidad despues de una bala: corta, para que una rafaga lastime pero no mate de golpe. */
     private static final float FLASH_BALA = 0.25f;
     private static final float EMPUJE_BALA = 0.08f * VELOCIDAD;
@@ -125,11 +138,15 @@ public class Jugador {
     private float tiempoRodada;
     private float recargaRodada;
     private float direccionRodada;
-    /** Lo que tiene en la mano; {@code null} mientras espera la espada nueva despues de tirar el arma. */
+    /** Lo que tiene en la mano; {@code null} con las manos vacias (pega punetazos). */
     private TipoArma arma = TipoArma.ESPADA;
     private int balas;
-    private float tiempoReaparicionArma;
     private float recargaDisparo;
+    /** Si el punetazo en curso ya pego: cada punetazo hiere una sola vez. */
+    private boolean punioConecto;
+    /** El arma que se le cayo de la mano por un punetazo, hasta que la junta {@link ArmasEnJuego}. */
+    private TipoArma armaSoltada;
+    private Random azar = new Random();
     /** Balas y armas tiradas en este fotograma: las junta {@link ArmasEnJuego}. */
     private final List<Proyectil> lanzados = new ArrayList<>();
     private final Hoja hoja = new Hoja();
@@ -169,6 +186,8 @@ public class Jugador {
     private static final float ANCHO_PISTOLA = 30f * ESCALA;
     private static final float ALTO_PISTOLA = 12f * ESCALA;
     private static final Color COLOR_PISTOLA = new Color(0.55f, 0.58f, 0.65f, 1f);
+    private static final float ANCHO_ESCOPETA = 46f * ESCALA;
+    private static final Color COLOR_ESCOPETA = new Color(0.62f, 0.45f, 0.30f, 1f);
 
     private static final float ANCHO_BRAZO = 22f * ESCALA;
     private static final float ALTO_BRAZO = 8f * ESCALA;
@@ -184,7 +203,7 @@ public class Jugador {
         this.tinte = tinte;
         this.mirandoDerecha = mirandoDerecha;
         this.posicion.set(x, y);
-        this.vidaInicial = vida * TERCIOS_POR_CORAZON;
+        this.vidaInicial = vida * PARTES_POR_CORAZON;
         this.vida = vidaInicial;
         this.anguloObjetivo = mirandoDerecha ? 0f : MathUtils.PI;
         this.angulo = mirandoDerecha ? 0f : MathUtils.PI;
@@ -227,8 +246,9 @@ public class Jugador {
         recargaRodada = 0f;
         arma = TipoArma.ESPADA;
         balas = 0;
-        tiempoReaparicionArma = 0f;
         recargaDisparo = 0f;
+        punioConecto = false;
+        armaSoltada = null;
         lanzados.clear();
         corriendo = false;
         enVuelo = false;
@@ -261,7 +281,7 @@ public class Jugador {
         integrarFisica(delta, arena, oponente);
         // La hoja se coloca despues de mover al jugador, asi sigue al hombro y al cursor del fotograma.
         apuntar(delta);
-        actualizarArma(delta);
+        actualizarArma();
         actualizarHoja();
         resolverColisiones(arena, oponente);
         actualizarPiso(estabaEnPiso);
@@ -366,8 +386,15 @@ public class Jugador {
         if (recargaDisparo > 0f) {
             recargaDisparo -= delta;
         }
-        if (vivo && arma == TipoArma.PISTOLA && entrada.estocada && recargaDisparo <= 0f && balas > 0) {
+        if (vivo && arma != null && arma.esDeFuego() && entrada.estocada && recargaDisparo <= 0f && balas > 0) {
             disparar();
+        }
+        if (vivo && arma == null && !desarmado && entrada.estocada && tiempoEstocada <= 0f && recargaEstocada <= 0f) {
+            // sin arma, el clic tira un punetazo: el brazo sale como una estocada corta
+            duracionEstocadaActual = DURACION_PUNIO;
+            tiempoEstocada = DURACION_PUNIO;
+            recargaEstocada = RECARGA_PUNIO;
+            punioConecto = false;
         }
         if (vivo && arma == TipoArma.ESPADA && entrada.estocada && tiempoEstocada <= 0f && recargaEstocada <= 0f) {
             duracionEstocadaActual = DURACION_ESTOCADA * (bloqueadoTimer > 0f ? 1.2f : 1f);
@@ -379,41 +406,43 @@ public class Jugador {
             : 0f;
     }
 
-    /** Con la pistola, el clic dispara una bala hacia donde apunta. Sin balas vuelve a la espada. */
+    /**
+     * Con un arma de fuego, el clic dispara hacia donde apunta: la pistola una bala y la escopeta un
+     * abanico de {@link TipoArma#PERDIGONES} perdigones. Sin balas se queda con las manos vacias.
+     */
     private void disparar() {
         float x = pivoteX() + (float) Math.cos(angulo) * LARGO_PISTOLA;
         float y = pivoteY() + (float) Math.sin(angulo) * LARGO_PISTOLA;
-        lanzados.add(new Proyectil(Proyectil.Tipo.BALA, this, x, y, angulo, Proyectil.VELOCIDAD_BALA));
+        if (arma == TipoArma.ESCOPETA) {
+            for (int i = 0; i < TipoArma.PERDIGONES; i++) {
+                float desvio = ABANICO_ESCOPETA * ((float) i / (TipoArma.PERDIGONES - 1) - 0.5f);
+                lanzados.add(new Proyectil(Proyectil.Tipo.PERDIGON, this, x, y, angulo + desvio, Proyectil.VELOCIDAD_PERDIGON));
+            }
+            recargaDisparo = RECARGA_ESCOPETA;
+        } else {
+            lanzados.add(new Proyectil(Proyectil.Tipo.BALA, this, x, y, angulo, Proyectil.VELOCIDAD_BALA));
+            recargaDisparo = RECARGA_PISTOLA;
+        }
         balas--;
-        recargaDisparo = RECARGA_DISPARO;
         if (balas <= 0) {
-            arma = TipoArma.ESPADA;
+            arma = null;
         }
     }
 
     /**
      * El clic derecho tira lo que tiene en la mano hacia donde apunta: vuela, cae y hiere si toca al
-     * rival. Sin arma no puede atacar hasta que, a los {@link #REAPARICION_ARMA} segundos, le aparece una
-     * espada nueva en la mano.
+     * rival. La espada rebota y queda en el mapa para que la agarre cualquiera; las armas de fuego se
+     * rompen al chocar. Despues de tirarla queda con las manos vacias hasta agarrar otra.
      */
-    private void actualizarArma(float delta) {
-        if (arma == null) {
-            tiempoReaparicionArma -= delta;
-            if (tiempoReaparicionArma <= 0f) {
-                arma = TipoArma.ESPADA;
-            }
+    private void actualizarArma() {
+        if (arma == null || !vivo || desarmado || !entrada.lanzar) {
             return;
         }
-        if (!vivo || desarmado || !entrada.lanzar) {
-            return;
-        }
-        Proyectil.Tipo tipo = arma == TipoArma.ESPADA ? Proyectil.Tipo.ESPADA_LANZADA : Proyectil.Tipo.PISTOLA_LANZADA;
-        lanzados.add(new Proyectil(tipo, this, pivoteX(), pivoteY(), angulo, Proyectil.VELOCIDAD_LANZADA));
+        lanzados.add(new Proyectil(Proyectil.lanzadaDe(arma), this, pivoteX(), pivoteY(), angulo, Proyectil.VELOCIDAD_LANZADA));
         arma = null;
         balas = 0;
         tiempoEstocada = 0f;
         extension = 0f;
-        tiempoReaparicionArma = REAPARICION_ARMA;
     }
 
     /** Verdadero si tiene la espada en la mano: solo ahi la hoja hiere, choca y empuja. */
@@ -655,6 +684,15 @@ public class Jugador {
             oponente.activarFlash(1f, this);
             registrarGolpe();
         }
+
+        // Sin arma, el punetazo pega con la mano, una vez por punetazo.
+        if (arma == null && !desarmado && vivo && tiempoEstocada > 0f && !punioConecto && punioToca(cajaOponente)) {
+            punioConecto = true;
+            float direccion = oponente.posicion.x + ANCHO / 2f >= posicion.x + ANCHO / 2f ? 1f : -1f;
+            if (oponente.recibirPunetazo(direccion)) {
+                registrarGolpe();
+            }
+        }
         if (posicion.y < -ALTO) {
             vivo = false;
         }
@@ -721,6 +759,9 @@ public class Jugador {
             } else if (arma == TipoArma.PISTOLA) {
                 batch.setColor(COLOR_PISTOLA);
                 dibujarGirado(batch, recursos.brazo, ANCHO_PISTOLA, ALTO_PISTOLA);
+            } else if (arma == TipoArma.ESCOPETA) {
+                batch.setColor(COLOR_ESCOPETA);
+                dibujarGirado(batch, recursos.brazo, ANCHO_ESCOPETA, ALTO_PISTOLA);
             }
         }
         batch.setColor(Color.WHITE);
@@ -742,11 +783,53 @@ public class Jugador {
 	    float direccion = (miCentro < suCentro) ? -1f : 1f;
 	    empujar(direccion, EMPUJE_GOLPE);
 	    velocidad.y += 400f * ESCALA;
-	    quitarVida(TERCIOS_POR_CORAZON);
+	    quitarVida(PARTES_POR_CORAZON);
     }
 
-    private void quitarVida(int tercios) {
-        vida = Math.max(0, vida - tercios);
+    /** Verdadero si la mano (adelante del brazo, en la base de la hoja) toca el cuerpo. */
+    private boolean punioToca(Rectangle cuerpoAjeno) {
+        float x = hoja.getBaseX() + (float) Math.cos(angulo) * LADO_PUNIO / 2f;
+        float y = hoja.getBaseY() + (float) Math.sin(angulo) * LADO_PUNIO / 2f;
+        return cuerpoAjeno.overlaps(new Rectangle(x - LADO_PUNIO / 2f, y - LADO_PUNIO / 2f, LADO_PUNIO, LADO_PUNIO));
+    }
+
+    /**
+     * Lo golpea un punetazo: saca muy poco, lo empuja bastante y a veces le hace soltar el arma, que cae a
+     * sus pies para que la agarre cualquiera.
+     *
+     * @return {@code false} si no le hizo nada (muerto o todavia invulnerable)
+     */
+    boolean recibirPunetazo(float direccion) {
+        if (!vivo || tiempoRestanteFlash > 0f) {
+            return false;
+        }
+        tiempoRestanteFlash = FLASH_BALA;
+        empujar(direccion, EMPUJE_PUNIO);
+        quitarVida(TipoArma.DANIO_PUNIO);
+        if (!desarmado && arma != null && azar.nextInt(CHANCE_DESARME) == 0) {
+            armaSoltada = arma;
+            arma = null;
+            balas = 0;
+            tiempoEstocada = 0f;
+            extension = 0f;
+        }
+        return true;
+    }
+
+    /** El arma que se le cayo por un punetazo desde la ultima vez, o {@code null}. La deja de tener. */
+    public TipoArma tomarArmaSoltada() {
+        TipoArma soltada = armaSoltada;
+        armaSoltada = null;
+        return soltada;
+    }
+
+    /** Para los tests: hace que el desarme sea predecible. */
+    void setAzar(Random azar) {
+        this.azar = azar;
+    }
+
+    private void quitarVida(int partes) {
+        vida = Math.max(0, vida - partes);
         if (vida == 0) {
             vivo = false;
         }
@@ -755,12 +838,12 @@ public class Jugador {
     /**
      * Lo hiere algo que no es la hoja: una bala o un arma tirada.
      *
-     * @param tercios cuanto saca, en tercios de corazon
+     * @param partes cuanto saca, en sextos de corazon
      * @param direccion hacia donde lo empuja (-1 izquierda, 1 derecha)
      * @param esBala una bala empuja poco y deja una invulnerabilidad corta
      * @return {@code false} si no le hizo nada (muerto o todavia invulnerable por el golpe anterior)
      */
-    public boolean recibirDanio(int tercios, float direccion, boolean esBala) {
+    public boolean recibirDanio(int partes, float direccion, boolean esBala) {
         if (!vivo || tiempoRestanteFlash > 0f) {
             return false;
         }
@@ -769,7 +852,7 @@ public class Jugador {
         if (!esBala) {
             velocidad.y += 400f * ESCALA;
         }
-        quitarVida(tercios);
+        quitarVida(partes);
         return true;
     }
 
@@ -779,11 +862,10 @@ public class Jugador {
         contadorGolpes++;
     }
 
-    /** Agarra un arma del mapa: reemplaza lo que tenia en la mano. La pistola viene cargada. */
+    /** Agarra un arma del mapa: reemplaza lo que tenia en la mano. Las armas de fuego vienen cargadas. */
     public void equipar(TipoArma nueva) {
         arma = nueva;
-        balas = nueva == TipoArma.PISTOLA ? TipoArma.BALAS_PISTOLA : 0;
-        tiempoReaparicionArma = 0f;
+        balas = nueva.getBalasIniciales();
         tiempoEstocada = 0f;
         extension = 0f;
     }
@@ -794,7 +876,7 @@ public class Jugador {
         lanzados.clear();
     }
 
-    /** Lo que tiene en la mano, o {@code null} si acaba de tirar el arma. */
+    /** Lo que tiene en la mano, o {@code null} con las manos vacias. */
     public TipoArma getArma() {
         return arma;
     }
@@ -812,8 +894,8 @@ public class Jugador {
         return desarmado;
     }
 
-    /** Vida en tercios de corazon. */
-    public int getTercios() {
+    /** Vida en sextos de corazon. */
+    public int getPartes() {
         return vida;
     }
 
@@ -927,7 +1009,7 @@ public class Jugador {
 
     /** Corazones que le quedan, contando como entero uno que esta por la mitad. */
     public int getVida() {
-        return (vida + TERCIOS_POR_CORAZON - 1) / TERCIOS_POR_CORAZON;
+        return (vida + PARTES_POR_CORAZON - 1) / PARTES_POR_CORAZON;
     }
 
     /** Quita o devuelve la espada. El blanco del modo de prueba esta desarmado. */

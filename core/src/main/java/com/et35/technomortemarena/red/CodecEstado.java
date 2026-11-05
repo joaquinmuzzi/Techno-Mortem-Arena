@@ -82,7 +82,7 @@ final class CodecEstado {
         int aterrizajes = buffer.getInt();
         int arma = buffer.get();
         int balas = buffer.get();
-        if (arma < 0 || arma > TipoArma.values().length || balas < 0 || balas > TipoArma.BALAS_PISTOLA) {
+        if (arma < 0 || arma > TipoArma.values().length || balas < 0 || balas > TipoArma.MAX_BALAS) {
             return false;
         }
         if (!finito(x) || !finito(y) || !finito(angulo) || !finito(extension) || !finito(flash)

@@ -24,6 +24,8 @@ public final class EstadoArmas {
     public final List<float[]> powerUps = new ArrayList<>();
     /** Las celdas que rompieron los cohetes en la ronda, como {@code {columna, fila}} contando desde abajo. */
     public final List<int[]> celdasRotas = new ArrayList<>();
+    /** Veces que una espada tirada toco el piso, para que el cliente dispare el sonido. */
+    public int contadorEspadasAlCaer;
 
     public void copiarDe(EstadoArmas origen) {
         proyectiles.clear();
@@ -42,5 +44,6 @@ public final class EstadoArmas {
         for (int[] c : origen.celdasRotas) {
             celdasRotas.add(c.clone());
         }
+        contadorEspadasAlCaer = origen.contadorEspadasAlCaer;
     }
 }

@@ -96,6 +96,8 @@ public final class ArmasEnJuego {
      * abajo. La pantalla rearma el mapa sin ellas; vuelven al empezar la ronda siguiente.
      */
     private final List<int[]> celdasRotas = new ArrayList<>();
+    /** Veces que una espada tirada toco el piso desde que empezo la partida, para el sonido. */
+    private int contadorEspadasAlCaer;
 
     /** @param zonasProhibidas zonas {@code {x0, y0, x1, y1}} en celdas donde no aparecen armas */
     public ArmasEnJuego(Random azar, List<float[]> zonasProhibidas) {
@@ -133,6 +135,7 @@ public final class ArmasEnJuego {
             if (proyectil.exploto()) {
                 explotar(proyectil.getX(), proyectil.getY(), proyectil.getDuenio(), arena, uno, dos);
             }
+            contadorEspadasAlCaer += proyectil.tomarCaidasAlPiso();
             if (!proyectil.isActivo()) {
                 if (proyectil.dejaArmaEnElSuelo()) {
                     // el arma termino de rebotar: queda apoyada donde freno, con las balas que tenia
@@ -582,6 +585,11 @@ public final class ArmasEnJuego {
         return enElSuelo;
     }
 
+    /** Veces que una espada tirada toco el piso; el contador solo sube, para disparar el sonido. */
+    public int getContadorEspadasAlCaer() {
+        return contadorEspadasAlCaer;
+    }
+
     /** Copia en {@code destino} lo que hay que dibujar en el cliente. */
     public void exportar(EstadoArmas destino) {
         destino.proyectiles.clear();
@@ -600,6 +608,7 @@ public final class ArmasEnJuego {
         for (int[] celda : celdasRotas) {
             destino.celdasRotas.add(celda.clone());
         }
+        destino.contadorEspadasAlCaer = contadorEspadasAlCaer;
     }
 
     /** Pisa lo que hay con lo que mando el anfitrion. Lo usa el cliente, que no simula las armas. */
@@ -621,6 +630,7 @@ public final class ArmasEnJuego {
         for (int[] celda : origen.celdasRotas) {
             celdasRotas.add(celda.clone());
         }
+        contadorEspadasAlCaer = origen.contadorEspadasAlCaer;
     }
 
     /** Dibuja las armas en el suelo y los proyectiles. Entre {@code batch.begin()} y {@code end()}. */

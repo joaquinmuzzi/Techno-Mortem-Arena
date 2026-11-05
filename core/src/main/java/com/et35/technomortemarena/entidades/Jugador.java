@@ -192,6 +192,12 @@ public class Jugador {
     /** Cuantas veces ocurrieron: viajan por la red para que los clientes disparen los sonidos. */
     private int contadorGolpes;
     private int contadorAterrizajes;
+    /** Disparos de cada arma de fuego, para que el cliente de red reproduzca el efecto. */
+    private int contadorDisparosPistola;
+    private int contadorDisparosEscopeta;
+    /** Armas recogidas del suelo, separadas por tipo de sonido. */
+    private int contadorEspadasEquipadas;
+    private int contadorArmasDeFuegoEquipadas;
 
     /** Bloque sobre el que esta parado, si lo hay. Sirve para avisar solo al aterrizar. */
     private Bloque bloqueBajoPies;
@@ -455,6 +461,7 @@ public class Jugador {
                 lanzados.add(new Proyectil(Proyectil.Tipo.PERDIGON, this, x, y, angulo + desvio, velocidad));
             }
             recargaDisparo = RECARGA_ESCOPETA * factorRecarga();
+            contadorDisparosEscopeta++;
         } else if (arma == TipoArma.RIFLE_LASER) {
             lanzados.add(new Proyectil(Proyectil.Tipo.LASER, this, x, y, angulo, Proyectil.VELOCIDAD_LASER));
             recargaDisparo = RECARGA_RIFLE * factorRecarga();
@@ -464,6 +471,7 @@ public class Jugador {
         } else {
             lanzados.add(new Proyectil(Proyectil.Tipo.BALA, this, x, y, angulo, Proyectil.VELOCIDAD_BALA));
             recargaDisparo = RECARGA_PISTOLA * factorRecarga();
+            contadorDisparosPistola++;
         }
         balas--;
         if (balas <= 0) {
@@ -1018,6 +1026,11 @@ public class Jugador {
         balas = nueva.esDeFuego() ? balasQueTrae : 0;
         tiempoEstocada = 0f;
         extension = 0f;
+        if (nueva.esEspada()) {
+            contadorEspadasEquipadas++;
+        } else if (nueva.esDeFuego()) {
+            contadorArmasDeFuegoEquipadas++;
+        }
     }
 
     /** Pasa a {@code destino} las balas y armas que tiro desde la ultima vez. */
@@ -1124,6 +1137,10 @@ public class Jugador {
         destino.tiempoRestanteFlash = tiempoRestanteFlash;
         destino.contadorGolpes = contadorGolpes;
         destino.contadorAterrizajes = contadorAterrizajes;
+        destino.contadorDisparosPistola = contadorDisparosPistola;
+        destino.contadorDisparosEscopeta = contadorDisparosEscopeta;
+        destino.contadorEspadasEquipadas = contadorEspadasEquipadas;
+        destino.contadorArmasDeFuegoEquipadas = contadorArmasDeFuegoEquipadas;
     }
 
     /**
@@ -1146,6 +1163,10 @@ public class Jugador {
         tiempoRestanteFlash = origen.tiempoRestanteFlash;
         contadorGolpes = origen.contadorGolpes;
         contadorAterrizajes = origen.contadorAterrizajes;
+        contadorDisparosPistola = origen.contadorDisparosPistola;
+        contadorDisparosEscopeta = origen.contadorDisparosEscopeta;
+        contadorEspadasEquipadas = origen.contadorEspadasEquipadas;
+        contadorArmasDeFuegoEquipadas = origen.contadorArmasDeFuegoEquipadas;
         actualizarHoja();
     }
 
@@ -1157,6 +1178,26 @@ public class Jugador {
     /** Cantidad de aterrizajes desde que empezo; sube de a uno en cada aterrizaje. */
     public int getContadorAterrizajes() {
         return contadorAterrizajes;
+    }
+
+    /** Disparos de pistola desde que empezo la partida. */
+    public int getContadorDisparosPistola() {
+        return contadorDisparosPistola;
+    }
+
+    /** Disparos de escopeta desde que empezo la partida. */
+    public int getContadorDisparosEscopeta() {
+        return contadorDisparosEscopeta;
+    }
+
+    /** Espadas recogidas del suelo desde que empezo la partida. */
+    public int getContadorEspadasEquipadas() {
+        return contadorEspadasEquipadas;
+    }
+
+    /** Pistolas o escopetas recogidas del suelo desde que empezo la partida. */
+    public int getContadorArmasDeFuegoEquipadas() {
+        return contadorArmasDeFuegoEquipadas;
     }
 
     /** Corazones que le quedan, contando como entero uno que esta por la mitad. */

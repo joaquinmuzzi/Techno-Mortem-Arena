@@ -66,8 +66,6 @@ public final class Proyectil {
     private boolean apoyada;
     /** Las balas que le quedan a un arma de fuego tirada: con balas queda en el mapa, sin balas se rompe. */
     private int balas;
-    /** El disparo de escopeta al que pertenece un perdigon (0 si no es un perdigon). */
-    private int rafaga;
     private final Rectangle caja = new Rectangle();
 
     public Proyectil(Tipo tipo, Jugador duenio, float x, float y, float angulo, float velocidad) {
@@ -100,12 +98,6 @@ public final class Proyectil {
     /** Le pone las balas que tenia el arma de fuego en la mano al tirarla. */
     Proyectil conBalas(int balas) {
         this.balas = balas;
-        return this;
-    }
-
-    /** Marca el perdigon como parte del disparo numero {@code rafaga}. */
-    Proyectil deLaRafaga(int rafaga) {
-        this.rafaga = rafaga;
         return this;
     }
 
@@ -219,7 +211,10 @@ public final class Proyectil {
 
     private void herir(Jugador tocado) {
         float direccion = vx >= 0f ? 1f : -1f;
-        if (tocado.recibirDanio(getDanio(), direccion, esDisparo(), rafaga) && duenio != null) {
+        boolean hirio = tipo == Tipo.PERDIGON
+            ? tocado.recibirPerdigon(getDanio(), direccion)
+            : tocado.recibirDanio(getDanio(), direccion, esDisparo());
+        if (hirio && duenio != null) {
             duenio.registrarGolpe();
         }
         if (rebota()) {

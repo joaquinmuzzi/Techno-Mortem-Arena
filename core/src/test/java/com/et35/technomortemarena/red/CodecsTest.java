@@ -232,7 +232,7 @@ class CodecsTest {
             (Consumer<EstadoPartida>) e -> e.cursorFila = Arena.FILAS,
             (Consumer<EstadoPartida>) e -> e.tiempoEdicion = Float.NaN,
             (Consumer<EstadoPartida>) e -> e.tiempoEdicion = -1f,
-            (Consumer<EstadoPartida>) e -> e.piezas.add(new int[] {9, 0, 0}),
+            (Consumer<EstadoPartida>) e -> e.piezas.add(new int[] {20, 0, 0}),
             (Consumer<EstadoPartida>) e -> e.piezas.add(new int[] {0, Arena.COLUMNAS, 0}),
             (Consumer<EstadoPartida>) e -> e.piezas.add(new int[] {0, 0, Arena.FILAS}),
         };
@@ -321,6 +321,12 @@ class CodecsTest {
         CodecEstado.escribir(buffer, estado);
         buffer.flip();
         assertFalse(CodecEstado.leer(buffer, new EstadoJugador()));
+    }
+
+    @Test
+    void unaFilaConSpawnersDeArmasViajaPorLaRed() {
+        String original = "PPP" + fila('.', 10) + "EEE" + fila('#', Arena.COLUMNAS - 16);
+        assertEquals(original, CodecMapa.decodificarFila(CodecMapa.codificarFila(original), Arena.COLUMNAS));
     }
 
     @Test

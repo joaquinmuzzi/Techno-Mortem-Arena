@@ -190,6 +190,9 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Corregido
 
+- Red: cuando un jugador se iba o llegaba a la sala, las armas del suelo y las que volaban quedaban en la
+  partida nueva hasta el primer reinicio de ronda. Ahora la partida arranca sin armas (lo mismo en la
+  revancha).
 - Selección de mapa, "Mis mapas": con más de 5 mapas guardados, las filas se caían fuera de la pantalla
   apenas aparecían (el rectángulo de cada fila se usaba también como punto de partida de la lista, y
   terminaba en la última fila). Además, la lista se movía con el movimiento del mouse y no con la rueda.

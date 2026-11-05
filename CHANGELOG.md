@@ -200,6 +200,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Se reemplazó la pisada de correr (`Running On Metal Grate.mp3`, 19.8 s) por `Running.mp3`, una
   pisada corta de 0.34 s, y el aterrizaje (`Landing-Jump.mp3`) por `Landing.wav`. Así el bucle de
   correr no arrastra un fragmento largo y se nota cada pisada.
+- JUnit pasa de 5.11.4 a 6.1.3. Como JUnit 6 exige Java 17, solo los tests se compilan con
+  `--release 17` (`core/build.gradle`); el bytecode del juego sigue siendo Java 8.
 
 ### Corregido
 

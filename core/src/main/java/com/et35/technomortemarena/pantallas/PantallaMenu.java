@@ -52,14 +52,16 @@ public class PantallaMenu extends ScreenAdapter {
     /** Segundos desde que se abrio el menu: mueve un poco las espadas, como si estuvieran en guardia. */
     private float tiempo;
 
-    private final Rectangle botonJugar = new Rectangle(ANCHO_MUNDO / 2f - 120f, 330f, 240f, 60f);
-    private final Rectangle botonMultijugador = new Rectangle(ANCHO_MUNDO / 2f - 120f, 255f, 240f, 60f);
-    private final Rectangle botonEditor = new Rectangle(ANCHO_MUNDO / 2f - 120f, 180f, 240f, 60f);
-    private final Rectangle botonSalir = new Rectangle(ANCHO_MUNDO / 2f - 120f, 105f, 240f, 60f);
+    private final Rectangle botonJugar = new Rectangle(ANCHO_MUNDO / 2f - 120f, 350f, 240f, 52f);
+    private final Rectangle botonMultijugador = new Rectangle(ANCHO_MUNDO / 2f - 120f, 288f, 240f, 52f);
+    private final Rectangle botonEditor = new Rectangle(ANCHO_MUNDO / 2f - 120f, 226f, 240f, 52f);
+    private final Rectangle botonOpciones = new Rectangle(ANCHO_MUNDO / 2f - 120f, 164f, 240f, 52f);
+    private final Rectangle botonSalir = new Rectangle(ANCHO_MUNDO / 2f - 120f, 102f, 240f, 52f);
 
     public PantallaMenu(RecursosGraficos recursos, RecursosAudio audio) {
         this.recursos = recursos;
         this.audio = audio;
+        audio.pedirMusicaMenu(true);
         ui.setAudio(audio);
     }
 
@@ -70,6 +72,7 @@ public class PantallaMenu extends ScreenAdapter {
         boolean sobreJugar = botonJugar.contains(mouse);
         boolean sobreMultijugador = botonMultijugador.contains(mouse);
         boolean sobreEditor = botonEditor.contains(mouse);
+        boolean sobreOpciones = botonOpciones.contains(mouse);
         boolean sobreSalir = botonSalir.contains(mouse);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || (Gdx.input.justTouched() && sobreJugar)) {
@@ -86,13 +89,18 @@ public class PantallaMenu extends ScreenAdapter {
             cambiarA(new PantallaEditor(recursos, audio));
             return;
         }
+        if (Gdx.input.justTouched() && sobreOpciones) {
+            ui.clic();
+            cambiarA(new PantallaOpciones(recursos, audio));
+            return;
+        }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (Gdx.input.justTouched() && sobreSalir)) {
             ui.clic();
             Gdx.app.exit();
             return;
         }
 
-        dibujar(sobreJugar, sobreMultijugador, sobreEditor, sobreSalir);
+        dibujar(sobreJugar, sobreMultijugador, sobreEditor, sobreOpciones, sobreSalir);
     }
 
     /**
@@ -105,7 +113,8 @@ public class PantallaMenu extends ScreenAdapter {
         dispose();
     }
 
-    private void dibujar(boolean sobreJugar, boolean sobreMultijugador, boolean sobreEditor, boolean sobreSalir) {
+    private void dibujar(boolean sobreJugar, boolean sobreMultijugador, boolean sobreEditor, boolean sobreOpciones,
+                         boolean sobreSalir) {
         ScreenUtils.clear(FONDO);
         viewport.apply();
         batch.setProjectionMatrix(viewport.getCamera().combined);
@@ -115,6 +124,7 @@ public class PantallaMenu extends ScreenAdapter {
         ui.boton(batch, botonJugar, sobreJugar, "MODO DE PRUEBA", 1.3f);
         ui.boton(batch, botonMultijugador, sobreMultijugador, "MULTIJUGADOR", 1.3f);
         ui.boton(batch, botonEditor, sobreEditor, "EDITOR DE NIVELES", 1.3f);
+        ui.boton(batch, botonOpciones, sobreOpciones, "OPCIONES", 1.3f);
         ui.boton(batch, botonSalir, sobreSalir, "SALIR", 1.6f);
         dibujarTitulo();
         batch.end();

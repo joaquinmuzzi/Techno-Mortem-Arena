@@ -1,6 +1,8 @@
 package com.et35.technomortemarena;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.utils.Disposable;
 
@@ -14,7 +16,11 @@ import com.badlogic.gdx.utils.Disposable;
  *
  * <p>Se guardan como {@link Sound} y no como {@code Music} porque son efectos cortos que conviene
  * tener decodificados en memoria: asi se pueden superponer y repetir en bucle (el de correr) sin
- * cortes ni pausas al leer del disco.
+ * cortes ni pausas al leer del disco. La musica del menu, en cambio, es larga: va como {@link Music}, que
+ * la lee del disco de a poco.
+ *
+ * <p>Las {@link OpcionesAudio} deciden si suenan la musica y los efectos: los efectos se reproducen con
+ * {@link #reproducir} y {@link #repetir}, que no hacen nada si estan apagados.
  */
 public class RecursosAudio implements Disposable {
 
@@ -48,6 +54,14 @@ public class RecursosAudio implements Disposable {
     /** Sonido de interfaz al hacer clic en un boton. */
     public final Sound botonSeleccionado;
 
+    /** Volumen de la musica del menu: queda por debajo de los sonidos de los botones. */
+    private static final float VOLUMEN_MUSICA = 0.5f;
+
+    private final Music musicaMenu;
+    private final OpcionesAudio opciones;
+    /** Si la pantalla actual quiere la musica del menu (las del menu si, la partida y el editor no). */
+    private boolean pideMusicaMenu;
+
     public RecursosAudio() {
         correr = cargar("sounds/Running.mp3");
         golpe = cargar("sounds/Bloody Sword Hit Sound Effect.mp3");
@@ -59,6 +73,68 @@ public class RecursosAudio implements Disposable {
         armaEquipada = cargar("sounds/Weapon-Equip.mp3");
         boton = cargar("sounds/Boton.wav");
         botonSeleccionado = cargar("sounds/Boton Seleccionado.mp3");
+        musicaMenu = Gdx.audio.newMusic(Gdx.files.internal("music/menu.mp3"));
+        musicaMenu.setLooping(true);
+        musicaMenu.setVolume(VOLUMEN_MUSICA);
+        Preferences preferencias = Gdx.app.getPreferences("techno-mortem-arena");
+        opciones = new OpcionesAudio(new OpcionesAudio.Almacen() {
+            @Override
+            public boolean leer(String clave, boolean porDefecto) {
+                return preferencias.getBoolean(clave, porDefecto);
+            }
+
+            @Override
+            public void guardar(String clave, boolean valor) {
+                preferencias.putBoolean(clave, valor);
+                preferencias.flush();
+            }
+        });
+    }
+
+    public OpcionesAudio getOpciones() {
+        return opciones;
+    }
+
+    /** Reproduce un efecto una vez, si los efectos estan prendidos. */
+    public void reproducir(Sound sonido, float volumen) {
+        if (opciones.isEfectos()) {
+            sonido.play(volumen);
+        }
+    }
+
+    /** Reproduce un efecto en bucle, si los efectos estan prendidos. Se corta con {@code sonido.stop()}. */
+    public void repetir(Sound sonido, float volumen) {
+        if (opciones.isEfectos()) {
+            sonido.loop(volumen);
+        }
+    }
+
+    /**
+     * Cada pantalla dice si quiere la musica del menu: las del menu la piden y la partida y el editor no. Si
+     * ya estaba sonando sigue sin cortarse, asi no vuelve a empezar al pasar de una pantalla del menu a otra.
+     */
+    public void pedirMusicaMenu(boolean pide) {
+        pideMusicaMenu = pide;
+        actualizarMusica();
+    }
+
+    /** Prende o apaga la musica y la deja sonando o callada al momento. */
+    public void setMusica(boolean musica) {
+        opciones.setMusica(musica);
+        actualizarMusica();
+    }
+
+    public void setEfectos(boolean efectos) {
+        opciones.setEfectos(efectos);
+    }
+
+    private void actualizarMusica() {
+        boolean debeSonar = pideMusicaMenu && opciones.isMusica();
+        if (debeSonar && !musicaMenu.isPlaying()) {
+            musicaMenu.play();
+        } else if (!debeSonar && musicaMenu.isPlaying()) {
+            musicaMenu.stop();
+        }
     }
 
     /**
@@ -84,5 +160,6 @@ public class RecursosAudio implements Disposable {
         armaEquipada.dispose();
         boton.dispose();
         botonSeleccionado.dispose();
+        musicaMenu.dispose();
     }
 }

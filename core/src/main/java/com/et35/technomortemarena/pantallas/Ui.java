@@ -117,7 +117,7 @@ public class Ui {
             return;
         }
         if (resaltado && !id.equals(idResaltado)) {
-            audio.boton.play(VOLUMEN_INTERFAZ);
+            audio.reproducir(audio.boton, VOLUMEN_INTERFAZ);
             idResaltado = id;
         } else if (!resaltado && id.equals(idResaltado)) {
             idResaltado = null;
@@ -127,7 +127,7 @@ public class Ui {
     /** Reproduce el sonido de clic cuando un boton se activa. No hace nada si la pantalla esta en silencio. */
     public void clic() {
         if (audio != null) {
-            audio.botonSeleccionado.play(VOLUMEN_INTERFAZ);
+            audio.reproducir(audio.botonSeleccionado, VOLUMEN_INTERFAZ);
         }
     }
 

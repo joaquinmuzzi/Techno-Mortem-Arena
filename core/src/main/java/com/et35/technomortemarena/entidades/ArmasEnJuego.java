@@ -7,6 +7,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.mundo.Arena;
+import com.et35.technomortemarena.mundo.Bloque;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -30,6 +31,11 @@ public final class ArmasEnJuego {
 
     /** Segundos entre una aparicion y la siguiente. */
     public static final float INTERVALO_APARICION = 8f;
+    /** Gravedad de las armas que caen: desde arriba del mapa tardan un par de segundos en llegar al piso. */
+    static final float GRAVEDAD_CAIDA = -1100f * Arena.ESCALA;
+    /** Tope de la velocidad de caida, para que se las pueda ver venir. */
+    static final float CAIDA_MAXIMA = -1400f * Arena.ESCALA;
+
     /** Segundos entre un arma y la siguiente en cada bloque spawner. */
     public static final float INTERVALO_SPAWNER = 5f;
     public static final int MAX_EN_EL_SUELO = 2;
@@ -48,7 +54,7 @@ public final class ArmasEnJuego {
     private final List<Proyectil> proyectiles = new ArrayList<>();
     /**
      * Cada una como {@code {codigo de TipoArma, x, y, segundos hasta que se pueda agarrar, balas, 1 si la
-     * hizo aparecer un spawner}}.
+     * hizo aparecer un spawner, velocidad vertical, 1 mientras cae}}. Las que caen no se pueden agarrar.
      */
     private final List<float[]> enElSuelo = new ArrayList<>();
     private final List<Proyectil> nuevos = new ArrayList<>();
@@ -102,8 +108,12 @@ public final class ArmasEnJuego {
         }
         juntarSoltadas(uno);
         juntarSoltadas(dos);
-        for (float[] arma : enElSuelo) {
+        for (Iterator<float[]> it = enElSuelo.iterator(); it.hasNext(); ) {
+            float[] arma = it.next();
             arma[3] = Math.max(0f, arma[3] - delta);
+            if (arma[7] == 1f && !caer(arma, delta, arena)) {
+                it.remove(); // se cayo por un agujero del mapa
+            }
         }
         while (proyectiles.size() > EstadoArmas.MAX_PROYECTILES) {
             proyectiles.remove(0);
@@ -137,7 +147,7 @@ public final class ArmasEnJuego {
                 TipoArma tipo = TipoArma.porCodigo((int) spawner[0]);
                 float centro = (spawner[1] + spawner[2]) / 2f;
                 enElSuelo.add(new float[] {spawner[0], centro - anchoEnElSuelo(tipo) / 2f, spawner[3], 0f,
-                    tipo.getBalasIniciales(), 1f});
+                    tipo.getBalasIniciales(), 1f, 0f, 0f});
             }
         }
     }
@@ -213,7 +223,7 @@ public final class ArmasEnJuego {
         for (Iterator<float[]> it = enElSuelo.iterator(); it.hasNext(); ) {
             float[] arma = it.next();
             TipoArma tipo = TipoArma.porCodigo((int) arma[0]);
-            if (arma[3] > 0f || jugador.getArma() != null) {
+            if (arma[3] > 0f || arma[7] == 1f || jugador.getArma() != null) {
                 continue; // recien caida, o quien la pisa ya tiene algo en la mano: para cambiar, primero hay que tirarla
             }
             if (cuerpo.overlaps(new Rectangle(arma[1], arma[2], anchoEnElSuelo(tipo), ALTO_EN_EL_SUELO))) {
@@ -231,8 +241,9 @@ public final class ArmasEnJuego {
         }
         TipoArma soltada = jugador.tomarArmaSoltada();
         if (soltada != null) {
-            dejarEnElSuelo(soltada, jugador.getPosicion().x, jugador.getPosicion().y, ESPERA_PARA_AGARRAR,
-                jugador.getBalasSoltadas());
+            // cae a los pies, o al piso si estaba en el aire
+            dejarCayendo(soltada, jugador.getPosicion().x, jugador.getPosicion().y + 1f, jugador.getBalasSoltadas());
+            enElSuelo.get(enElSuelo.size() - 1)[3] = ESPERA_PARA_AGARRAR;
         }
     }
 
@@ -242,7 +253,7 @@ public final class ArmasEnJuego {
     }
 
     void dejarEnElSuelo(TipoArma tipo, float x, float y, float espera, int balas) {
-        enElSuelo.add(new float[] {TipoArma.codigoDe(tipo), x, y, espera, balas, 0f});
+        enElSuelo.add(new float[] {TipoArma.codigoDe(tipo), x, y, espera, balas, 0f, 0f, 0f});
         while (enElSuelo.size() > EstadoArmas.MAX_EN_EL_SUELO) {
             enElSuelo.remove(0);
         }
@@ -288,7 +299,43 @@ public final class ArmasEnJuego {
         } else {
             tipo = azar.nextBoolean() ? TipoArma.PISTOLA : TipoArma.ESCOPETA;
         }
-        dejarEnElSuelo(tipo, lugar[0], lugar[1], 0f);
+        // cae desde arriba del mapa sobre el lugar elegido: se la ve venir, y se agarra cuando toca el piso
+        dejarCayendo(tipo, lugar[0], Arena.ALTO_MUNDO - Arena.CELDA, tipo.getBalasIniciales());
+    }
+
+    /** Deja un arma en el aire, cayendo: se agarra cuando se apoya en algo. */
+    void dejarCayendo(TipoArma tipo, float x, float y, int balas) {
+        dejarEnElSuelo(tipo, x, y, 0f, balas);
+        enElSuelo.get(enElSuelo.size() - 1)[7] = 1f;
+    }
+
+    /**
+     * Hace caer un arma un fotograma. Se apoya sobre el primer bloque que encuentra debajo.
+     *
+     * @return {@code false} si se cayo por debajo del mapa y hay que sacarla
+     */
+    private boolean caer(float[] arma, float delta, Arena arena) {
+        arma[6] = Math.max(CAIDA_MAXIMA, arma[6] + GRAVEDAD_CAIDA * delta);
+        float antes = arma[2];
+        float despues = antes + arma[6] * delta;
+        float ancho = anchoEnElSuelo(TipoArma.porCodigo((int) arma[0]));
+        float apoyo = Float.NEGATIVE_INFINITY;
+        for (Bloque bloque : arena.getBloques()) {
+            Rectangle area = bloque.getArea();
+            float arriba = area.y + area.height;
+            boolean debajo = area.x < arma[1] + ancho && area.x + area.width > arma[1];
+            if (debajo && arriba <= antes && arriba >= despues) {
+                apoyo = Math.max(apoyo, arriba);
+            }
+        }
+        if (apoyo != Float.NEGATIVE_INFINITY) {
+            arma[2] = apoyo;
+            arma[6] = 0f;
+            arma[7] = 0f;
+            return true;
+        }
+        arma[2] = despues;
+        return despues > -Arena.ALTO_MUNDO / 4f;
     }
 
     /**

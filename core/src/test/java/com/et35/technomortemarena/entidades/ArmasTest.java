@@ -460,7 +460,9 @@ class ArmasTest {
         float[] arma = armas.getEnElSuelo().get(0);
         TipoArma tipo = TipoArma.porCodigo((int) arma[0]);
         assertTrue(tipo == TipoArma.PISTOLA || tipo == TipoArma.ESCOPETA);
-        assertEquals(PISO, arma[2], 0.01f, "aparece apoyada sobre el piso");
+        assertTrue(arma[2] > Arena.ALTO_MUNDO / 2f, "aparece arriba, en el cielo");
+        pasos(a, d, 240); // cuatro segundos: le alcanza para caer
+        assertEquals(PISO, arma[2], 0.01f, "y cae hasta apoyarse en el piso");
 
         arma[1] = a.getPosicion().x;
         pasos(a, d, 1);
@@ -848,6 +850,78 @@ class ArmasTest {
             distintos |= Math.abs(primero - segundo) > 0.001f;
         }
         assertTrue(distintos, "dos disparos no salen exactamente igual");
+    }
+
+    // ---- armas que caen del cielo
+
+    @Test
+    void unArmaQueCaeNoSeAgarraEnElAire() {
+        Jugador vacio = desarmado(1000f);
+        Jugador d = blanco(3500f);
+        // cae justo sobre el jugador: pasa por su cuerpo pero no la agarra hasta que toca el piso
+        armas.dejarCayendo(TipoArma.PISTOLA, vacio.getPosicion().x, PISO + 400f, 6);
+        boolean laTuvoEnElAire = false;
+        for (int i = 0; i < 120 && vacio.getArma() == null; i++) {
+            float[] arma = armas.getEnElSuelo().isEmpty() ? null : armas.getEnElSuelo().get(0);
+            pasos(vacio, d, 1);
+            if (vacio.getArma() != null && arma != null && arma[2] > PISO + 1f) {
+                laTuvoEnElAire = true;
+            }
+        }
+        assertFalse(laTuvoEnElAire, "la agarro antes de que tocara el piso");
+        assertEquals(TipoArma.PISTOLA, vacio.getArma(), "cuando toca el piso, si");
+    }
+
+    @Test
+    void unArmaQueCaeSeApoyaEnLaPrimeraPlataformaQueEncuentra() {
+        String aire = repetir('.', Arena.COLUMNAS);
+        String plataforma = repetir('.', 40) + repetir('#', 10) + repetir('.', Arena.COLUMNAS - 50);
+        String piso = repetir('#', Arena.COLUMNAS);
+        Arena conPlataforma = Arena.desdeGrilla(plataforma, aire, aire, aire, aire, piso, piso, piso);
+        armas.dejarCayendo(TipoArma.ESCOPETA, 42f * Arena.CELDA, Arena.ALTO_MUNDO - 100f, 3);
+        Jugador a = blanco(200f);
+        Jugador d = blanco(3500f);
+        for (int i = 0; i < 300; i++) {
+            armas.actualizar(DT, conPlataforma, a, d);
+        }
+        assertEquals(8f * Arena.CELDA, armas.getEnElSuelo().get(0)[2], 0.01f, "sobre la plataforma, no en el piso");
+    }
+
+    @Test
+    void unArmaQueCaePorUnAgujeroDesaparece() {
+        Arena conAgujero = Arena.conAgujero();
+        float centro = Arena.ANCHO_MUNDO / 2f;
+        armas.dejarCayendo(TipoArma.PISTOLA, centro - 20f, PISO + 200f, 6);
+        Jugador a = blanco(200f);
+        Jugador d = blanco(7000f);
+        for (int i = 0; i < 300; i++) {
+            armas.actualizar(DT, conAgujero, a, d);
+        }
+        assertTrue(armas.getEnElSuelo().isEmpty());
+    }
+
+    @Test
+    void elArmaQueSeCaeDeLaManoEnElAireCaeAlPiso() {
+        Jugador a = desarmado(1000f);
+        Jugador d = rivalArmado(1130f);
+        d.setAzar(new Random() {
+            @Override
+            public int nextInt(int limite) {
+                return 0;
+            }
+        });
+        apuntarALaDerecha();
+        pasos(a, d, 20);
+        d.impulsar(Jugador.IMPULSO_SALTO); // en el aire
+        pasos(a, d, 3);
+        guion.clic = true;
+        for (int i = 0; i < 10 && d.getArma() != null; i++) {
+            pasos(a, d, 1);
+        }
+        pasos(a, d, 180);
+        if (!armas.getEnElSuelo().isEmpty()) {
+            assertEquals(PISO, armas.getEnElSuelo().get(0)[2], 0.01f, "termina en el piso, no flotando");
+        }
     }
 
     private List<Proyectil> disparoHastaVaciar(Jugador a, Jugador d) {

@@ -145,7 +145,7 @@ que se tiene. Sin arma, el
 clic pega un puñetazo de corto alcance que empuja al rival y, una de cada tres veces, le hace soltar el
 arma. Con la espada también se puede desarmar: si la punta de tu hoja (su último tercio) pega en la base
 de la del rival (su primer tercio) mientras la movés, su espada sale volando hacia arriba y cae al mapa.
-Cada 8 s aparece una pistola (6 balas) o una escopeta (3 disparos de 5 perdigones en un abanico con algo de dispersión al azar, alcance medio), la que
+Cada 8 s cae del cielo una pistola (6 balas) o una escopeta (3 disparos de 5 perdigones en un abanico con algo de dispersión al azar, alcance medio), la que
 haya menos en el suelo, en un lugar al azar lejos de los spawns. Además, los bloques spawner de pistolas
 y de escopetas (de 3x3, se ponen en el editor y también se pueden elegir entre rondas) hacen aparecer su
 arma encima cada 5 s, una sola a la vez. En la esquina de arriba de cada jugador se ve el arma que tiene

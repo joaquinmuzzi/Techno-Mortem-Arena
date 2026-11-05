@@ -284,7 +284,7 @@ class CodecsTest {
     @Test
     void unasArmasAbsurdasSeRechazan() {
         float[][][] malas = {
-            {{9, 0, 0, 0}},          // un proyectil que no existe
+            {{99, 0, 0, 0}},         // un proyectil que no existe
             {{0, Float.NaN, 0, 0}},  // una posicion no finita
         };
         for (float[][] proyectiles : malas) {
@@ -402,5 +402,27 @@ class CodecsTest {
         byte[] a = CodecMapa.codificarFila(fila('#', Arena.COLUMNAS));
         byte[] b = CodecMapa.codificarFila(fila('#', Arena.COLUMNAS));
         assertArrayEquals(a, b);
+    }
+
+    @Test
+    void lasCeldasRotasViajanYLasQueSeSalenDelMapaSeRechazan() {
+        EstadoArmas armas = new EstadoArmas();
+        armas.celdasRotas.add(new int[] {179, 2});
+        armas.celdasRotas.add(new int[] {50, 100});
+        ByteBuffer buffer = ByteBuffer.allocate(256);
+        CodecEstado.escribir(buffer, armas);
+        assertEquals(CodecEstado.BYTES_ARMAS + 2 * CodecEstado.BYTES_POR_CELDA_ROTA, buffer.position());
+        buffer.flip();
+        EstadoArmas leidas = new EstadoArmas();
+        assertTrue(CodecEstado.leer(buffer, leidas));
+        assertArrayEquals(new int[] {179, 2}, leidas.celdasRotas.get(0));
+        assertArrayEquals(new int[] {50, 100}, leidas.celdasRotas.get(1));
+
+        EstadoArmas fuera = new EstadoArmas();
+        fuera.celdasRotas.add(new int[] {Arena.COLUMNAS, 2});
+        buffer = ByteBuffer.allocate(256);
+        CodecEstado.escribir(buffer, fuera);
+        buffer.flip();
+        assertFalse(CodecEstado.leer(buffer, new EstadoArmas()));
     }
 }

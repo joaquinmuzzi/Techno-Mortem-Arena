@@ -76,6 +76,8 @@ public class Jugador {
     /** Segundos entre un disparo y el siguiente: la escopeta tarda mas en recargar. */
     private static final float RECARGA_PISTOLA = 0.22f;
     private static final float RECARGA_ESCOPETA = 0.6f;
+    private static final float RECARGA_RIFLE = 0.12f;
+    private static final float RECARGA_LANZACOHETES = 1f;
     /** Abertura total del abanico de perdigones de la escopeta, en radianes (unos 17 grados). */
     static final float ABANICO_ESCOPETA = 0.3f;
     /** Cuanto se corre al azar cada perdigon de su lugar en el abanico, en radianes, para arriba o abajo. */
@@ -207,6 +209,11 @@ public class Jugador {
     private static final float ANCHO_PISTOLA = 30f * ESCALA;
     private static final float ALTO_PISTOLA = 12f * ESCALA;
     private static final float ANCHO_ESCOPETA = 46f * ESCALA;
+    private static final float ANCHO_RIFLE = 50f * ESCALA;
+    private static final float ANCHO_LANZACOHETES = 52f * ESCALA;
+    private static final float ALTO_LANZACOHETES = 16f * ESCALA;
+    /** La espada laser es la misma hoja, tenida de rojo. */
+    public static final Color COLOR_ESPADA_LASER = new Color(1f, 0.25f, 0.25f, 1f);
 
     private static final float ANCHO_BRAZO = 22f * ESCALA;
     private static final float ALTO_BRAZO = 8f * ESCALA;
@@ -448,6 +455,12 @@ public class Jugador {
                 lanzados.add(new Proyectil(Proyectil.Tipo.PERDIGON, this, x, y, angulo + desvio, velocidad));
             }
             recargaDisparo = RECARGA_ESCOPETA * factorRecarga();
+        } else if (arma == TipoArma.RIFLE_LASER) {
+            lanzados.add(new Proyectil(Proyectil.Tipo.LASER, this, x, y, angulo, Proyectil.VELOCIDAD_LASER));
+            recargaDisparo = RECARGA_RIFLE * factorRecarga();
+        } else if (arma == TipoArma.LANZACOHETES) {
+            lanzados.add(new Proyectil(Proyectil.Tipo.COHETE, this, x, y, angulo, Proyectil.VELOCIDAD_COHETE));
+            recargaDisparo = RECARGA_LANZACOHETES * factorRecarga();
         } else {
             lanzados.add(new Proyectil(Proyectil.Tipo.BALA, this, x, y, angulo, Proyectil.VELOCIDAD_BALA));
             recargaDisparo = RECARGA_PISTOLA * factorRecarga();
@@ -477,7 +490,12 @@ public class Jugador {
 
     /** Verdadero si tiene la espada en la mano: solo ahi la hoja hiere, choca y empuja. */
     private boolean tieneEspada() {
-        return !desarmado && arma == TipoArma.ESPADA;
+        return !desarmado && arma != null && arma.esEspada();
+    }
+
+    /** Verdadero si tiene una espada (comun o laser) en la mano: su hoja hiere, choca y refleja balas. */
+    public boolean tieneHoja() {
+        return tieneEspada();
     }
 
     private void leerEntrada(Arena arena, float delta) {
@@ -699,8 +717,11 @@ public class Jugador {
         }
 
         // Choque de hojas: los dos se empujan para separarse.
-        if (tieneEspada() && oponente.tieneEspada() && hoja.solapa(hojaOponente)) {
-            if (desarmaAlChocar(hojaOponente)) {
+        // la espada laser atraviesa a la comun: entre ellas no hay choque ni empuje (dos laser si chocan)
+        boolean seAtraviesan = (arma == TipoArma.ESPADA_LASER) != (oponente.arma == TipoArma.ESPADA_LASER);
+        if (tieneEspada() && oponente.tieneEspada() && !seAtraviesan && hoja.solapa(hojaOponente)) {
+            // la espada laser no se suelta
+            if (oponente.arma != TipoArma.ESPADA_LASER && desarmaAlChocar(hojaOponente)) {
                 float lado = oponente.posicion.x >= posicion.x ? 1f : -1f;
                 oponente.soltarEspadaAlAire(lado);
                 registrarGolpe();
@@ -800,6 +821,15 @@ public class Jugador {
             } else if (arma == TipoArma.ESCOPETA) {
                 batch.setColor(Color.WHITE);
                 dibujarGirado(batch, recursos.escopeta, ANCHO_ESCOPETA, ALTO_PISTOLA);
+            } else if (arma == TipoArma.RIFLE_LASER) {
+                batch.setColor(Color.WHITE);
+                dibujarGirado(batch, recursos.rifleLaser, ANCHO_RIFLE, ALTO_PISTOLA);
+            } else if (arma == TipoArma.LANZACOHETES) {
+                batch.setColor(Color.WHITE);
+                dibujarGirado(batch, recursos.lanzacohetes, ANCHO_LANZACOHETES, ALTO_LANZACOHETES);
+            } else if (arma == TipoArma.ESPADA_LASER) {
+                batch.setColor(COLOR_ESPADA_LASER);
+                dibujarEspada(batch, recursos);
             }
         }
         batch.setColor(Color.WHITE);
@@ -821,7 +851,8 @@ public class Jugador {
 	    float direccion = (miCentro < suCentro) ? -1f : 1f;
 	    empujar(direccion, EMPUJE_GOLPE);
 	    velocidad.y += 400f * ESCALA;
-	    quitarVida(PARTES_POR_CORAZON);
+	    // la espada laser pega mas fuerte que la comun
+	    quitarVida(atacante.arma != null && atacante.arma.esEspada() ? atacante.arma.getDanioHoja() : PARTES_POR_CORAZON);
     }
 
     /**
@@ -846,7 +877,7 @@ public class Jugador {
 
     /** Se le vuela la espada de la mano hacia arriba: cae al mapa sin herir y la agarra cualquiera. */
     void soltarEspadaAlAire(float lado) {
-        lanzados.add(Proyectil.inofensiva(Proyectil.Tipo.ESPADA_LANZADA, this, hoja.getBaseX(), hoja.getBaseY(),
+        lanzados.add(Proyectil.inofensiva(Proyectil.lanzadaDe(arma), this, hoja.getBaseX(), hoja.getBaseY(),
             lado * VUELO_DESARME_X, VUELO_DESARME_Y));
         arma = null;
         balas = 0;
@@ -875,7 +906,8 @@ public class Jugador {
         tiempoRestanteFlash = FLASH_BALA;
         empujar(direccion, EMPUJE_PUNIO);
         quitarVida(TipoArma.DANIO_PUNIO);
-        if (!desarmado && arma != null && azar.nextInt(CHANCE_DESARME) == 0) {
+        // la espada laser no se suelta
+        if (!desarmado && arma != null && arma != TipoArma.ESPADA_LASER && azar.nextInt(CHANCE_DESARME) == 0) {
             armaSoltada = arma;
             balasSoltadas = balas;
             arma = null;

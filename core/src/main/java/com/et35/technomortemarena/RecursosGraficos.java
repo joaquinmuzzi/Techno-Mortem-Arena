@@ -33,6 +33,9 @@ public class RecursosGraficos implements Disposable {
 
     /** Escopeta, 32x9 px, con la culata de madera a la izquierda y el cano a la derecha. */
     public final Texture escopeta;
+    public final Texture rifleLaser;
+    public final Texture lanzacohetes;
+    public final Texture cohete;
 
     /** Halo amarillo suave, 48x20 px con transparencia: marca las armas que se pueden agarrar. */
     public final Texture brillo;
@@ -49,6 +52,9 @@ public class RecursosGraficos implements Disposable {
         piso = cargar("sprites/piso.png");
         pistola = cargar("sprites/pistola.png");
         escopeta = cargar("sprites/escopeta.png");
+        rifleLaser = cargar("sprites/rifle_laser.png");
+        lanzacohetes = cargar("sprites/lanzacohetes.png");
+        cohete = cargar("sprites/cohete.png");
         brillo = cargar("sprites/brillo.png");
         powerUpVelocidad = cargar("sprites/powerup_velocidad.png");
         powerUpSalto = cargar("sprites/powerup_salto.png");
@@ -81,6 +87,9 @@ public class RecursosGraficos implements Disposable {
         piso.dispose();
         pistola.dispose();
         escopeta.dispose();
+        rifleLaser.dispose();
+        lanzacohetes.dispose();
+        cohete.dispose();
         brillo.dispose();
         powerUpVelocidad.dispose();
         powerUpSalto.dispose();

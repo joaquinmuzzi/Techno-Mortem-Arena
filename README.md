@@ -76,7 +76,7 @@ core/src/main/java/com/et35/technomortemarena/
 │   └── Pincho.java            Bloque letal al tocarlo
 ├── entidades/
 │   ├── Jugador.java           Entidad controlable: física, salto, apuntado, estocada y apilado
-│   ├── TipoArma.java          Espada, pistola y escopeta: daño al tirarlas y balas
+│   ├── TipoArma.java          Espadas y armas de fuego: daño al tirarlas, de la hoja y balas
 │   ├── Proyectil.java         Balas, perdigones y armas tiradas (la espada rebota)
 │   ├── ArmasEnJuego.java      Proyectiles y armas que aparecen en el mapa para agarrar
 │   ├── EstadoJugador.java     Lo necesario para dibujar a un jugador (viaja por la red)
@@ -145,8 +145,18 @@ que se tiene. Sin arma, el
 clic pega un puñetazo de corto alcance que empuja al rival y, una de cada tres veces, le hace soltar el
 arma. Con la espada también se puede desarmar: si la punta de tu hoja (su último tercio) pega en la base
 de la del rival (su primer tercio) mientras la movés, su espada sale volando hacia arriba y cae al mapa.
-Cada 8 s cae del cielo una pistola (6 balas) o una escopeta (3 disparos de 5 perdigones en un abanico con algo de dispersión al azar, alcance medio), la que
-haya menos en el suelo, en un lugar al azar lejos de los spawns. Además, los bloques spawner de pistolas
+Cada 8 s cae del cielo un arma de fuego, la que haya menos en el suelo, en un lugar al azar lejos de los
+spawns: una pistola (6 balas), una escopeta (3 disparos de 5 perdigones en un abanico con algo de dispersión
+al azar, alcance medio), un rifle láser (20 rayos largos y muy rápidos que no caen; cada uno saca un sexto y
+no respeta la invulnerabilidad después de un golpe) o un lanzacohetes (1 cohete medio lento que explota al
+chocar: saca un corazón a todos los que estén a menos de 4 celdas, también al que lo tiró, y rompe los
+bloques de la celda del impacto y las de alrededor hasta que empieza la ronda siguiente; las paredes de los
+costados y la fila de abajo de todo no se rompen). Muy de vez en cuando (una de cada 12) cae en cambio la
+espada láser roja: pega un corazón y un tercio, no se puede desarmar ni soltar por un puñetazo, atraviesa a
+la espada común sin chocar y, tirada, cae menos y llega más lejos. Las balas, los perdigones y los cohetes
+que pegan en una hoja rebotan espejados según el ángulo de la hoja y pasan a ser de quien los reflejó: con
+la espada común pierden algo de velocidad y se desvían un poco; con la láser rebotan perfecto. Los rayos
+láser no se reflejan. Además, los bloques spawner de pistolas
 y de escopetas (de 3x3, se ponen en el editor y también se pueden elegir entre rondas) hacen aparecer su
 arma encima cada 5 s, una sola a la vez. Cada 12 s cae también una mejora que dura 10 s: velocidad (+40 %), salto (+35 %) o puntería (dispara más
 seguido y la escopeta abre menos); la agarra quien pase por encima. En la esquina de arriba de cada jugador se ve el arma que tiene

@@ -1,5 +1,6 @@
 package com.et35.technomortemarena.red;
 
+import com.et35.technomortemarena.entidades.ArmasEnJuego;
 import com.et35.technomortemarena.entidades.EstadoArmas;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entidades.PowerUp;
@@ -21,8 +22,13 @@ final class CodecEstado {
 
     static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 1 + 1 + PowerUp.values().length;
 
-    /** Lo minimo de las armas fuera de las manos: las dos cantidades. Cada proyectil y cada arma suma lo suyo. */
-    static final int BYTES_ARMAS = 3;
+    /**
+     * Lo minimo de las armas fuera de las manos: las cuatro cantidades (proyectiles, armas en el suelo, mejoras y
+     * celdas rotas). Cada uno suma lo suyo.
+     */
+    static final int BYTES_ARMAS = 4;
+    /** Columna y fila de una celda que rompio un cohete. */
+    static final int BYTES_POR_CELDA_ROTA = 2;
     static final int BYTES_POR_POWER_UP = 1 + 4 + 4;
     static final int BYTES_POR_PROYECTIL = 1 + 4 + 4 + 4;
     static final int BYTES_POR_ARMA_EN_EL_SUELO = 1 + 4 + 4;
@@ -242,6 +248,13 @@ final class CodecEstado {
             buffer.putFloat(m[1]);
             buffer.putFloat(m[2]);
         }
+        int rotas = Math.min(armas.celdasRotas.size(), ArmasEnJuego.MAX_CELDAS_ROTAS);
+        buffer.put((byte) rotas);
+        for (int i = 0; i < rotas; i++) {
+            int[] celda = armas.celdasRotas.get(i);
+            buffer.put((byte) celda[0]);
+            buffer.put((byte) celda[1]);
+        }
     }
 
     /**
@@ -296,6 +309,24 @@ final class CodecEstado {
             if (PowerUp.porIndice(tipo) == null || !finito(mejoras[i][1]) || !finito(mejoras[i][2])) {
                 return false;
             }
+        }
+        if (buffer.remaining() < 1) {
+            return false;
+        }
+        int cantidadRotas = buffer.get() & 0xFF;
+        if (cantidadRotas > ArmasEnJuego.MAX_CELDAS_ROTAS || buffer.remaining() < cantidadRotas * BYTES_POR_CELDA_ROTA) {
+            return false;
+        }
+        int[][] rotas = new int[cantidadRotas][];
+        for (int i = 0; i < cantidadRotas; i++) {
+            rotas[i] = new int[] {buffer.get() & 0xFF, buffer.get() & 0xFF};
+            if (rotas[i][0] >= Arena.COLUMNAS || rotas[i][1] >= Arena.FILAS) {
+                return false;
+            }
+        }
+        destino.celdasRotas.clear();
+        for (int[] celda : rotas) {
+            destino.celdasRotas.add(celda);
         }
         destino.powerUps.clear();
         for (float[] m : mejoras) {

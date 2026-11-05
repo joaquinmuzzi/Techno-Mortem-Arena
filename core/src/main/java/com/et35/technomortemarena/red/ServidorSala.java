@@ -3,6 +3,7 @@ package com.et35.technomortemarena.red;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
+import com.et35.technomortemarena.entidades.EstadoArmas;
 import com.et35.technomortemarena.partida.EstadoPartida;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -28,8 +29,8 @@ import java.util.function.LongSupplier;
  */
 public final class ServidorSala implements AutoCloseable {
 
-    /** Bytes del cuerpo de una entrada: token, secuencia, banderas, contadores de salto, estocada y rodar, objeto elegido y contador de colocar, y el punto apuntado. */
-    private static final int LARGO_ENTRADA = 4 + 4 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 2;
+    /** Bytes del cuerpo de una entrada: token, secuencia, banderas, contadores de salto, estocada, rodar y lanzar, objeto elegido y contador de colocar, y el punto apuntado. */
+    private static final int LARGO_ENTRADA = 4 + 4 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 2;
 
     private final DatagramChannel canal;
     private final byte[][] filasCodificadas;
@@ -186,12 +187,13 @@ public final class ServidorSala implements AutoCloseable {
         byte salto = paquete.get();
         byte estocada = paquete.get();
         byte rodar = paquete.get();
+        byte lanzar = paquete.get();
         int eleccionPieza = paquete.get();
         byte colocar = paquete.get();
         float apuntaX = paquete.getShort();
         float apuntaY = paquete.getShort();
         entrada.aplicar(secuencia, (banderas & 1) != 0, (banderas & 2) != 0, (banderas & 4) != 0,
-            salto, estocada, rodar, eleccionPieza, colocar, apuntaX, apuntaY);
+            salto, estocada, rodar, lanzar, eleccionPieza, colocar, apuntaX, apuntaY);
         ultimoMensaje = reloj.getAsLong();
         listo = true;
     }
@@ -241,6 +243,11 @@ public final class ServidorSala implements AutoCloseable {
      * como va el marcador. No hace nada si el cliente todavia no esta listo.
      */
     public void enviarEstado(EstadoJugador anfitrion, EstadoJugador remoto, EstadoPartida partida) {
+        enviarEstado(anfitrion, remoto, partida, new EstadoArmas());
+    }
+
+    /** Igual que el anterior, con los proyectiles y las armas en el suelo. */
+    public void enviarEstado(EstadoJugador anfitrion, EstadoJugador remoto, EstadoPartida partida, EstadoArmas armas) {
         if (cliente == null || !listo) {
             return;
         }
@@ -249,6 +256,7 @@ public final class ServidorSala implements AutoCloseable {
         CodecEstado.escribir(paquete, anfitrion);
         CodecEstado.escribir(paquete, remoto);
         CodecEstado.escribir(paquete, partida);
+        CodecEstado.escribir(paquete, armas);
         Protocolo.enviar(canal, paquete, cliente);
     }
 

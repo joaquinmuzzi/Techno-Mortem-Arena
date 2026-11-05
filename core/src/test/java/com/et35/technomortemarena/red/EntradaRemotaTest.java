@@ -13,7 +13,7 @@ class EntradaRemotaTest {
     private final EntradaJugador salida = new EntradaJugador();
 
     private void paquete(int secuencia, boolean izq, boolean der, int salto, int estocada) {
-        remota.aplicar(secuencia, izq, der, true, (byte) salto, (byte) estocada, (byte) 0, -1, (byte) 0, 0f, 0f);
+        remota.aplicar(secuencia, izq, der, true, (byte) salto, (byte) estocada, (byte) 0, (byte) 0, -1, (byte) 0, 0f, 0f);
     }
 
     @Test
@@ -27,7 +27,7 @@ class EntradaRemotaTest {
 
     @Test
     void elPuntoApuntadoSeCopiaYSeMantiene() {
-        remota.aplicar(1, false, false, true, (byte) 0, (byte) 0, (byte) 0, -1, (byte) 0, 300f, 200f);
+        remota.aplicar(1, false, false, true, (byte) 0, (byte) 0, (byte) 0, (byte) 0, -1, (byte) 0, 300f, 200f);
 
         remota.leer(salida);
         assertTrue(salida.hayPuntero);
@@ -40,7 +40,7 @@ class EntradaRemotaTest {
 
     @Test
     void sinPunteroNoSeApunta() {
-        remota.aplicar(1, false, false, false, (byte) 0, (byte) 0, (byte) 0, -1, (byte) 0, 300f, 200f);
+        remota.aplicar(1, false, false, false, (byte) 0, (byte) 0, (byte) 0, (byte) 0, -1, (byte) 0, 300f, 200f);
 
         remota.leer(salida);
 
@@ -72,12 +72,12 @@ class EntradaRemotaTest {
 
     @Test
     void rodarLlegaComoContadoryNoSeRepite() {
-        remota.aplicar(1, false, false, true, (byte) 0, (byte) 0, (byte) 1, -1, (byte) 0, 0f, 0f);
+        remota.aplicar(1, false, false, true, (byte) 0, (byte) 0, (byte) 1, (byte) 0, -1, (byte) 0, 0f, 0f);
         remota.leer(salida);
         assertTrue(salida.rodar);
 
-        remota.aplicar(1, false, false, true, (byte) 0, (byte) 0, (byte) 1, -1, (byte) 0, 0f, 0f); // duplicado
-        remota.aplicar(2, false, false, true, (byte) 0, (byte) 0, (byte) 1, -1, (byte) 0, 0f, 0f); // mismo contador
+        remota.aplicar(1, false, false, true, (byte) 0, (byte) 0, (byte) 1, (byte) 0, -1, (byte) 0, 0f, 0f); // duplicado
+        remota.aplicar(2, false, false, true, (byte) 0, (byte) 0, (byte) 1, (byte) 0, -1, (byte) 0, 0f, 0f); // mismo contador
         remota.leer(salida);
         assertFalse(salida.rodar);
     }
@@ -86,7 +86,7 @@ class EntradaRemotaTest {
     void unPaqueteViejoSeDescarta() {
         paquete(5, true, false, 0, 0);
 
-        boolean aceptado = remota.aplicar(4, false, true, true, (byte) 1, (byte) 0, (byte) 0, -1, (byte) 0, 0f, 0f);
+        boolean aceptado = remota.aplicar(4, false, true, true, (byte) 1, (byte) 0, (byte) 0, (byte) 0, -1, (byte) 0, 0f, 0f);
 
         assertFalse(aceptado);
         remota.leer(salida);

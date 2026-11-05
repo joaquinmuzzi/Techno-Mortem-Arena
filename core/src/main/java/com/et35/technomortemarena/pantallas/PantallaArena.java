@@ -22,7 +22,10 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
+import com.et35.technomortemarena.entidades.ArmasEnJuego;
+import com.et35.technomortemarena.entidades.EstadoArmas;
 import com.et35.technomortemarena.entidades.Jugador;
+import com.et35.technomortemarena.entidades.TipoArma;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entrada.Controles;
 import com.et35.technomortemarena.entrada.EntradaJugador;
@@ -94,7 +97,8 @@ public class PantallaArena extends ScreenAdapter {
         "SALTAR: W",
         "RODAR: SHIFT",
         "APUNTAR: MOUSE",
-        "ESTOCADA: CLIC",
+        "ESTOCADA / DISPARO: CLIC",
+        "TIRAR EL ARMA: CLIC DERECHO",
     };
 
     /** Vidas con las que arranca cada duelista en cada ronda. */
@@ -164,6 +168,9 @@ public class PantallaArena extends ScreenAdapter {
     private List<int[]> piezasAplicadas = new ArrayList<>();
     private RondasPartida.Fase faseAnterior = RondasPartida.Fase.RONDA;
     private final Vector2 punteroEdicion = new Vector2();
+    /** Balas, armas tiradas y armas en el mapa. En el cliente solo se dibujan. */
+    private ArmasEnJuego armas;
+    private final EstadoArmas estadoArmas = new EstadoArmas();
 
     private boolean pausado;
     /** Verdadero despues de dispose(): si un boton de la pausa nos cambio de pantalla, no hay que seguir dibujando. */
@@ -231,6 +238,7 @@ public class PantallaArena extends ScreenAdapter {
         this.spawnUno = spawnUnoMapa != null ? spawnUnoMapa : new Vector2(xPorDefectoUno, yPiso);
         this.spawnDos = spawnDosMapa != null ? spawnDosMapa : new Vector2(xPorDefectoDos, yPiso);
         this.zonasProhibidas = crearZonasProhibidas();
+        this.armas = new ArmasEnJuego(new Random(), zonasProhibidas);
         this.edicion = servidor != null && filasOriginales.length > 0
             ? new EdicionNivel(filasOriginales, zonasProhibidas, new Random()) : null;
         armarJugadores();
@@ -269,6 +277,9 @@ public class PantallaArena extends ScreenAdapter {
             }
         }
         tiempoBlancoCaido = 0f;
+        if (armas != null) {
+            armas.limpiar();
+        }
         golpesSonados = 0;
         aterrizajesSonados = 0;
         muerteSubitaActivada = false;
@@ -350,6 +361,7 @@ public class PantallaArena extends ScreenAdapter {
         } else {
             jugadorUno.actualizar(paso, arena, jugadorDos);
             jugadorDos.actualizar(paso, arena, jugadorUno);
+            armas.actualizar(paso, arena, jugadorUno, jugadorDos);
             reaparecerBlanco(paso);
         }
         actualizarSonidos();
@@ -389,11 +401,13 @@ public class PantallaArena extends ScreenAdapter {
         entradaLocal.setActiva(!pausado && enRonda);
         if (jugadorDos == null) {
             jugadorUno.actualizar(paso, arena, fantasma);
+            armas.actualizar(paso, arena, jugadorUno, null);
             return;
         }
         if (enRonda) {
             jugadorUno.actualizar(paso, arena, jugadorDos);
             jugadorDos.actualizar(paso, arena, jugadorUno);
+            armas.actualizar(paso, arena, jugadorUno, jugadorDos);
         } else {
             // La simulacion queda congelada mientras se lee el resultado: se descartan las acciones
             // que el cliente haya mandado en el medio, para que no se disparen al arrancar la ronda.
@@ -417,7 +431,8 @@ public class PantallaArena extends ScreenAdapter {
             edicion.exportar(estadoPartida);
         }
         rondas.exportar(estadoPartida);
-        servidor.enviarEstado(estadoUno, estadoDos, estadoPartida);
+        armas.exportar(estadoArmas);
+        servidor.enviarEstado(estadoUno, estadoDos, estadoPartida, estadoArmas);
     }
 
     /**
@@ -439,6 +454,7 @@ public class PantallaArena extends ScreenAdapter {
         if (cliente.hayEstado()) {
             jugadorUno.importar(cliente.getEstado(0));
             jugadorDos.importar(cliente.getEstado(1));
+            armas.importar(cliente.getEstadoArmas(), Gdx.graphics.getDeltaTime());
             rondas.importar(cliente.getEstadoPartida());
             sincronizarNivelDelCliente();
             if (rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA && !muerteSubitaActivada && jugadorUno != null && jugadorDos != null) {
@@ -567,6 +583,7 @@ public class PantallaArena extends ScreenAdapter {
         }
         tiempoBlancoCaido = 0f;
         muerteSubitaActivada = false;
+        armas.limpiar();
     }
 
     private void forzarMuerteSubita() {
@@ -637,6 +654,7 @@ public class PantallaArena extends ScreenAdapter {
         if (jugadorDos != null) {
             jugadorDos.dibujar(batch, recursos);
         }
+        armas.dibujar(batch, recursos);
         batch.end();
 
         dibujarAyudaControles();
@@ -705,13 +723,25 @@ public class PantallaArena extends ScreenAdapter {
      */
     private void dibujarVidas(Jugador jugador, Color tinte, float xAncla, boolean haciaLaIzquierda) {
         // Un duelista muerto muestra las vidas vacias: el contador es "lo que queda por perder".
-        int vidas = jugador.isVivo() ? jugador.getVida() : 0;
+        // Cada corazon se llena por tercios: una bala saca un tercio, la espada uno entero.
+        int tercios = jugador.isVivo() ? jugador.getTercios() : 0;
         for (int i = 0; i < VIDAS_INICIALES; i++) {
             float x = haciaLaIzquierda
                 ? xAncla - TAMANO_VIDA - i * (TAMANO_VIDA + SEPARACION_VIDA)
                 : xAncla + i * (TAMANO_VIDA + SEPARACION_VIDA);
-            rectAux.set(x, ALTO_UI - MARGEN_HUD - TAMANO_VIDA, TAMANO_VIDA, TAMANO_VIDA);
-            ui.rectangulo(batch, rectAux, i < vidas ? tinte : COLOR_VIDA_PERDIDA);
+            float y = ALTO_UI - MARGEN_HUD - TAMANO_VIDA;
+            ui.rectangulo(batch, rectAux.set(x, y, TAMANO_VIDA, TAMANO_VIDA), COLOR_VIDA_PERDIDA);
+            int enEste = MathUtils.clamp(tercios - i * Jugador.TERCIOS_POR_CORAZON, 0, Jugador.TERCIOS_POR_CORAZON);
+            if (enEste > 0) {
+                float ancho = TAMANO_VIDA * enEste / Jugador.TERCIOS_POR_CORAZON;
+                ui.rectangulo(batch, rectAux.set(x, y, ancho, TAMANO_VIDA), tinte);
+            }
+        }
+        if (jugador.getArma() == TipoArma.PISTOLA) {
+            String texto = "BALAS " + jugador.getBalas();
+            float ancho = ui.anchoTexto(texto, 1f);
+            float x = haciaLaIzquierda ? xAncla - ancho : xAncla;
+            ui.texto(batch, texto, x, ALTO_UI - MARGEN_HUD - TAMANO_VIDA - 8f, 1f, tinte);
         }
     }
 

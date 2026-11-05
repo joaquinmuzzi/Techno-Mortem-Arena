@@ -10,12 +10,17 @@ public final class EstadoJugador {
 
     public float x;
     public float y;
+    /** Vida en tercios de corazon. */
     public int vida;
     public boolean mirandoDerecha;
     public boolean vivo;
     public boolean corriendo;
     /** Verdadero mientras rueda: la caja de colision es mas baja. */
     public boolean rodando;
+    /** Lo que tiene en la mano: 0 nada, 1 espada, 2 pistola (ver {@link TipoArma#codigoDe}). */
+    public int arma = 1;
+    /** Balas de la pistola. */
+    public int balas;
     /** Hacia donde apunta la espada, en radianes. */
     public float anguloEspada;
     /** Cuanto esta adelantada la hoja por la estocada, de 0 a 1. */

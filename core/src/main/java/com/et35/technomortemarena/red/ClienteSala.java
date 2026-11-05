@@ -3,6 +3,7 @@ package com.et35.technomortemarena.red;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entrada.EntradaJugador;
 import com.et35.technomortemarena.mundo.Arena;
+import com.et35.technomortemarena.entidades.EstadoArmas;
 import com.et35.technomortemarena.partida.EstadoPartida;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -41,6 +42,7 @@ public final class ClienteSala implements AutoCloseable {
 
     private final EstadoJugador[] estados = {new EstadoJugador(), new EstadoJugador()};
     private final EstadoPartida estadoPartida = new EstadoPartida();
+    private final EstadoArmas estadoArmas = new EstadoArmas();
     private boolean hayEstado;
     private int ultimaSecuenciaEstado;
 
@@ -48,6 +50,7 @@ public final class ClienteSala implements AutoCloseable {
     private byte contadorSalto;
     private byte contadorEstocada;
     private byte contadorRodar;
+    private byte contadorLanzar;
     private byte contadorColocar;
 
     private ClienteSala(DatagramChannel canal, SocketAddress servidor, LongSupplier reloj) {
@@ -170,7 +173,7 @@ public final class ClienteSala implements AutoCloseable {
     }
 
     private void atenderEstado(ByteBuffer paquete) {
-        if (fase != Fase.JUGANDO || paquete.remaining() < 4 + 2 * CodecEstado.BYTES + CodecEstado.BYTES_PARTIDA) {
+        if (fase != Fase.JUGANDO || paquete.remaining() < 4 + 2 * CodecEstado.BYTES + CodecEstado.BYTES_PARTIDA + CodecEstado.BYTES_ARMAS) {
             return;
         }
         int secuencia = paquete.getInt();
@@ -181,13 +184,15 @@ public final class ClienteSala implements AutoCloseable {
         EstadoJugador uno = new EstadoJugador();
         EstadoJugador dos = new EstadoJugador();
         EstadoPartida partida = new EstadoPartida();
+        EstadoArmas armas = new EstadoArmas();
         if (!CodecEstado.leer(paquete, uno) || !CodecEstado.leer(paquete, dos)
-            || !CodecEstado.leer(paquete, partida)) {
+            || !CodecEstado.leer(paquete, partida) || !CodecEstado.leer(paquete, armas)) {
             return;
         }
         copiar(uno, estados[0]);
         copiar(dos, estados[1]);
         estadoPartida.copiarDe(partida);
+        estadoArmas.copiarDe(armas);
         hayEstado = true;
         ultimaSecuenciaEstado = secuencia;
         ultimoMensaje = reloj.getAsLong();
@@ -202,6 +207,8 @@ public final class ClienteSala implements AutoCloseable {
         destino.vivo = origen.vivo;
         destino.corriendo = origen.corriendo;
         destino.rodando = origen.rodando;
+        destino.arma = origen.arma;
+        destino.balas = origen.balas;
         destino.anguloEspada = origen.anguloEspada;
         destino.tiempoRestanteFlash = origen.tiempoRestanteFlash;
         destino.contadorGolpes = origen.contadorGolpes;
@@ -274,6 +281,9 @@ public final class ClienteSala implements AutoCloseable {
         if (entrada.rodar) {
             contadorRodar++;
         }
+        if (entrada.lanzar) {
+            contadorLanzar++;
+        }
         if (entrada.colocarPieza) {
             contadorColocar++;
         }
@@ -284,6 +294,7 @@ public final class ClienteSala implements AutoCloseable {
         paquete.put(contadorSalto);
         paquete.put(contadorEstocada);
         paquete.put(contadorRodar);
+        paquete.put(contadorLanzar);
         paquete.put((byte) entrada.eleccionPieza);
         paquete.put(contadorColocar);
         // El punto apuntado va en pixeles del mundo, como entero de 16 bits: la arena mide menos de 4000.
@@ -321,6 +332,11 @@ public final class ClienteSala implements AutoCloseable {
     }
 
     /** Como va la partida: etapa, ronda, marcador y quien gano la ultima ronda. */
+    /** Los proyectiles y las armas en el suelo que mando el anfitrion por ultima vez. */
+    public EstadoArmas getEstadoArmas() {
+        return estadoArmas;
+    }
+
     public EstadoPartida getEstadoPartida() {
         return estadoPartida;
     }

@@ -49,6 +49,7 @@ public class EntradaLocal implements FuenteEntrada {
         // accion por pulsacion. Con "sostenida", mantener la tecla saltaria en cada fotograma.
         destino.saltar = Gdx.input.isKeyJustPressed(controles.getSaltar());
         destino.rodar = Gdx.input.isKeyJustPressed(controles.getRodar());
+        destino.lanzar = Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT);
         destino.estocada = Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
         if (viewport != null) {
             puntero.set(Gdx.input.getX(), Gdx.input.getY());

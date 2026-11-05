@@ -16,6 +16,8 @@ public final class EntradaJugador {
     public boolean saltar;
     public boolean estocada;
     public boolean rodar;
+    /** Tirar lo que tiene en la mano hacia donde apunta (clic derecho). */
+    public boolean lanzar;
 
     /** Durante la edicion del nivel: el objeto elegido (0 a 2), o -1 si todavia no eligio. */
     public int eleccionPieza = -1;
@@ -33,6 +35,7 @@ public final class EntradaJugador {
         saltar = false;
         estocada = false;
         rodar = false;
+        lanzar = false;
         eleccionPieza = -1;
         colocarPieza = false;
         hayPuntero = false;

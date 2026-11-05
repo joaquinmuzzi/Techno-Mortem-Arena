@@ -360,6 +360,12 @@ A esos se suman los dos sonidos de interfaz, `Boton.wav` (pasar el cursor por en
 que cada pantalla solo tiene que habilitarlos con `Ui.setAudio`; el editor de niveles no lo hace y por
 eso queda en silencio.
 
+El texto de la interfaz usa dos fuentes pixeladas, sin suavizado, en `assets/fuentes/`: Orbitron
+en negrita para los títulos y los botones, y Share Tech Mono para el resto (el HUD, la ayuda, las
+listas). Están horneadas en varios tamaños con `herramientas/hornear_fuentes.py` (necesita Pillow) y
+`pantallas.Ui` usa el más cercano a cada escala. Las licencias están en
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 El registro detallado de cambios está en [CHANGELOG.md](CHANGELOG.md).
 
 ## Pruebas y contribuciones

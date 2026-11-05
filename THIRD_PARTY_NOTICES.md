@@ -24,6 +24,18 @@ Los sprites de `assets/sprites/` son *placeholders* hechos por el equipo para pr
 y no dependen de terceros. `assets/libgdx.png` es el logo de libGDX que incluye la plantilla del
 proyecto.
 
+## Fuentes
+
+Las fuentes de `assets/fuentes/` son versiones de mapa de bits, sin suavizado, de dos fuentes de
+[Google Fonts](https://github.com/google/fonts), hechas con `herramientas/hornear_fuentes.py`:
+
+| Fuente | Uso | Licencia |
+|---|---|---|
+| [Orbitron](https://github.com/theleagueof/orbitron) (The Orbitron Project Authors) | Títulos y botones (`titulo-NN`) | [SIL Open Font License 1.1](assets/fuentes/OFL-Orbitron.txt) |
+| [Share Tech Mono](https://fonts.google.com/specimen/Share+Tech+Mono) (Carrois Type Design) | El resto del texto (`mono-NN`) | [SIL Open Font License 1.1](assets/fuentes/OFL-ShareTechMono.txt) |
+
+Como son versiones modificadas, los archivos no usan los nombres reservados de las fuentes.
+
 ## Licencia del código
 
 El repositorio todavía no declara una licencia propia para el código. Hasta que el equipo elija

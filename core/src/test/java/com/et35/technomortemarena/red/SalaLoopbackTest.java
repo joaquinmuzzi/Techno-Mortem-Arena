@@ -204,6 +204,7 @@ class SalaLoopbackTest {
         remoto.x = 99f;
         remoto.vida = 2;
         remoto.vivo = true;
+        remoto.rodando = true;
 
         EstadoPartida partida = new EstadoPartida();
         partida.fase = 1;
@@ -211,6 +212,8 @@ class SalaLoopbackTest {
         partida.rondasGanadasUno = 2;
         partida.rondasGanadasDos = 1;
         partida.ganadorDeLaRonda = 0;
+        partida.tiempoRestante = 42.5f;
+        partida.tiempoMuerteSubita = 3.25f;
 
         servidor.enviarEstado(anfitrion, remoto, partida);
         girarHasta(cliente::hayEstado);
@@ -218,6 +221,10 @@ class SalaLoopbackTest {
         assertEquals(321.5f, cliente.getEstado(0).x);
         assertEquals(99f, cliente.getEstado(1).x);
         assertEquals(2, cliente.getEstado(1).vida);
+        assertTrue(cliente.getEstado(1).rodando, "el cliente tiene que ver al rival agachado mientras rueda");
+        assertFalse(cliente.getEstado(0).rodando);
+        assertEquals(42.5f, cliente.getEstadoPartida().tiempoRestante, "el reloj de la ronda llega al cliente");
+        assertEquals(3.25f, cliente.getEstadoPartida().tiempoMuerteSubita);
         assertEquals(1, cliente.getEstadoPartida().fase);
         assertEquals(3, cliente.getEstadoPartida().numeroRonda);
         assertEquals(2, cliente.getEstadoPartida().rondasGanadasUno);

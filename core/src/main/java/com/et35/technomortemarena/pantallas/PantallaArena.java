@@ -642,7 +642,10 @@ public class PantallaArena extends ScreenAdapter {
         dibujarAyudaControles();
         dibujarHud();
         dibujarEstadoRed();
-        if (rondas.getFase() == RondasPartida.Fase.RONDA || rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA) {
+        // El reloj solo corre en un duelo en red: en el modo de prueba, o con el anfitrion esperando rival,
+        // no hay rondas y quedaria clavado en el valor inicial.
+        boolean hayDuelo = enRed() && jugadorDos != null;
+        if (hayDuelo && (rondas.getFase() == RondasPartida.Fase.RONDA || rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA)) {
             if (rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA) {
                 int seg = Math.max(0, (int) Math.ceil(rondas.getTiempoMuerteSubita()));
                 batch.begin();

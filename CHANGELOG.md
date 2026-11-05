@@ -116,6 +116,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
   pisada corta de 0.34 s, y el aterrizaje (`Landing-Jump.mp3`) por `Landing.wav`. Así el bucle de
   correr no arrastra un fragmento largo y se nota cada pisada.
 
+### Corregido
+
+- Rodar en red: `red.ClienteSala` no copiaba la bandera `rodando` del estado que llega, así que en el
+  cliente nadie se veía agachado al rodar (en el anfitrión sí).
+- Reloj de la ronda: en el modo de prueba y en el anfitrión mientras espera rival no hay rondas, y el
+  reloj quedaba clavado en 60 s. Ahora solo se muestra durante un duelo en red.
+
 ### Quitado
 
 - Las tres alturas de guardia (`AlturaEspada`) y sus teclas (`E`/`Q`, `O`/`L`), la estocada con tecla

@@ -238,6 +238,7 @@ public class PantallaArena extends ScreenAdapter {
                           Supplier<Screen> alReiniciar, ServidorSala servidor, ClienteSala cliente) {
         this.recursos = recursos;
         this.audio = audio;
+        audio.pedirMusicaMenu(false);
         this.arena = arena;
         this.filasOriginales = arena.getFilas();
         this.rondas = new RondasPartida(servidor != null && filasOriginales.length > 0);
@@ -500,7 +501,7 @@ public class PantallaArena extends ScreenAdapter {
         boolean corriendo = rondas.getFase() == RondasPartida.Fase.RONDA
             && (jugadorUno.estaCorriendo() || (jugadorDos != null && jugadorDos.estaCorriendo()));
         if (corriendo && !suenaCorrer) {
-            audio.correr.loop(VOLUMEN_CORRER);
+            audio.repetir(audio.correr, VOLUMEN_CORRER);
             suenaCorrer = true;
         } else if (!corriendo) {
             detenerSonidoCorrer();
@@ -509,13 +510,13 @@ public class PantallaArena extends ScreenAdapter {
         // instancia o si es una copia que llega por la red.
         int golpes = jugadorUno.getContadorGolpes() + (jugadorDos != null ? jugadorDos.getContadorGolpes() : 0);
         if (golpes > golpesSonados) {
-            audio.golpe.play(VOLUMEN_GOLPE);
+            audio.reproducir(audio.golpe, VOLUMEN_GOLPE);
         }
         golpesSonados = golpes;
         int aterrizajes = jugadorUno.getContadorAterrizajes()
             + (jugadorDos != null ? jugadorDos.getContadorAterrizajes() : 0);
         if (aterrizajes > aterrizajesSonados) {
-            audio.aterrizar.play(VOLUMEN_ATERRIZAR);
+            audio.reproducir(audio.aterrizar, VOLUMEN_ATERRIZAR);
         }
         aterrizajesSonados = aterrizajes;
     }

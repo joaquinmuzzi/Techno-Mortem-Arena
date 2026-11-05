@@ -28,6 +28,11 @@ import com.et35.technomortemarena.entidades.Jugador;
  */
 public class PantallaMenu extends ScreenAdapter {
 
+    private static final float ESCALA_TITULO = 3.2f;
+    private static final float ESCALA_ARENA = 1.6f;
+    private static final float SEPARACION_ARENA = 22f;
+    private static final Color COLOR_MORTEM = new Color(0.90f, 0.22f, 0.22f, 1f);
+    private static final Color COLOR_ARENA = new Color(0.35f, 0.72f, 1f, 1f);
     private static final float ANCHO_MUNDO = 960f;
     private static final float ALTO_MUNDO = 540f;
     private static final Color FONDO = new Color(0.09f, 0.10f, 0.14f, 1f);
@@ -111,10 +116,30 @@ public class PantallaMenu extends ScreenAdapter {
         ui.boton(batch, botonMultijugador, sobreMultijugador, "MULTIJUGADOR", 1.3f);
         ui.boton(batch, botonEditor, sobreEditor, "EDITOR DE NIVELES", 1.3f);
         ui.boton(batch, botonSalir, sobreSalir, "SALIR", 1.6f);
-        String titulo = "TECHNO MORTEM ARENA";
-        float x = (ANCHO_MUNDO - ui.anchoTexto(titulo, 3f)) / 2f;
-        ui.texto(batch, titulo, x, ALTO_MUNDO - 100f, 3f, Color.WHITE);
+        dibujarTitulo();
         batch.end();
+    }
+
+    /** "TECHNO MORTEM" grande, con MORTEM en rojo, y abajo "ARENA" chico, azul y con las letras separadas. */
+    private void dibujarTitulo() {
+        float arriba = ALTO_MUNDO - 38f;
+        String techno = "TECHNO ";
+        String mortem = "MORTEM";
+        float anchoTechno = ui.anchoTexto(techno, ESCALA_TITULO);
+        float x = (ANCHO_MUNDO - anchoTechno - ui.anchoTexto(mortem, ESCALA_TITULO)) / 2f;
+        ui.texto(batch, techno, x, arriba, ESCALA_TITULO, Color.WHITE);
+        ui.texto(batch, mortem, x + anchoTechno, arriba, ESCALA_TITULO, COLOR_MORTEM);
+        String arena = "ARENA";
+        float anchoLetras = 0f;
+        for (int i = 0; i < arena.length(); i++) {
+            anchoLetras += ui.anchoTexto(arena.substring(i, i + 1), ESCALA_ARENA);
+        }
+        float xLetra = (ANCHO_MUNDO - anchoLetras - (arena.length() - 1) * SEPARACION_ARENA) / 2f;
+        for (int i = 0; i < arena.length(); i++) {
+            String letra = arena.substring(i, i + 1);
+            ui.texto(batch, letra, xLetra, arriba - 54f, ESCALA_ARENA, COLOR_ARENA);
+            xLetra += ui.anchoTexto(letra, ESCALA_ARENA) + SEPARACION_ARENA;
+        }
     }
 
     /** Los dos duelistas a los costados, mirandose con la espada en guardia hacia el centro. */

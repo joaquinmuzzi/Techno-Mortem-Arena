@@ -9,6 +9,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Fuentes nuevas, pixeladas y sin suavizado (`assets/fuentes/`, hechas con `herramientas/hornear_fuentes.py`):
+  Orbitron en negrita para los títulos y los botones, y Share Tech Mono para el resto. `pantallas.Ui` elige
+  el tamaño horneado más cercano a cada escala. Reemplazan a la fuente que traía libGDX, cuyos bordes
+  suavizados se veían como un halo gris al agrandarla.
+- Título del menú nuevo: "TECHNO MORTEM" con MORTEM en rojo y, abajo, "ARENA" en azul con las letras
+  separadas.
+
 - Rifle láser (`TipoArma.RIFLE_LASER`, `sprites/rifle_laser.png`): 20 rayos largos y muy rápidos, sin caída,
   de un sexto de corazón cada uno; no respetan la invulnerabilidad después de un golpe y no se reflejan.
 - Lanzacohetes (`TipoArma.LANZACOHETES`, `sprites/lanzacohetes.png` y `sprites/cohete.png`): un cohete medio
@@ -153,6 +160,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- Botones: fondo apenas marcado y una raya abajo, azul con el mouse encima y gris si no.
 - En los mapas que no marcan los spawns, cada duelista aparece a 15 celdas de su pared, parado sobre lo que
   haya ahí (en la escalera, sobre el escalón bajo).
 - Las armas que aparecen solas ya no aparecen de golpe en el piso: caen desde arriba del mapa sobre el lugar

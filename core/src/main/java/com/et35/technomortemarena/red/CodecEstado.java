@@ -2,6 +2,7 @@ package com.et35.technomortemarena.red;
 
 import com.et35.technomortemarena.entidades.EstadoArmas;
 import com.et35.technomortemarena.entidades.EstadoJugador;
+import com.et35.technomortemarena.entidades.PowerUp;
 import com.et35.technomortemarena.entidades.Proyectil;
 import com.et35.technomortemarena.entidades.TipoArma;
 import com.et35.technomortemarena.mundo.Arena;
@@ -18,10 +19,11 @@ import java.nio.ByteBuffer;
  */
 final class CodecEstado {
 
-    static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 1 + 1;
+    static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 1 + 1 + PowerUp.values().length;
 
     /** Lo minimo de las armas fuera de las manos: las dos cantidades. Cada proyectil y cada arma suma lo suyo. */
-    static final int BYTES_ARMAS = 2;
+    static final int BYTES_ARMAS = 3;
+    static final int BYTES_POR_POWER_UP = 1 + 4 + 4;
     static final int BYTES_POR_PROYECTIL = 1 + 4 + 4 + 4;
     static final int BYTES_POR_ARMA_EN_EL_SUELO = 1 + 4 + 4;
 
@@ -59,6 +61,10 @@ final class CodecEstado {
         buffer.putInt(estado.contadorAterrizajes);
         buffer.put((byte) estado.arma);
         buffer.put((byte) estado.balas);
+        // el tiempo de cada mejora en decimas de segundo, en un byte sin signo
+        for (float tiempo : estado.tiempoPowerUp) {
+            buffer.put((byte) Math.max(0, Math.min(255, Math.round(tiempo * 10f))));
+        }
     }
 
     /**
@@ -82,6 +88,10 @@ final class CodecEstado {
         int aterrizajes = buffer.getInt();
         int arma = buffer.get();
         int balas = buffer.get();
+        float[] tiempos = new float[PowerUp.values().length];
+        for (int i = 0; i < tiempos.length; i++) {
+            tiempos[i] = (buffer.get() & 0xFF) / 10f;
+        }
         if (arma < 0 || arma > TipoArma.values().length || balas < 0 || balas > TipoArma.MAX_BALAS) {
             return false;
         }
@@ -103,6 +113,7 @@ final class CodecEstado {
         destino.contadorAterrizajes = aterrizajes;
         destino.arma = arma;
         destino.balas = balas;
+        System.arraycopy(tiempos, 0, destino.tiempoPowerUp, 0, tiempos.length);
         return true;
     }
 
@@ -223,6 +234,14 @@ final class CodecEstado {
             buffer.putFloat(a[1]);
             buffer.putFloat(a[2]);
         }
+        int mejoras = Math.min(armas.powerUps.size(), EstadoArmas.MAX_POWER_UPS);
+        buffer.put((byte) mejoras);
+        for (int i = 0; i < mejoras; i++) {
+            float[] m = armas.powerUps.get(i);
+            buffer.put((byte) m[0]);
+            buffer.putFloat(m[1]);
+            buffer.putFloat(m[2]);
+        }
     }
 
     /**
@@ -261,6 +280,26 @@ final class CodecEstado {
             if (TipoArma.porCodigo(tipo) == null || !finito(armas[i][1]) || !finito(armas[i][2])) {
                 return false;
             }
+        }
+        if (buffer.remaining() < 1) {
+            return false;
+        }
+        int cantidadMejoras = buffer.get();
+        if (cantidadMejoras < 0 || cantidadMejoras > EstadoArmas.MAX_POWER_UPS
+            || buffer.remaining() < cantidadMejoras * BYTES_POR_POWER_UP) {
+            return false;
+        }
+        float[][] mejoras = new float[cantidadMejoras][];
+        for (int i = 0; i < cantidadMejoras; i++) {
+            int tipo = buffer.get();
+            mejoras[i] = new float[] {tipo, buffer.getFloat(), buffer.getFloat()};
+            if (PowerUp.porIndice(tipo) == null || !finito(mejoras[i][1]) || !finito(mejoras[i][2])) {
+                return false;
+            }
+        }
+        destino.powerUps.clear();
+        for (float[] m : mejoras) {
+            destino.powerUps.add(m);
         }
         destino.proyectiles.clear();
         for (float[] p : leidos) {

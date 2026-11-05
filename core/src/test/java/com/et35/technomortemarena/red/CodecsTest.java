@@ -346,6 +346,39 @@ class CodecsTest {
     }
 
     @Test
+    void lasMejorasViajanPorLaRedYUnaAbsurdaSeRechaza() {
+        EstadoArmas armas = new EstadoArmas();
+        armas.powerUps.add(new float[] {2, 640f, 128f});
+        ByteBuffer buffer = ByteBuffer.allocate(256);
+        CodecEstado.escribir(buffer, armas);
+        buffer.flip();
+        EstadoArmas leidas = new EstadoArmas();
+        assertTrue(CodecEstado.leer(buffer, leidas));
+        assertArrayEquals(new float[] {2, 640f, 128f}, leidas.powerUps.get(0));
+
+        EstadoArmas mala = new EstadoArmas();
+        mala.powerUps.add(new float[] {9, 0f, 0f});
+        buffer = ByteBuffer.allocate(256);
+        CodecEstado.escribir(buffer, mala);
+        buffer.flip();
+        assertFalse(CodecEstado.leer(buffer, new EstadoArmas()));
+    }
+
+    @Test
+    void elTiempoDeLasMejorasDelJugadorViaja() {
+        EstadoJugador estado = estadoDeEjemplo();
+        estado.tiempoPowerUp[0] = 7.3f;
+        ByteBuffer buffer = ByteBuffer.allocate(64);
+        CodecEstado.escribir(buffer, estado);
+        assertEquals(CodecEstado.BYTES, buffer.position());
+        buffer.flip();
+        EstadoJugador leido = new EstadoJugador();
+        assertTrue(CodecEstado.leer(buffer, leido));
+        assertEquals(7.3f, leido.tiempoPowerUp[0], 0.051f);
+        assertEquals(0f, leido.tiempoPowerUp[1], 0.0001f);
+    }
+
+    @Test
     void laCabeceraSoloAceptaPaquetesDeEsteProtocolo() {
         ByteBuffer bueno = Protocolo.nuevo(Protocolo.ENTRADA);
         bueno.flip();

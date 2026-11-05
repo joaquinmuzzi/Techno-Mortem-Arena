@@ -36,6 +36,12 @@ public final class ArmasEnJuego {
     /** Tope de la velocidad de caida, para que se las pueda ver venir. */
     static final float CAIDA_MAXIMA = -1400f * Arena.ESCALA;
 
+    /** Segundos entre una mejora y la siguiente, y cuantas puede haber en el mapa a la vez. */
+    public static final float INTERVALO_POWER_UP = 12f;
+    public static final int MAX_POWER_UPS = 2;
+    /** Lado de la caja de una mejora: con eso se agarra, y asi de grande se dibuja. */
+    public static final float LADO_POWER_UP = 40f * Arena.ESCALA;
+
     /** Segundos entre un arma y la siguiente en cada bloque spawner. */
     public static final float INTERVALO_SPAWNER = 5f;
     public static final int MAX_EN_EL_SUELO = 2;
@@ -59,6 +65,9 @@ public final class ArmasEnJuego {
     private final List<float[]> enElSuelo = new ArrayList<>();
     private final List<Proyectil> nuevos = new ArrayList<>();
     private final Random azar;
+    /** Las mejoras en el mapa, como {@code {indice de PowerUp, x, y, velocidad vertical, 1 mientras cae}}. */
+    private final List<float[]> powerUps = new ArrayList<>();
+    private float tiempoParaPowerUp = INTERVALO_POWER_UP;
     private final List<float[]> zonasProhibidas;
     private float tiempoParaAparicion = INTERVALO_APARICION;
     /** Los spawners del mapa, como {@code {codigo de TipoArma, x0, x1, y de arriba, segundos para la proxima}}. */
@@ -79,6 +88,8 @@ public final class ArmasEnJuego {
         enElSuelo.clear();
         tiempoParaAparicion = INTERVALO_APARICION;
         arenaDeLosSpawners = null;
+        powerUps.clear();
+        tiempoParaPowerUp = INTERVALO_POWER_UP;
     }
 
     /**
@@ -126,8 +137,86 @@ public final class ArmasEnJuego {
             }
         }
         actualizarSpawners(delta, arena);
+        actualizarPowerUps(delta, arena, uno, dos);
         agarrar(uno);
         agarrar(dos);
+    }
+
+    /**
+     * Cada {@link #INTERVALO_POWER_UP} segundos cae del cielo una mejora al azar sobre una superficie. Las que
+     * ya se apoyaron las agarra el primer duelista que pasa por encima, tenga o no un arma en la mano.
+     */
+    private void actualizarPowerUps(float delta, Arena arena, Jugador uno, Jugador dos) {
+        tiempoParaPowerUp -= delta;
+        if (tiempoParaPowerUp <= 0f) {
+            tiempoParaPowerUp = INTERVALO_POWER_UP;
+            if (powerUps.size() < MAX_POWER_UPS) {
+                aparecerPowerUp(arena);
+            }
+        }
+        for (Iterator<float[]> it = powerUps.iterator(); it.hasNext(); ) {
+            float[] mejora = it.next();
+            if (mejora[4] == 1f) {
+                mejora[3] = Math.max(CAIDA_MAXIMA, mejora[3] + GRAVEDAD_CAIDA * delta);
+                float antes = mejora[2];
+                float despues = antes + mejora[3] * delta;
+                float apoyo = apoyoDebajo(arena, mejora[1], LADO_POWER_UP, antes, despues);
+                if (!Float.isNaN(apoyo)) {
+                    mejora[2] = apoyo;
+                    mejora[3] = 0f;
+                    mejora[4] = 0f;
+                } else if (despues < -Arena.ALTO_MUNDO / 4f) {
+                    it.remove();
+                    continue;
+                } else {
+                    mejora[2] = despues;
+                }
+                continue;
+            }
+            Rectangle caja = new Rectangle(mejora[1], mejora[2], LADO_POWER_UP, LADO_POWER_UP);
+            Jugador quien = agarraPowerUp(uno, caja) ? uno : agarraPowerUp(dos, caja) ? dos : null;
+            if (quien != null) {
+                quien.activarPowerUp(PowerUp.porIndice((int) mejora[0]));
+                it.remove();
+            }
+        }
+    }
+
+    private static boolean agarraPowerUp(Jugador jugador, Rectangle caja) {
+        return jugador != null && jugador.isVivo() && !jugador.isDesarmado() && jugador.getCaja().overlaps(caja);
+    }
+
+    /** Hace caer una mejora al azar desde arriba del mapa sobre una superficie al azar. */
+    void aparecerPowerUp(Arena arena) {
+        List<float[]> lugares = superficies(arena);
+        if (lugares.isEmpty()) {
+            return;
+        }
+        float[] lugar = lugares.get(azar.nextInt(lugares.size()));
+        int tipo = azar.nextInt(PowerUp.values().length);
+        powerUps.add(new float[] {tipo, lugar[0], Arena.ALTO_MUNDO - Arena.CELDA, 0f, 1f});
+    }
+
+    /** Las mejoras en el mapa, como {@code {indice de PowerUp, x, y, velocidad vertical, 1 mientras cae}}. */
+    public List<float[]> getPowerUps() {
+        return powerUps;
+    }
+
+    /**
+     * La altura del bloque mas alto sobre el que se apoya algo de ancho {@code ancho} en {@code x} que cae de
+     * {@code antes} a {@code despues}, o {@code NaN} si en ese tramo no toca ninguno.
+     */
+    private static float apoyoDebajo(Arena arena, float x, float ancho, float antes, float despues) {
+        float apoyo = Float.NaN;
+        for (Bloque bloque : arena.getBloques()) {
+            Rectangle area = bloque.getArea();
+            float arriba = area.y + area.height;
+            boolean debajo = area.x < x + ancho && area.x + area.width > x;
+            if (debajo && arriba <= antes && arriba >= despues && (Float.isNaN(apoyo) || arriba > apoyo)) {
+                apoyo = arriba;
+            }
+        }
+        return apoyo;
     }
 
     /** Cada spawner cuenta su tiempo y, si no tiene un arma encima, hace aparecer la suya. */
@@ -319,16 +408,8 @@ public final class ArmasEnJuego {
         float antes = arma[2];
         float despues = antes + arma[6] * delta;
         float ancho = anchoEnElSuelo(TipoArma.porCodigo((int) arma[0]));
-        float apoyo = Float.NEGATIVE_INFINITY;
-        for (Bloque bloque : arena.getBloques()) {
-            Rectangle area = bloque.getArea();
-            float arriba = area.y + area.height;
-            boolean debajo = area.x < arma[1] + ancho && area.x + area.width > arma[1];
-            if (debajo && arriba <= antes && arriba >= despues) {
-                apoyo = Math.max(apoyo, arriba);
-            }
-        }
-        if (apoyo != Float.NEGATIVE_INFINITY) {
+        float apoyo = apoyoDebajo(arena, arma[1], ancho, antes, despues);
+        if (!Float.isNaN(apoyo)) {
             arma[2] = apoyo;
             arma[6] = 0f;
             arma[7] = 0f;
@@ -399,6 +480,10 @@ public final class ArmasEnJuego {
         for (float[] arma : enElSuelo) {
             destino.enElSuelo.add(arma.clone());
         }
+        destino.powerUps.clear();
+        for (float[] mejora : powerUps) {
+            destino.powerUps.add(new float[] {mejora[0], mejora[1], mejora[2]});
+        }
     }
 
     /** Pisa lo que hay con lo que mando el anfitrion. Lo usa el cliente, que no simula las armas. */
@@ -411,6 +496,10 @@ public final class ArmasEnJuego {
         enElSuelo.clear();
         for (float[] arma : origen.enElSuelo) {
             enElSuelo.add(arma.clone());
+        }
+        powerUps.clear();
+        for (float[] mejora : origen.powerUps) {
+            powerUps.add(mejora.clone());
         }
     }
 
@@ -435,6 +524,15 @@ public final class ArmasEnJuego {
                 batch.draw(texturaDe(recursos, tipo), x, y, ancho, ALTO_ARMA);
             }
         }
+        for (float[] mejora : powerUps) {
+            float y = mejora[2] + 4f * Arena.ESCALA + flote;
+            float brillo = 0.6f + 0.3f * (float) Math.sin(tiempoAnimacion * 6f);
+            batch.setColor(1f, 1f, 1f, brillo);
+            float margen = 12f * Arena.ESCALA;
+            batch.draw(recursos.brillo, mejora[1] - margen, y - margen, LADO_POWER_UP + 2f * margen, LADO_POWER_UP + 2f * margen);
+            batch.setColor(Color.WHITE);
+            batch.draw(texturaDePowerUp(recursos, PowerUp.porIndice((int) mejora[0])), mejora[1], y, LADO_POWER_UP, LADO_POWER_UP);
+        }
         for (Proyectil p : proyectiles) {
             switch (p.getTipo()) {
                 case BALA:
@@ -457,6 +555,18 @@ public final class ArmasEnJuego {
             }
         }
         batch.setColor(Color.WHITE);
+    }
+
+    /** El icono de cada mejora; lo usa tambien la interfaz. */
+    public static Texture texturaDePowerUp(RecursosGraficos recursos, PowerUp mejora) {
+        switch (mejora) {
+            case VELOCIDAD:
+                return recursos.powerUpVelocidad;
+            case SALTO:
+                return recursos.powerUpSalto;
+            default:
+                return recursos.powerUpPunteria;
+        }
     }
 
     private static Texture texturaDe(RecursosGraficos recursos, TipoArma tipo) {

@@ -18,6 +18,10 @@ public final class EstadoArmas {
     public final List<float[]> proyectiles = new ArrayList<>();
     /** Cada una como {@code {codigo de TipoArma, x, y}}. */
     public final List<float[]> enElSuelo = new ArrayList<>();
+    /** Tope de mejoras en el mapa que viajan por la red. */
+    public static final int MAX_POWER_UPS = 4;
+    /** Cada una como {@code {indice de PowerUp, x, y}}. */
+    public final List<float[]> powerUps = new ArrayList<>();
 
     public void copiarDe(EstadoArmas origen) {
         proyectiles.clear();
@@ -27,6 +31,10 @@ public final class EstadoArmas {
         enElSuelo.clear();
         for (float[] a : origen.enElSuelo) {
             enElSuelo.add(a.clone());
+        }
+        powerUps.clear();
+        for (float[] m : origen.powerUps) {
+            powerUps.add(m.clone());
         }
     }
 }

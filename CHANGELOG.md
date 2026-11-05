@@ -9,6 +9,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Mejoras (`entidades.PowerUp`): cada 12 s cae del cielo una (como mucho 2 en el mapa) y la agarra quien pasa
+  por encima, tenga o no un arma. Duran 10 s: VELOCIDAD corre y rueda un 40 % más rápido, SALTO salta un
+  35 % más alto y PUNTERIA dispara más seguido y casi no abre los perdigones de la escopeta. Cada una tiene
+  su ícono (`sprites/powerup_*.png`) y en la esquina de cada jugador se ve cuáles tiene y cuánto les queda.
+  Se borran al empezar cada ronda. Protocolo de red versión 9 (no es compatible con la 8).
 - Mapa el doble de grande: 180 x 101 celdas (antes 90 x 50), con las celdas del mismo tamaño. Los mapas
   predefinidos mantienen el tamaño de sus elementos y se reparten en el mapa más grande (escaleras en las dos
   puntas, tres trampolines con su plataforma) y los spawns por defecto quedan a la misma distancia entre sí

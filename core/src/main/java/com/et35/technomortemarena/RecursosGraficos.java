@@ -37,6 +37,11 @@ public class RecursosGraficos implements Disposable {
     /** Halo amarillo suave, 48x20 px con transparencia: marca las armas que se pueden agarrar. */
     public final Texture brillo;
 
+    /** Iconos de las mejoras, 16x16 px: un rayo (velocidad), una flecha (salto) y una mira (punteria). */
+    public final Texture powerUpVelocidad;
+    public final Texture powerUpSalto;
+    public final Texture powerUpPunteria;
+
     public RecursosGraficos() {
         jugador = cargar("sprites/jugador.png");
         espada = cargar("sprites/espada.png");
@@ -45,6 +50,9 @@ public class RecursosGraficos implements Disposable {
         pistola = cargar("sprites/pistola.png");
         escopeta = cargar("sprites/escopeta.png");
         brillo = cargar("sprites/brillo.png");
+        powerUpVelocidad = cargar("sprites/powerup_velocidad.png");
+        powerUpSalto = cargar("sprites/powerup_salto.png");
+        powerUpPunteria = cargar("sprites/powerup_punteria.png");
         // el halo es un degrade: con Nearest se veria en escalones
         brillo.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
@@ -74,5 +82,8 @@ public class RecursosGraficos implements Disposable {
         pistola.dispose();
         escopeta.dispose();
         brillo.dispose();
+        powerUpVelocidad.dispose();
+        powerUpSalto.dispose();
+        powerUpPunteria.dispose();
     }
 }

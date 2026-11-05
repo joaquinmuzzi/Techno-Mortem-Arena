@@ -10,9 +10,10 @@ import java.util.Random;
  * 0 es la de la izquierda y la fila 0 es la del piso (de abajo hacia arriba), al reves que el texto de la
  * grilla, donde la primera fila es la de arriba.
  *
- * <p>Una pieza se puede colocar si entra en la grilla, no pisa ninguna celda ocupada y no toca una zona
- * prohibida (el entorno de los spawns, para que nadie arme una trampa de pinchos sobre el punto de
- * aparicion). Es logica pura, sin libGDX.
+ * <p>Una pieza se puede colocar si entra en la grilla y no toca una zona prohibida (el entorno de los
+ * spawns, para que nadie arme una trampa de pinchos sobre el punto de aparicion). Puede pisar lo que ya
+ * habia: sus celdas reemplazan a las del mapa (las vacias de la forma, como el hueco de la esquina, no
+ * borran nada). Es logica pura, sin libGDX.
  */
 public final class ColocadorPiezas {
 
@@ -60,8 +61,8 @@ public final class ColocadorPiezas {
     /**
      * Si la pieza con la esquina inferior izquierda en {@code (columna, fila)} se puede colocar.
      *
-     * @param filas la grilla actual, la primera fila la de arriba; las filas que no existen (por encima
-     *              de la ultima) cuentan como aire
+     * @param filas la grilla actual, la primera fila la de arriba. Hoy no limita nada (se puede pisar lo que
+     *              haya), pero queda en la firma por si se vuelve a restringir
      * @param zonasProhibidas zonas {@code {x0, y0, x1, y1}} en celdas
      */
     public static boolean puedeColocar(String[] filas, PiezaNivel pieza, int columna, int fila,
@@ -75,13 +76,6 @@ public final class ColocadorPiezas {
                 && fila < zona[3] && fila + pieza.getAlto() > zona[1];
             if (seCruzan) {
                 return false;
-            }
-        }
-        for (int dy = 0; dy < pieza.getAlto(); dy++) {
-            for (int dx = 0; dx < pieza.getAncho(); dx++) {
-                if (pieza.celda(dx, dy) != '.' && celdaDe(filas, columna + dx, fila + dy) != '.') {
-                    return false;
-                }
             }
         }
         return true;

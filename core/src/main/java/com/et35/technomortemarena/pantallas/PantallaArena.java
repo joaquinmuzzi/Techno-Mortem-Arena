@@ -73,6 +73,8 @@ public class PantallaArena extends ScreenAdapter {
     private static final Color TINTE_UNO = Jugador.TINTE_UNO;
     private static final Color TINTE_DOS = Jugador.TINTE_DOS;
     private static final Color VELO_PAUSA = new Color(0f, 0f, 0f, 0.6f);
+    /** Oscurece el mapa a quien mira la edicion del rival: no es su turno. */
+    private static final Color VELO_ESPECTADOR = new Color(0f, 0f, 0f, 0.5f);
 
     // Volumen de cada efecto. El de correr es mas bajo porque suena en bucle casi todo el tiempo y
     // taparia el resto; los golpes y aterrizajes son cortos y puntuales.
@@ -614,13 +616,11 @@ public class PantallaArena extends ScreenAdapter {
         }
     }
 
-    /** Las zonas donde no se puede colocar nada: alrededor de cada spawn y del punto de la muerte subita. */
+    /** Las zonas donde no se puede colocar nada: alrededor de cada spawn. */
     private List<float[]> crearZonasProhibidas() {
         List<float[]> zonas = new ArrayList<>();
         zonas.add(ColocadorPiezas.zonaDeSpawn(spawnUno.x, spawnUno.y, Jugador.ANCHO, Jugador.ALTO));
         zonas.add(ColocadorPiezas.zonaDeSpawn(spawnDos.x, spawnDos.y, Jugador.ANCHO, Jugador.ALTO));
-        float yPiso = Arena.FILAS_PISO * Arena.CELDA;
-        zonas.add(ColocadorPiezas.zonaDeSpawn(arena.getAncho() / 2f - 80f, yPiso, 160f, Jugador.ALTO));
         return zonas;
     }
 
@@ -655,7 +655,8 @@ public class PantallaArena extends ScreenAdapter {
 
         batch.begin();
         dibujarBloques();
-        if (rondas.getFase() == RondasPartida.Fase.EDICION) {
+        if (rondas.getFase() == RondasPartida.Fase.EDICION && soyElEditor()) {
+            // quien mira la edicion del rival la ve encima del velo, en dibujarEdicionEnLaInterfaz
             dibujarEdicionEnElMundo();
         }
         jugadorUno.dibujar(batch, recursos);
@@ -743,8 +744,10 @@ public class PantallaArena extends ScreenAdapter {
             ui.rectangulo(batch, rectAux.set(x, y, TAMANO_VIDA, TAMANO_VIDA), COLOR_VIDA_PERDIDA);
             int enEste = MathUtils.clamp(partes - i * Jugador.PARTES_POR_CORAZON, 0, Jugador.PARTES_POR_CORAZON);
             if (enEste > 0) {
+                // se vacia desde afuera hacia el centro: la del Jugador 1 de izquierda a derecha, la del 2 al reves
                 float ancho = TAMANO_VIDA * enEste / Jugador.PARTES_POR_CORAZON;
-                ui.rectangulo(batch, rectAux.set(x, y, ancho, TAMANO_VIDA), tinte);
+                float desde = haciaLaIzquierda ? x + TAMANO_VIDA - ancho : x;
+                ui.rectangulo(batch, rectAux.set(desde, y, ancho, TAMANO_VIDA), tinte);
             }
         }
     }
@@ -1059,8 +1062,24 @@ public class PantallaArena extends ScreenAdapter {
         return ColocadorPiezas.puedeColocar(arena.getFilas(), pieza, origen[0], origen[1], zonasProhibidas);
     }
 
-    /** Cartel con el tiempo y las tres tarjetas de la edicion, con la proyeccion de la interfaz. */
+    /**
+     * Cartel con el tiempo y las tres tarjetas de la edicion, con la proyeccion de la interfaz. A quien no
+     * le toca elegir se le oscurece el mapa con un velo, para que se entienda que no es su turno, pero la
+     * vista previa de lo que coloca el rival y las tarjetas van encima del velo y se ven claras.
+     */
     private void dibujarEdicionEnLaInterfaz() {
+        if (!soyElEditor()) {
+            viewportUi.apply();
+            batch.setProjectionMatrix(viewportUi.getCamera().combined);
+            batch.begin();
+            ui.rectangulo(batch, rectAux.set(0f, 0f, ANCHO_UI, ALTO_UI), VELO_ESPECTADOR);
+            batch.end();
+            viewport.apply();
+            batch.setProjectionMatrix(viewport.getCamera().combined);
+            batch.begin();
+            dibujarEdicionEnElMundo();
+            batch.end();
+        }
         viewportUi.apply();
         batch.setProjectionMatrix(viewportUi.getCamera().combined);
         PiezaNivel[] opciones = new PiezaNivel[EdicionNivel.OPCIONES];

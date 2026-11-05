@@ -181,8 +181,8 @@ aparece el cartel de victoria con la revancha (la pide el anfitrión).
 **Edición del nivel entre rondas** (al estilo *Ultimate Chicken Horse*): después del resultado, quien
 perdió la ronda recibe 3 objetos al azar y tiene 20 segundos para elegir uno (clic en la tarjeta o
 teclas `1`, `2` y `3`) y colocarlo con un clic en el mapa. La vista previa se ve verde donde se puede
-y roja donde no: no se puede pisar lo que ya hay ni colocar cerca de los spawns ni del centro de la
-muerte súbita (las zonas rojas). Si se acaba el tiempo, el objeto elegido se coloca donde estaba el
+y roja donde no: se puede colocar encima de lo que ya hay, pero no cerca de los spawns (las zonas
+rojas). Mientras uno coloca, al otro se le oscurece el mapa: ve lo que elige el rival, pero no es su turno. Si se acaba el tiempo, el objeto elegido se coloca donde estaba el
 cursor (o en el lugar válido más cercano) y, si no eligió ninguno, uno de los tres al azar en un lugar
 al azar. Las piezas se acumulan durante la partida y la revancha vuelve al mapa original. En empate no
 hay edición.

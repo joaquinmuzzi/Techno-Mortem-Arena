@@ -115,6 +115,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- Edición entre rondas: las piezas se pueden colocar encima de lo que ya hay (piso, bloques u otras piezas,
+  que quedan reemplazados; los huecos de la forma, como el de la esquina, no borran nada). La única zona
+  prohibida es alrededor de los spawns: se sacó la del centro, que protegía el lugar de la muerte súbita.
+- Quien mira la edición del rival ve el mapa oscurecido, para que se entienda que no es su turno; las
+  tarjetas y la vista previa de lo que elige y coloca el rival van encima y se ven claras.
+- Las vidas del Jugador 1 (azul) se vacían de izquierda a derecha, en espejo de las del Jugador 2: antes cada
+  corazón a medias se vaciaba del lado del centro.
 - Las armas se agarran solo con la mano vacía (la espada también cuenta): pasar por encima con algo en la
   mano no hace nada. Para cambiar de arma, primero hay que tirar la que se tiene.
 - Los perdigones de la escopeta no respetan ni dejan invulnerabilidad: cada perdigón que toca saca su parte,

@@ -21,6 +21,8 @@ public final class EstadoJugador {
     public int arma = 1;
     /** Balas de la pistola. */
     public int balas;
+    /** Segundos que le quedan a cada mejora, en el orden de {@link PowerUp}. */
+    public final float[] tiempoPowerUp = new float[PowerUp.values().length];
     /** Hacia donde apunta la espada, en radianes. */
     public float anguloEspada;
     /** Cuanto esta adelantada la hoja por la estocada, de 0 a 1. */

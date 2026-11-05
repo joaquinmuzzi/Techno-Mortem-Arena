@@ -7,6 +7,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -165,6 +166,8 @@ public class Jugador {
     /** El arma que se le cayo de la mano por un punetazo, hasta que la junta {@link ArmasEnJuego}. */
     private TipoArma armaSoltada;
     private Random azar = new Random();
+    /** Segundos que le quedan a cada mejora, en el orden de {@link PowerUp}; 0 si no la tiene. */
+    private final float[] tiempoPowerUp = new float[PowerUp.values().length];
     /** Balas y armas tiradas en este fotograma: las junta {@link ArmasEnJuego}. */
     private final List<Proyectil> lanzados = new ArrayList<>();
     private final Hoja hoja = new Hoja();
@@ -266,6 +269,7 @@ public class Jugador {
         punioConecto = false;
         armaSoltada = null;
         lanzados.clear();
+        Arrays.fill(tiempoPowerUp, 0f);
         corriendo = false;
         enVuelo = false;
         acabaDeAterrizar = false;
@@ -307,6 +311,9 @@ public class Jugador {
         }
         if (bloqueadoTimer > 0f) {
             bloqueadoTimer -= delta;
+        }
+        for (int i = 0; i < tiempoPowerUp.length; i++) {
+            tiempoPowerUp[i] = Math.max(0f, tiempoPowerUp[i] - delta);
         }
     }
 
@@ -433,16 +440,17 @@ public class Jugador {
         if (arma == TipoArma.ESCOPETA) {
             for (int i = 0; i < TipoArma.PERDIGONES; i++) {
                 // un abanico parejo, con cada perdigon corrido un poco al azar
-                float desvio = ABANICO_ESCOPETA * ((float) i / (TipoArma.PERDIGONES - 1) - 0.5f)
-                    + (azar.nextFloat() * 2f - 1f) * DISPERSION_PERDIGON;
+                float abanico = tienePowerUp(PowerUp.PUNTERIA) ? PowerUp.FACTOR_ABANICO : 1f;
+                float desvio = abanico * (ABANICO_ESCOPETA * ((float) i / (TipoArma.PERDIGONES - 1) - 0.5f)
+                    + (azar.nextFloat() * 2f - 1f) * DISPERSION_PERDIGON);
                 float velocidad = Proyectil.VELOCIDAD_PERDIGON
                     * (1f + (azar.nextFloat() * 2f - 1f) * VARIACION_VELOCIDAD_PERDIGON);
                 lanzados.add(new Proyectil(Proyectil.Tipo.PERDIGON, this, x, y, angulo + desvio, velocidad));
             }
-            recargaDisparo = RECARGA_ESCOPETA;
+            recargaDisparo = RECARGA_ESCOPETA * factorRecarga();
         } else {
             lanzados.add(new Proyectil(Proyectil.Tipo.BALA, this, x, y, angulo, Proyectil.VELOCIDAD_BALA));
-            recargaDisparo = RECARGA_PISTOLA;
+            recargaDisparo = RECARGA_PISTOLA * factorRecarga();
         }
         balas--;
         if (balas <= 0) {
@@ -478,16 +486,16 @@ public class Jugador {
         entradaDerecha = entrada.derecha;
 
         if (entradaIzquierda && !entradaDerecha) {
-            velocidad.x += -(VELOCIDAD*(bloqueadoTimer > 0f ? 0.5f : 1f) + velocidad.x);
+            velocidad.x += -(VELOCIDAD * factorVelocidad() * (bloqueadoTimer > 0f ? 0.5f : 1f) + velocidad.x);
         } else if (entradaDerecha && !entradaIzquierda) {
-            velocidad.x += VELOCIDAD*(bloqueadoTimer > 0f ? 0.5f : 1f) - velocidad.x;
+            velocidad.x += VELOCIDAD * factorVelocidad() * (bloqueadoTimer > 0f ? 0.5f : 1f) - velocidad.x;
         }
 
         actualizarRodada(arena, delta);
         if (rodando) {
-            velocidad.x = direccionRodada * VELOCIDAD_RODADA;
+            velocidad.x = direccionRodada * VELOCIDAD_RODADA * factorVelocidad();
         } else if (enElPiso && entrada.saltar) {
-            impulsar(IMPULSO_SALTO);
+            impulsar(IMPULSO_SALTO * (tienePowerUp(PowerUp.SALTO) ? PowerUp.FACTOR_SALTO : 1f));
         }
     }
 
@@ -939,6 +947,28 @@ public class Jugador {
         return true;
     }
 
+    /** Agarra una mejora: le dura {@link PowerUp#DURACION} segundos (si ya la tenia, vuelve a empezar). */
+    public void activarPowerUp(PowerUp mejora) {
+        tiempoPowerUp[mejora.ordinal()] = PowerUp.DURACION;
+    }
+
+    public boolean tienePowerUp(PowerUp mejora) {
+        return tiempoPowerUp[mejora.ordinal()] > 0f;
+    }
+
+    /** Segundos que le quedan a una mejora; 0 si no la tiene. */
+    public float getTiempoPowerUp(PowerUp mejora) {
+        return tiempoPowerUp[mejora.ordinal()];
+    }
+
+    private float factorVelocidad() {
+        return tienePowerUp(PowerUp.VELOCIDAD) ? PowerUp.FACTOR_VELOCIDAD : 1f;
+    }
+
+    private float factorRecarga() {
+        return tienePowerUp(PowerUp.PUNTERIA) ? PowerUp.FACTOR_RECARGA : 1f;
+    }
+
     /** Anota que este jugador acaba de herir al rival: suena el golpe, aca y en el cliente. */
     void registrarGolpe() {
         acabaDeGolpear = true;
@@ -1056,6 +1086,7 @@ public class Jugador {
         destino.rodando = rodando;
         destino.arma = TipoArma.codigoDe(arma);
         destino.balas = balas;
+        System.arraycopy(tiempoPowerUp, 0, destino.tiempoPowerUp, 0, tiempoPowerUp.length);
         destino.anguloEspada = angulo;
         destino.extension = extension;
         destino.tiempoRestanteFlash = tiempoRestanteFlash;
@@ -1076,6 +1107,7 @@ public class Jugador {
         rodando = origen.rodando;
         arma = TipoArma.porCodigo(origen.arma);
         balas = origen.balas;
+        System.arraycopy(origen.tiempoPowerUp, 0, tiempoPowerUp, 0, tiempoPowerUp.length);
         angulo = origen.anguloEspada;
         anguloObjetivo = origen.anguloEspada;
         extension = origen.extension;

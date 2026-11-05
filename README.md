@@ -148,7 +148,8 @@ de la del rival (su primer tercio) mientras la movés, su espada sale volando ha
 Cada 8 s cae del cielo una pistola (6 balas) o una escopeta (3 disparos de 5 perdigones en un abanico con algo de dispersión al azar, alcance medio), la que
 haya menos en el suelo, en un lugar al azar lejos de los spawns. Además, los bloques spawner de pistolas
 y de escopetas (de 3x3, se ponen en el editor y también se pueden elegir entre rondas) hacen aparecer su
-arma encima cada 5 s, una sola a la vez. En la esquina de arriba de cada jugador se ve el arma que tiene
+arma encima cada 5 s, una sola a la vez. Cada 12 s cae también una mejora que dura 10 s: velocidad (+40 %), salto (+35 %) o puntería (dispara más
+seguido y la escopeta abre menos); la agarra quien pase por encima. En la esquina de arriba de cada jugador se ve el arma que tiene
 en la mano y, debajo, sus balas. Al empezar cada ronda todos vuelven a tener la espada.
 
 Al rodar (solo desde el piso, 0,35 s y con una recarga de 0,9 s) el cuerpo se achica a la mitad de

@@ -209,6 +209,7 @@ public final class ClienteSala implements AutoCloseable {
         destino.rodando = origen.rodando;
         destino.arma = origen.arma;
         destino.balas = origen.balas;
+        System.arraycopy(origen.tiempoPowerUp, 0, destino.tiempoPowerUp, 0, origen.tiempoPowerUp.length);
         destino.anguloEspada = origen.anguloEspada;
         destino.tiempoRestanteFlash = origen.tiempoRestanteFlash;
         destino.contadorGolpes = origen.contadorGolpes;

@@ -26,6 +26,7 @@ import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entidades.ArmasEnJuego;
 import com.et35.technomortemarena.entidades.EstadoArmas;
 import com.et35.technomortemarena.entidades.Jugador;
+import com.et35.technomortemarena.entidades.PowerUp;
 import com.et35.technomortemarena.entidades.TipoArma;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entrada.Controles;
@@ -127,6 +128,7 @@ public class PantallaArena extends ScreenAdapter {
     private static final float ANCHO_BALA_HUD = 8f;
     private static final float ALTO_BALA_HUD = 18f;
     private static final float SEPARACION_BALA_HUD = 5f;
+    private static final float LADO_POWER_UP_HUD = 24f;
     private static final Color COLOR_TIMER = new Color(1f, 0.9f, 0.4f, 1f);
     private static final Color COLOR_MUERTE_SUBITA = new Color(1f, 0.3f, 0.2f, 1f);
 
@@ -794,6 +796,29 @@ public class PantallaArena extends ScreenAdapter {
      * los que quedan y apagados los gastados, en el mismo estilo que las vidas. Mientras se ve el cartel de
      * controles (arriba a la izquierda), la del Jugador 1 va debajo del cartel y sube cuando se desvanece.
      */
+    /**
+     * Las mejoras que tiene un duelista, debajo de sus balas: el icono de cada una y una barra con el tiempo
+     * que le queda. En la columna de la esquina del jugador, como el resto de su interfaz.
+     */
+    private void dibujarPowerUps(Jugador jugador, boolean aLaIzquierda, float xCuadro, float arriba) {
+        int numero = 0;
+        for (PowerUp mejora : PowerUp.values()) {
+            float tiempo = jugador.getTiempoPowerUp(mejora);
+            if (tiempo <= 0f) {
+                continue;
+            }
+            float x = aLaIzquierda
+                ? xCuadro + numero * (LADO_POWER_UP_HUD + 8f)
+                : xCuadro + ANCHO_CUADRO_ARMA - LADO_POWER_UP_HUD - numero * (LADO_POWER_UP_HUD + 8f);
+            float y = arriba - LADO_POWER_UP_HUD;
+            ui.rectangulo(batch, rectAux.set(x - 2f, y - 8f, LADO_POWER_UP_HUD + 4f, LADO_POWER_UP_HUD + 10f), FONDO_CUADRO_ARMA);
+            batch.draw(ArmasEnJuego.texturaDePowerUp(recursos, mejora), x, y, LADO_POWER_UP_HUD, LADO_POWER_UP_HUD);
+            float parte = tiempo / PowerUp.DURACION;
+            ui.rectangulo(batch, rectAux.set(x, y - 6f, LADO_POWER_UP_HUD * parte, 3f), Color.WHITE);
+            numero++;
+        }
+    }
+
     private void dibujarArma(Jugador jugador, Color tinte, boolean aLaIzquierda) {
         if (jugador.isDesarmado()) {
             return; // el blanco del modo de prueba no usa armas
@@ -806,6 +831,7 @@ public class PantallaArena extends ScreenAdapter {
         }
         float abajo = arriba - ALTO_CUADRO_ARMA;
         ui.rectangulo(batch, rectAux.set(x, abajo, ANCHO_CUADRO_ARMA, ALTO_CUADRO_ARMA), FONDO_CUADRO_ARMA);
+        dibujarPowerUps(jugador, aLaIzquierda, x, abajo - 6f - ALTO_BALA_HUD - 10f);
         TipoArma arma = jugador.getArma();
         if (arma == null) {
             String vacia = "MANO VACIA";

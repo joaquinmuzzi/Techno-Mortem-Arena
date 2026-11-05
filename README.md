@@ -354,7 +354,7 @@ El registro detallado de cambios está en [CHANGELOG.md](CHANGELOG.md).
 ## Pruebas y contribuciones
 
 ```bash
-./gradlew test    # tests unitarios (JUnit 5, en core/src/test)
+./gradlew test    # tests unitarios (JUnit 6, en core/src/test; requiere JDK 17)
 ./gradlew build   # compila todos los módulos
 ```
 

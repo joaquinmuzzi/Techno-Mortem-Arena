@@ -36,10 +36,14 @@ Son las mismas que corre el CI (ver `.github/workflows/`). Corrélas antes de ab
 ./gradlew test       # tests unitarios
 ```
 
-Los tests están en `core/src/test/java` y usan JUnit 5. Cubren la lógica que se puede probar sin
+Los tests están en `core/src/test/java` y usan JUnit 6. Cubren la lógica que se puede probar sin
 abrir una ventana: la grilla de la arena y sus bloques, las alturas de la espada y los mapas del
 editor. Si tu cambio toca esa lógica, agregá o actualizá tests. Si arreglás un error, agregá un test
 que lo reproduzca cuando se pueda.
+
+JUnit 6 necesita Java 17 para los tests, así que `core/build.gradle` compila solo los tests con
+`--release 17`. El bytecode del juego sigue en Java 8: por eso `./gradlew test` tiene que correrse
+con un JDK 17 o superior.
 
 Compilar y pasar los tests **no alcanza** para lo que ve el jugador: si cambiás una mecánica,
 una pantalla o el editor, probalo jugando la parte afectada y contá en la descripción cómo lo
@@ -50,7 +54,7 @@ probaste.
 ```
 core/        lógica del juego compartida por todas las plataformas
   src/main/  código (ver "Estructura del código" en el README)
-  src/test/  tests unitarios (JUnit 5)
+  src/test/  tests unitarios (JUnit 6)
 lwjgl3/      plataforma de escritorio y lanzador
 assets/      imágenes, sonidos y fuentes
 .github/     workflows de CI, plantillas de issues y de PR, Dependabot

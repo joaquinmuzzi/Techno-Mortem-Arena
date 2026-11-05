@@ -30,7 +30,7 @@ public final class Proyectil {
     /** Un arma tirada cae bastante: hay que tirarla en arco para llegar lejos. */
     static final float GRAVEDAD_LANZADA = -1100f * ESCALA;
     /** Segundos que vuela un perdigon antes de perderse: la escopeta es de corto alcance. */
-    static final float VIDA_PERDIGON = 0.35f;
+    static final float VIDA_PERDIGON = 0.55f;
     /** Cuanto de la velocidad conserva al rebotar: poco, para que un rebote no sirva de ataque. */
     private static final float REBOTE = 0.25f;
     /** Cuanto de la velocidad horizontal le queda en cada pique contra el piso. */
@@ -66,6 +66,8 @@ public final class Proyectil {
     private boolean apoyada;
     /** Las balas que le quedan a un arma de fuego tirada: con balas queda en el mapa, sin balas se rompe. */
     private int balas;
+    /** El disparo de escopeta al que pertenece un perdigon (0 si no es un perdigon). */
+    private int rafaga;
     private final Rectangle caja = new Rectangle();
 
     public Proyectil(Tipo tipo, Jugador duenio, float x, float y, float angulo, float velocidad) {
@@ -98,6 +100,12 @@ public final class Proyectil {
     /** Le pone las balas que tenia el arma de fuego en la mano al tirarla. */
     Proyectil conBalas(int balas) {
         this.balas = balas;
+        return this;
+    }
+
+    /** Marca el perdigon como parte del disparo numero {@code rafaga}. */
+    Proyectil deLaRafaga(int rafaga) {
+        this.rafaga = rafaga;
         return this;
     }
 
@@ -211,7 +219,7 @@ public final class Proyectil {
 
     private void herir(Jugador tocado) {
         float direccion = vx >= 0f ? 1f : -1f;
-        if (tocado.recibirDanio(getDanio(), direccion, esDisparo()) && duenio != null) {
+        if (tocado.recibirDanio(getDanio(), direccion, esDisparo(), rafaga) && duenio != null) {
             duenio.registrarGolpe();
         }
         if (rebota()) {

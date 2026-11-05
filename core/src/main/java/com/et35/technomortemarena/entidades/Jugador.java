@@ -9,6 +9,7 @@ import com.badlogic.gdx.math.Vector2;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entrada.EntradaJugador;
@@ -75,8 +76,12 @@ public class Jugador {
     /** Segundos entre un disparo y el siguiente: la escopeta tarda mas en recargar. */
     private static final float RECARGA_PISTOLA = 0.22f;
     private static final float RECARGA_ESCOPETA = 0.6f;
-    /** Abertura total del abanico de perdigones de la escopeta, en radianes. */
-    private static final float ABANICO_ESCOPETA = 0.5f;
+    /** Abertura total del abanico de perdigones de la escopeta, en radianes (unos 17 grados). */
+    static final float ABANICO_ESCOPETA = 0.3f;
+    /** Cuanto se corre al azar cada perdigon de su lugar en el abanico, en radianes, para arriba o abajo. */
+    static final float DISPERSION_PERDIGON = 0.05f;
+    /** Cuanto varia al azar la velocidad de cada perdigon, en proporcion (0,1 = un 10 % mas o menos). */
+    private static final float VARIACION_VELOCIDAD_PERDIGON = 0.1f;
     /** El punetazo sin arma: corto, con recarga, empuja y a veces desarma. */
     private static final float DURACION_PUNIO = 0.16f;
     private static final float RECARGA_PUNIO = 0.35f;
@@ -161,6 +166,13 @@ public class Jugador {
     /** El arma que se le cayo de la mano por un punetazo, hasta que la junta {@link ArmasEnJuego}. */
     private TipoArma armaSoltada;
     private Random azar = new Random();
+    /** Numeros de disparo de escopeta, unicos entre todos los jugadores: los perdigones de un disparo comparten el suyo. */
+    private static final AtomicInteger RAFAGAS = new AtomicInteger();
+    /**
+     * Disparo de escopeta que causo la invulnerabilidad actual (0 si no la causo una escopeta): los demas
+     * perdigones de ese mismo disparo la atraviesan, si no la invulnerabilidad del primero cortaria al resto.
+     */
+    private int rafagaDeLaInvulnerabilidad;
     /** Balas y armas tiradas en este fotograma: las junta {@link ArmasEnJuego}. */
     private final List<Proyectil> lanzados = new ArrayList<>();
     private final Hoja hoja = new Hoja();
@@ -427,9 +439,15 @@ public class Jugador {
         float x = pivoteX() + (float) Math.cos(angulo) * LARGO_PISTOLA;
         float y = pivoteY() + (float) Math.sin(angulo) * LARGO_PISTOLA;
         if (arma == TipoArma.ESCOPETA) {
+            // cada disparo tiene su numero (nunca 0), para que sus perdigones no se corten entre si
+            int rafaga = (RAFAGAS.incrementAndGet() & Integer.MAX_VALUE) + 1;
             for (int i = 0; i < TipoArma.PERDIGONES; i++) {
-                float desvio = ABANICO_ESCOPETA * ((float) i / (TipoArma.PERDIGONES - 1) - 0.5f);
-                lanzados.add(new Proyectil(Proyectil.Tipo.PERDIGON, this, x, y, angulo + desvio, Proyectil.VELOCIDAD_PERDIGON));
+                // un abanico parejo, con cada perdigon corrido un poco al azar
+                float desvio = ABANICO_ESCOPETA * ((float) i / (TipoArma.PERDIGONES - 1) - 0.5f)
+                    + (azar.nextFloat() * 2f - 1f) * DISPERSION_PERDIGON;
+                float velocidad = Proyectil.VELOCIDAD_PERDIGON
+                    * (1f + (azar.nextFloat() * 2f - 1f) * VARIACION_VELOCIDAD_PERDIGON);
+                lanzados.add(new Proyectil(Proyectil.Tipo.PERDIGON, this, x, y, angulo + desvio, velocidad).deLaRafaga(rafaga));
             }
             recargaDisparo = RECARGA_ESCOPETA;
         } else {
@@ -775,6 +793,8 @@ public class Jugador {
         if (!desarmado) {
             dibujarBrazo(batch, recursos);
             if (arma == TipoArma.ESPADA) {
+                // la espada no se tine con el color del jugador: va en blanco, como las armas de fuego
+                batch.setColor(Color.WHITE);
                 dibujarEspada(batch, recursos);
             } else if (arma == TipoArma.PISTOLA) {
                 batch.setColor(Color.WHITE);
@@ -901,10 +921,23 @@ public class Jugador {
      * @return {@code false} si no le hizo nada (muerto o todavia invulnerable por el golpe anterior)
      */
     public boolean recibirDanio(int partes, float direccion, boolean esBala) {
-        if (!vivo || tiempoRestanteFlash > 0f) {
+        return recibirDanio(partes, direccion, esBala, 0);
+    }
+
+    /**
+     * Igual que {@link #recibirDanio(int, float, boolean)}, para un perdigon del disparo de escopeta numero
+     * {@code rafaga}: si la invulnerabilidad actual la causo otro perdigon de ese mismo disparo, no lo frena.
+     * Asi un escopetazo de cerca pega con todos sus perdigones.
+     */
+    public boolean recibirDanio(int partes, float direccion, boolean esBala, int rafaga) {
+        boolean mismaRafaga = rafaga != 0 && rafaga == rafagaDeLaInvulnerabilidad;
+        if (!vivo || (tiempoRestanteFlash > 0f && !mismaRafaga)) {
             return false;
         }
-        tiempoRestanteFlash = esBala ? FLASH_BALA : 1f;
+        if (!mismaRafaga) {
+            tiempoRestanteFlash = esBala ? FLASH_BALA : 1f;
+        }
+        rafagaDeLaInvulnerabilidad = rafaga;
         empujar(direccion, esBala ? EMPUJE_BALA : EMPUJE_GOLPE);
         if (!esBala) {
             velocidad.y += 400f * ESCALA;

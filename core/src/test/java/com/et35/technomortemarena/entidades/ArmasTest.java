@@ -221,7 +221,9 @@ class ArmasTest {
             minimo = Math.min(minimo, salidas.get(i).getAngulo());
             maximo = Math.max(maximo, salidas.get(i).getAngulo());
         }
-        assertTrue(maximo - minimo > 0.3f, "los perdigones salen abiertos");
+        assertTrue(maximo - minimo > 0.15f, "los perdigones salen abiertos");
+        assertTrue(maximo - minimo < Jugador.ABANICO_ESCOPETA + 2f * Jugador.DISPERSION_PERDIGON + 0.01f,
+            "pero en un abanico cerrado");
         assertNull(a.getArma());
     }
 
@@ -233,7 +235,8 @@ class ArmasTest {
             perdigon.actualizar(DT, vacia, null, null);
         }
         assertFalse(perdigon.isActivo());
-        assertTrue(perdigon.getX() < Arena.ANCHO_MUNDO / 3f, "se pierde antes de cruzar un tercio de la arena");
+        assertTrue(perdigon.getX() < Arena.ANCHO_MUNDO / 2f, "se pierde antes de cruzar media arena");
+        assertTrue(perdigon.getX() > Arena.ANCHO_MUNDO / 4f, "pero llega mas lejos que un cuarto");
     }
 
     @Test
@@ -246,9 +249,9 @@ class ArmasTest {
         guion.clic = true;
         pasos(a, d, 30);
 
-        // la invulnerabilidad corta deja pasar un perdigon por golpe: de cerca se lleva al menos uno
-        assertTrue(d.getPartes() < VIDA_LLENA);
-        assertTrue(d.getPartes() >= VIDA_LLENA - TipoArma.PERDIGONES);
+        // los perdigones de un mismo disparo no se frenan con la invulnerabilidad del primero
+        assertEquals(VIDA_LLENA - TipoArma.PERDIGONES * TipoArma.DANIO_PERDIGON, d.getPartes(),
+            "de cerca pegan los cinco");
     }
 
     // ---- tirar la espada
@@ -700,6 +703,33 @@ class ArmasTest {
         assertEquals(VIDA_LLENA, d.getPartes());
         assertEquals(1, armas.getEnElSuelo().size());
         assertEquals(TipoArma.codigoDe(TipoArma.ESPADA), (int) armas.getEnElSuelo().get(0)[0]);
+    }
+
+    @Test
+    void laInvulnerabilidadDeUnPerdigonNoFrenaAOtroDisparo() {
+        Jugador d = blanco(1000f);
+        assertTrue(d.recibirDanio(1, 1f, true, 7));
+        assertTrue(d.recibirDanio(1, 1f, true, 7), "otro perdigon del mismo disparo pasa");
+        assertFalse(d.recibirDanio(2, 1f, true), "una bala en el medio no");
+        assertFalse(d.recibirDanio(1, 1f, true, 8), "ni un perdigon de otro disparo");
+        assertEquals(VIDA_LLENA - 2, d.getPartes());
+    }
+
+    @Test
+    void cadaDisparoDeEscopetaTieneSuPropiaDispersion() {
+        Jugador a = tirador(1000f);
+        Jugador d = blanco(3000f);
+        a.equipar(TipoArma.ESCOPETA);
+        apuntarALaDerecha();
+        pasos(a, d, 3);
+        List<Proyectil> salidas = disparoHastaVaciar(a, d);
+        boolean distintos = false;
+        for (int i = 0; i < TipoArma.PERDIGONES; i++) {
+            float primero = salidas.get(i).getAngulo();
+            float segundo = salidas.get(i + TipoArma.PERDIGONES).getAngulo();
+            distintos |= Math.abs(primero - segundo) > 0.001f;
+        }
+        assertTrue(distintos, "dos disparos no salen exactamente igual");
     }
 
     private List<Proyectil> disparoHastaVaciar(Jugador a, Jugador d) {

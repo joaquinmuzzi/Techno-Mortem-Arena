@@ -131,6 +131,12 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- En los mapas que no marcan los spawns, cada duelista aparece a 15 celdas de su pared, parado sobre lo que
+  haya ahí (en la escalera, sobre el escalón bajo).
+- Las armas que aparecen solas ya no aparecen de golpe en el piso: caen desde arriba del mapa sobre el lugar
+  elegido y se agarran recién cuando se apoyan (en el primer bloque que encuentran). Si caen por un agujero,
+  desaparecen. El arma que se le cae a un duelista en el aire también cae hasta el piso. Los spawners de
+  bloque siguen poniendo su arma directamente encima.
 - Protocolo de red versión 8: el saludo lleva dos máscaras de 64 bits (hasta 128 filas de mapa), el largo de
   cada fila codificada va en dos bytes y las columnas de la edición se leen sin signo (hay más de 127). No
   es compatible con la versión 7. Los mapas guardados con el tamaño anterior ya no se cargan.

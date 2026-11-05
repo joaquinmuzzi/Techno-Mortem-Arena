@@ -130,6 +130,9 @@ public class PantallaArena extends ScreenAdapter {
     private static final Color COLOR_TIMER = new Color(1f, 0.9f, 0.4f, 1f);
     private static final Color COLOR_MUERTE_SUBITA = new Color(1f, 0.3f, 0.2f, 1f);
 
+    /** A cuantas celdas de su pared aparece cada duelista en un mapa que no marca los spawns. */
+    static final float DISTANCIA_SPAWN_A_LA_PARED = 15f;
+
     /** Segundos que tarda en reaparecer el blanco del modo de prueba despues de caer. */
     private static final float REAPARICION_BLANCO = 2f;
 
@@ -243,14 +246,14 @@ public class PantallaArena extends ScreenAdapter {
         // resolucion, que es imprescindible para que el enfrentamiento sea justo. Muestra la vista de
         // la camara (la mitad del mapa en cada sentido): la camara sigue a los duelistas (CamaraDuelo).
         this.viewport = new FitViewport(Arena.ANCHO_VISTA, Arena.ALTO_VISTA, new OrthographicCamera());
-        float yPiso = Arena.FILAS_PISO * Arena.CELDA;
-        // a la misma distancia entre si que en el mapa chico: cerca del centro, no en las puntas
-        float xPorDefectoUno = (Arena.COLUMNAS / 2f - 21f) * Arena.CELDA;
+        // Sin spawns en el mapa, cada uno aparece a 15 celdas de su pared, parado sobre lo que haya ahi
+        // (el piso, o un escalon en el mapa de la escalera).
+        float xPorDefectoUno = DISTANCIA_SPAWN_A_LA_PARED * Arena.CELDA;
         float xPorDefectoDos = arena.getAncho() - xPorDefectoUno - Jugador.ANCHO;
         Vector2 spawnUnoMapa = arena.getSpawnUno();
         Vector2 spawnDosMapa = arena.getSpawnDos();
-        this.spawnUno = spawnUnoMapa != null ? spawnUnoMapa : new Vector2(xPorDefectoUno, yPiso);
-        this.spawnDos = spawnDosMapa != null ? spawnDosMapa : new Vector2(xPorDefectoDos, yPiso);
+        this.spawnUno = spawnUnoMapa != null ? spawnUnoMapa : new Vector2(xPorDefectoUno, alturaDelPiso(arena, xPorDefectoUno));
+        this.spawnDos = spawnDosMapa != null ? spawnDosMapa : new Vector2(xPorDefectoDos, alturaDelPiso(arena, xPorDefectoDos));
         this.zonasProhibidas = crearZonasProhibidas();
         this.armas = new ArmasEnJuego(new Random(), zonasProhibidas);
         this.edicion = servidor != null && filasOriginales.length > 0
@@ -624,6 +627,23 @@ public class PantallaArena extends ScreenAdapter {
             edicion.reiniciarNivel();
             arena = Arena.desdeGrilla(filasOriginales);
         }
+    }
+
+    /**
+     * La altura de lo mas alto que hay debajo de un cuerpo parado en {@code x}: ahi apoya los pies. Sin nada
+     * debajo, la altura del piso de siempre.
+     */
+    static float alturaDelPiso(Arena arena, float x) {
+        float altura = 0f;
+        boolean hayAlgo = false;
+        for (Bloque bloque : arena.getBloques()) {
+            Rectangle area = bloque.getArea();
+            if (area.x < x + Jugador.ANCHO && area.x + area.width > x) {
+                altura = Math.max(altura, area.y + area.height);
+                hayAlgo = true;
+            }
+        }
+        return hayAlgo ? altura : Arena.FILAS_PISO * Arena.CELDA;
     }
 
     /**

@@ -360,6 +360,11 @@ A esos se suman los dos sonidos de interfaz, `Boton.wav` (pasar el cursor por en
 que cada pantalla solo tiene que habilitarlos con `Ui.setAudio`; el editor de niveles no lo hace y por
 eso queda en silencio.
 
+La música del menú es `assets/music/menu.mp3`: `RecursosAudio` la carga como `Music` (se lee del
+disco de a poco) y suena en las pantallas del menú. Desde OPCIONES, en el menú principal, se apagan la
+música o los efectos; la elección se guarda entre partidas. Los efectos se reproducen siempre con
+`RecursosAudio.reproducir` y `repetir`, que no suenan si están apagados.
+
 El texto de la interfaz usa dos fuentes pixeladas, sin suavizado, en `assets/fuentes/`: Orbitron
 en negrita para los títulos y los botones, y Share Tech Mono para el resto (el HUD, la ayuda, las
 listas). Están horneadas en varios tamaños con `herramientas/hornear_fuentes.py` (necesita Pillow) y

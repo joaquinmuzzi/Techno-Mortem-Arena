@@ -132,10 +132,11 @@ public final class ServidorSala implements AutoCloseable {
     }
 
     private void atenderHello(SocketAddress origen, ByteBuffer paquete) {
-        if (paquete.remaining() < Long.BYTES) {
+        if (paquete.remaining() < 2 * Long.BYTES) {
             return;
         }
-        long faltantes = paquete.getLong();
+        long faltantesBajas = paquete.getLong();
+        long faltantesAltas = paquete.getLong();
         long ahora = reloj.getAsLong();
         if (cliente == null) {
             cliente = origen;
@@ -163,12 +164,14 @@ public final class ServidorSala implements AutoCloseable {
         bienvenida.put((byte) filasCodificadas.length);
         Protocolo.enviar(canal, bienvenida, origen);
         for (int i = 0; i < filasCodificadas.length; i++) {
-            if ((faltantes & (1L << i)) == 0) {
+            boolean falta = i < 64 ? (faltantesBajas & (1L << i)) != 0 : (faltantesAltas & (1L << (i - 64))) != 0;
+            if (!falta) {
                 continue;
             }
             ByteBuffer fila = Protocolo.nuevo(Protocolo.FILA_MAPA);
             fila.put((byte) i);
-            fila.put((byte) filasCodificadas[i].length);
+            // el largo en dos bytes: una fila de 180 celdas codificada puede pasar de 255 bytes
+            fila.putShort((short) filasCodificadas[i].length);
             fila.put(filasCodificadas[i]);
             Protocolo.enviar(canal, fila, origen);
         }

@@ -178,6 +178,8 @@ public class PantallaArena extends ScreenAdapter {
     private List<int[]> piezasAplicadas = new ArrayList<>();
     private RondasPartida.Fase faseAnterior = RondasPartida.Fase.RONDA;
     private final Vector2 punteroEdicion = new Vector2();
+    /** Sigue a los duelistas y se aleja cuando se separan; en la edicion entre rondas muestra el mapa entero. */
+    private final CamaraDuelo camara = new CamaraDuelo();
     /** Balas, armas tiradas y armas en el mapa. En el cliente solo se dibujan. */
     private ArmasEnJuego armas;
     private final EstadoArmas estadoArmas = new EstadoArmas();
@@ -238,10 +240,12 @@ public class PantallaArena extends ScreenAdapter {
         ui.setAudio(audio);
         // FitViewport mantiene la relacion de aspecto agregando bandas negras si hace falta, en
         // lugar de estirar la imagen. Asi las distancias del duelo son identicas en cualquier
-        // resolucion, que es imprescindible para que el enfrentamiento sea justo.
-        this.viewport = new FitViewport(arena.getAncho(), arena.getAlto(), new OrthographicCamera());
+        // resolucion, que es imprescindible para que el enfrentamiento sea justo. Muestra la vista de
+        // la camara (la mitad del mapa en cada sentido): la camara sigue a los duelistas (CamaraDuelo).
+        this.viewport = new FitViewport(Arena.ANCHO_VISTA, Arena.ALTO_VISTA, new OrthographicCamera());
         float yPiso = Arena.FILAS_PISO * Arena.CELDA;
-        float xPorDefectoUno = 24f * Arena.CELDA;
+        // a la misma distancia entre si que en el mapa chico: cerca del centro, no en las puntas
+        float xPorDefectoUno = (Arena.COLUMNAS / 2f - 21f) * Arena.CELDA;
         float xPorDefectoDos = arena.getAncho() - xPorDefectoUno - Jugador.ANCHO;
         Vector2 spawnUnoMapa = arena.getSpawnUno();
         Vector2 spawnDosMapa = arena.getSpawnDos();
@@ -661,6 +665,7 @@ public class PantallaArena extends ScreenAdapter {
 
     private void dibujar() {
         ScreenUtils.clear(FONDO);
+        actualizarCamara(Gdx.graphics.getDeltaTime());
         viewport.apply();
         batch.setProjectionMatrix(viewport.getCamera().combined);
 
@@ -1107,6 +1112,14 @@ public class PantallaArena extends ScreenAdapter {
         panelEdicion.dibujarEnLaInterfaz(batch, ui, opciones, eleccionDeEdicion(), soyElEditor(), editor,
             editor == 0 ? TINTE_UNO : TINTE_DOS, rondas.getTiempoEdicion(), valida);
         batch.end();
+    }
+
+    /** Lleva la camara hacia los duelistas (o al mapa entero mientras se edita) y la aplica. */
+    private void actualizarCamara(float delta) {
+        Rectangle dos = jugadorDos != null ? jugadorDos.getCaja() : null;
+        boolean todoElMapa = rondas.getFase() == RondasPartida.Fase.EDICION;
+        camara.seguir(Math.min(delta, DELTA_MAXIMO), jugadorUno.getCaja(), dos, todoElMapa);
+        camara.aplicar((OrthographicCamera) viewport.getCamera());
     }
 
     private void dibujarBloques() {

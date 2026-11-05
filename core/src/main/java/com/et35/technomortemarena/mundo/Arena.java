@@ -26,15 +26,22 @@ public class Arena {
     public static final float ESCALA = 2f;
 
     /** Cantidad de columnas de la grilla de construccion. */
-    public static final int COLUMNAS = 90;
+    public static final int COLUMNAS = 180;
 
     /** Cantidad de filas que ocupa el piso de todos los mapas. */
     public static final int FILAS_PISO = 3;
 
     private static final float ESCALA_ARENA = 2f * ESCALA;
 
-    public static final float ANCHO_MUNDO = 960f * ESCALA_ARENA;
-    public static final float ALTO_MUNDO = 540f * ESCALA_ARENA;
+    /**
+     * El mapa mide el doble de ancho y de alto que la vista de la camara mas cerca ({@link #ANCHO_VISTA} x
+     * {@link #ALTO_VISTA}): la camara sigue a los duelistas y se aleja hasta mostrarlo entero.
+     */
+    public static final float ANCHO_MUNDO = 2f * 960f * ESCALA_ARENA;
+    public static final float ALTO_MUNDO = 2f * 540f * ESCALA_ARENA;
+    /** Lo que muestra la camara con los duelistas cerca: la mitad del mapa en cada sentido. */
+    public static final float ANCHO_VISTA = ANCHO_MUNDO / 2f;
+    public static final float ALTO_VISTA = ALTO_MUNDO / 2f;
 
     /** Lado de una celda de construccion. */
     public static final float CELDA = ANCHO_MUNDO / COLUMNAS;
@@ -72,19 +79,20 @@ public class Arena {
             repetir('#', COLUMNAS));
     }
 
-    /** Igual que {@link #porDefecto()}, pero con un agujero de 18 celdas en el centro del piso. */
+    /** Igual que {@link #porDefecto()}, pero con un agujero de 18 celdas en el centro del piso, entre los spawns. */
     public static Arena conAgujero() {
-        String fila = repetir('#', 36) + repetir('.', 18) + repetir('#', 36);
+        int lado = (COLUMNAS - 18) / 2;
+        String fila = repetir('#', lado) + repetir('.', 18) + repetir('#', COLUMNAS - lado - 18);
         return desdeGrilla(fila, fila, fila);
     }
 
     /**
-     * Escalera de dos escalones que sube hacia la izquierda desde el piso. Cada escalon toca al siguiente,
-     * asi que se sube saltando contra la pared de cada uno.
+     * Una escalera de dos escalones en cada punta del mapa, que sube hacia la pared. Cada escalon toca al
+     * siguiente, asi que se sube saltando contra la pared de cada uno.
      */
     public static Arena conPlataformas() {
-        String alto = repetir('#', 12) + repetir('.', 78);
-        String bajo = repetir('.', 12) + repetir('#', 12) + repetir('.', 66);
+        String alto = repetir('#', 12) + repetir('.', COLUMNAS - 24) + repetir('#', 12);
+        String bajo = repetir('.', 12) + repetir('#', 12) + repetir('.', COLUMNAS - 48) + repetir('#', 12) + repetir('.', 12);
         String piso = repetir('#', COLUMNAS);
         return desdeGrilla(
             alto, alto, alto,
@@ -92,23 +100,38 @@ public class Arena {
             piso, piso, piso);
     }
 
-    /** Piso con un trampolin en el centro y una plataforma alta que solo se alcanza rebotando. */
+    /**
+     * Tres trampolines en el piso, uno al centro y uno a cada lado, cada uno con su plataforma alta que
+     * solo se alcanza rebotando.
+     */
     public static Arena conTrampolin() {
-        String plataforma = repetir('.', 36) + repetir('#', 18) + repetir('.', 36);
+        int[] centros = {COLUMNAS / 2 - 60, COLUMNAS / 2, COLUMNAS / 2 + 60};
+        char[] plataforma = repetir('.', COLUMNAS).toCharArray();
+        char[] piso = repetir('#', COLUMNAS).toCharArray();
+        for (int centro : centros) {
+            for (int c = centro - 9; c < centro + 9; c++) {
+                plataforma[c] = '#';
+            }
+            for (int c = centro - 3; c < centro + 3; c++) {
+                piso[c] = 'T';
+            }
+        }
+        String alta = new String(plataforma);
         String vacia = repetir('.', COLUMNAS);
-        String pisoConTrampolin = repetir('#', 42) + repetir('T', 6) + repetir('#', 42);
+        String pisoConTrampolines = new String(piso);
         return desdeGrilla(
-            plataforma, plataforma, plataforma,
+            alta, alta, alta,
             vacia, vacia, vacia,
             vacia, vacia, vacia,
-            pisoConTrampolin, pisoConTrampolin, pisoConTrampolin);
+            pisoConTrampolines, pisoConTrampolines, pisoConTrampolines);
     }
 
-    /** Cintas que empujan en direcciones opuestas y pinchos entre ellas. Hay que saltarlos o caer. */
+    /** Cintas que empujan en direcciones opuestas y pinchos entre ellas, en el centro. Hay que saltarlos o caer. */
     public static Arena conCintasYPinchos() {
         String vacia = repetir('.', COLUMNAS);
-        String cintas = repetir('.', 28) + repetir('L', 9) + repetir('.', 9)
-            + repetir('X', 3) + repetir('.', 6) + repetir('R', 9) + repetir('.', 26);
+        String trampa = repetir('L', 9) + repetir('.', 9) + repetir('X', 3) + repetir('.', 6) + repetir('R', 9);
+        int antes = (COLUMNAS - trampa.length()) / 2;
+        String cintas = repetir('.', antes) + trampa + repetir('.', COLUMNAS - antes - trampa.length());
         String piso = repetir('#', COLUMNAS);
         return desdeGrilla(
             vacia, vacia, vacia, vacia, vacia, vacia, vacia, vacia,

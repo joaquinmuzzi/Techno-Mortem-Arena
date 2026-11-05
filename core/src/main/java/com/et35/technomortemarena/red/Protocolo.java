@@ -25,7 +25,7 @@ public final class Protocolo {
 
     /** "TM" de Techno Mortem. */
     public static final short MAGIA = 0x544D;
-    public static final byte VERSION = 7;
+    public static final byte VERSION = 8;
 
     public static final int PUERTO_POR_DEFECTO = 7777;
 
@@ -38,8 +38,8 @@ public final class Protocolo {
     /** Tamano maximo de un datagrama. Por debajo del MTU tipico de internet, para que no se fragmente. */
     public static final int MAX_DATAGRAMA = 1200;
 
-    /** Cantidad maxima de filas de un mapa. Cabe en la mascara de 64 bits del {@link #HELLO}. */
-    public static final int MAX_FILAS = 64;
+    /** Cantidad maxima de filas de un mapa. Cabe en la mascara de 128 bits (dos {@code long}) del {@link #HELLO}. */
+    public static final int MAX_FILAS = 128;
 
     public static final byte HELLO = 1;
     public static final byte BIENVENIDA = 2;

@@ -119,7 +119,7 @@ final class CodecEstado {
             buffer.put((byte) opcion);
         }
         buffer.put((byte) partida.eleccion);
-        buffer.put((byte) partida.cursorColumna);
+        buffer.put((byte) partida.cursorColumna); // sin signo: hay mas de 127 columnas
         buffer.put((byte) partida.cursorFila);
         buffer.putFloat(partida.tiempoEdicion);
         int cantidad = Math.min(partida.piezas.size(), EdicionNivel.MAX_PIEZAS);
@@ -153,7 +153,7 @@ final class CodecEstado {
         int editor = buffer.get();
         int[] opciones = {buffer.get(), buffer.get(), buffer.get()};
         int eleccion = buffer.get();
-        int cursorColumna = buffer.get();
+        int cursorColumna = buffer.get() & 0xFF;
         int cursorFila = buffer.get();
         float tiempoEdicion = buffer.getFloat();
         int cantidad = buffer.get();
@@ -162,7 +162,7 @@ final class CodecEstado {
         }
         int[][] piezas = new int[cantidad][];
         for (int i = 0; i < cantidad; i++) {
-            piezas[i] = new int[] {buffer.get(), buffer.get(), buffer.get()};
+            piezas[i] = new int[] {buffer.get(), buffer.get() & 0xFF, buffer.get()};
             if (PiezaNivel.porIndice(piezas[i][0]) == null || piezas[i][1] < 0 || piezas[i][1] >= Arena.COLUMNAS
                 || piezas[i][2] < 0 || piezas[i][2] >= Arena.FILAS) {
                 return false;

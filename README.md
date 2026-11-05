@@ -69,7 +69,7 @@ core/src/main/java/com/et35/technomortemarena/
 ├── RecursosGraficos.java      Carga y liberación centralizada de texturas
 ├── RecursosAudio.java         Carga y liberación centralizada de los efectos de sonido
 ├── mundo/
-│   ├── Arena.java             Escenario cerrado en grilla y fábricas de mapas
+│   ├── Arena.java             Escenario cerrado en grilla (180 x 101 celdas) y fábricas de mapas
 │   ├── Bloque.java            Base de los bloques interactivos
 │   ├── Trampolin.java         Bloque que rebota
 │   ├── CintaTransportadora.java  Bloque que empuja hacia un lado
@@ -108,11 +108,20 @@ core/src/main/java/com/et35/technomortemarena/
     ├── PantallaMultijugador.java  Crear una sala o unirse a la de otro
     ├── PantallaSeleccionMapa.java Elección del mapa: predefinidos y "Mis mapas" del editor (con scroll)
     ├── PantallaArena.java         Modo de prueba, anfitrión o cliente: rondas, HUD, marcador y pausa
+    ├── CamaraDuelo.java           Cámara que sigue a los duelistas y se aleja cuando se separan
     ├── PanelEdicion.java          Tarjetas y vista previa de la edición entre rondas
     ├── PantallaEditor.java        Editor de niveles (herramientas en un panel lateral con menú hamburguesa)
     ├── BarraDeDesplazamiento.java Barra de scroll vertical para listas
     └── Ui.java                    Interfaz común (botones, texto, rectángulos)
 ```
+
+## Mapa y cámara
+
+El mapa mide 180 x 101 celdas, el doble de ancho y de alto que lo que entra en pantalla con la cámara
+cerca. La cámara sigue a los dos duelistas y se aleja cuando se separan, hasta mostrar el mapa entero;
+nunca muestra lo que hay fuera del mapa. Durante la edición entre rondas muestra el mapa entero. En el
+editor de niveles, la rueda del mouse acerca y aleja la grilla, las flechas o WASD (o arrastrar con el
+botón del medio) la mueven y `F` muestra el mapa entero.
 
 ## Controles
 

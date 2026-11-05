@@ -235,8 +235,8 @@ class ArmasTest {
             perdigon.actualizar(DT, vacia, null, null);
         }
         assertFalse(perdigon.isActivo());
-        assertTrue(perdigon.getX() < Arena.ANCHO_MUNDO / 2f, "se pierde antes de cruzar media arena");
-        assertTrue(perdigon.getX() > Arena.ANCHO_MUNDO / 4f, "pero llega mas lejos que un cuarto");
+        assertTrue(perdigon.getX() < Arena.ANCHO_VISTA / 2f, "se pierde antes de cruzar media pantalla");
+        assertTrue(perdigon.getX() > Arena.ANCHO_VISTA / 4f, "pero llega mas lejos que un cuarto de la pantalla");
     }
 
     @Test

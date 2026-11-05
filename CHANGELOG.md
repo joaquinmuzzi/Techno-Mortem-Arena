@@ -9,6 +9,16 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Mapa el doble de grande: 180 x 101 celdas (antes 90 x 50), con las celdas del mismo tamaño. Los mapas
+  predefinidos mantienen el tamaño de sus elementos y se reparten en el mapa más grande (escaleras en las dos
+  puntas, tres trampolines con su plataforma) y los spawns por defecto quedan a la misma distancia entre sí
+  que antes, cerca del centro.
+- `pantallas.CamaraDuelo`: la cámara sigue a los dos duelistas y se aleja cuando se separan, hasta mostrar el
+  mapa entero, sin mostrar nunca lo que hay fuera; durante la edición entre rondas muestra el mapa entero.
+- Editor de niveles con cámara propia: la rueda acerca y aleja hacia el cursor, las flechas o WASD y el botón
+  del medio la mueven y `F` muestra el mapa entero. Las celdas se ven siempre cuadradas y la grilla es nueva:
+  fondo del mapa distinto de lo de afuera, líneas finas por celda, una línea guía cada 10 celdas, la del
+  centro marcada y el borde del mapa.
 - Editor de niveles: las herramientas pasan a un panel lateral con barra de desplazamiento, que se abre y se
   cierra con el botón hamburguesa de la barra de arriba (o la tecla `TAB`). Cada herramienta muestra su color
   y su tecla; la barra de arriba queda en una sola fila con las acciones y la herramienta elegida, y la
@@ -121,6 +131,9 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- Protocolo de red versión 8: el saludo lleva dos máscaras de 64 bits (hasta 128 filas de mapa), el largo de
+  cada fila codificada va en dos bytes y las columnas de la edición se leen sin signo (hay más de 127). No
+  es compatible con la versión 7. Los mapas guardados con el tamaño anterior ya no se cargan.
 - Edición entre rondas: las piezas se pueden colocar encima de lo que ya hay (piso, bloques u otras piezas,
   que quedan reemplazados; los huecos de la forma, como el de la esquina, no borran nada). Las zonas
   prohibidas son las de los spawns y la del centro, donde la muerte súbita pone a los dos duelistas.

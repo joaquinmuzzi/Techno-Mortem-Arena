@@ -7,6 +7,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -117,6 +118,13 @@ public class PantallaArena extends ScreenAdapter {
     /** Distancia desde el centro de la pantalla hasta la primera vida de cada duelista. */
     private static final float SEPARACION_VIDAS_DEL_CENTRO = 70f;
     private static final Color COLOR_VIDA_PERDIDA = new Color(0.25f, 0.25f, 0.28f, 1f);
+    /** El cuadro del arma en la esquina de cada duelista, y las balas debajo. */
+    private static final float ANCHO_CUADRO_ARMA = 120f;
+    private static final float ALTO_CUADRO_ARMA = 44f;
+    private static final Color FONDO_CUADRO_ARMA = new Color(0f, 0f, 0f, 0.45f);
+    private static final float ANCHO_BALA_HUD = 8f;
+    private static final float ALTO_BALA_HUD = 18f;
+    private static final float SEPARACION_BALA_HUD = 5f;
     private static final Color COLOR_TIMER = new Color(1f, 0.9f, 0.4f, 1f);
     private static final Color COLOR_MUERTE_SUBITA = new Color(1f, 0.3f, 0.2f, 1f);
 
@@ -703,8 +711,10 @@ public class PantallaArena extends ScreenAdapter {
         batch.begin();
         float centro = ANCHO_UI / 2f;
         dibujarVidas(jugadorUno, TINTE_UNO, centro - SEPARACION_VIDAS_DEL_CENTRO, true);
+        dibujarArma(jugadorUno, TINTE_UNO, true);
         if (jugadorDos != null) {
             dibujarVidas(jugadorDos, TINTE_DOS, centro + SEPARACION_VIDAS_DEL_CENTRO, false);
+            dibujarArma(jugadorDos, TINTE_DOS, false);
             if (enRed()) {
                 dibujarTextoCentrado("RONDA " + rondas.getNumeroRonda(), ESCALA_RONDA_HUD, ALTO_UI - MARGEN_HUD, Color.WHITE);
                 String marcadorTexto = rondas.getRondasGanadasUno() + " - " + rondas.getRondasGanadasDos();
@@ -737,11 +747,52 @@ public class PantallaArena extends ScreenAdapter {
                 ui.rectangulo(batch, rectAux.set(x, y, ancho, TAMANO_VIDA), tinte);
             }
         }
-        if (jugador.getArma() != null && jugador.getArma().esDeFuego()) {
-            String texto = "BALAS " + jugador.getBalas();
-            float ancho = ui.anchoTexto(texto, 1f);
-            float x = haciaLaIzquierda ? xAncla - ancho : xAncla;
-            ui.texto(batch, texto, x, ALTO_UI - MARGEN_HUD - TAMANO_VIDA - 8f, 1f, tinte);
+    }
+
+    /**
+     * El arma en la mano de un duelista, en su esquina de arriba (el Jugador 1 a la izquierda, el 2 a la
+     * derecha): el arma sobre un fondo con brillo y, debajo, las balas como rectangulos verticales, llenos
+     * los que quedan y apagados los gastados, en el mismo estilo que las vidas. Mientras se ve el cartel de
+     * controles (arriba a la izquierda), la del Jugador 1 va debajo del cartel y sube cuando se desvanece.
+     */
+    private void dibujarArma(Jugador jugador, Color tinte, boolean aLaIzquierda) {
+        if (jugador.isDesarmado()) {
+            return; // el blanco del modo de prueba no usa armas
+        }
+        float x = aLaIzquierda ? MARGEN_HUD : ANCHO_UI - MARGEN_HUD - ANCHO_CUADRO_ARMA;
+        float arriba = ALTO_UI - MARGEN_HUD;
+        if (aLaIzquierda) {
+            float altoCartel = 2f * RELLENO_AYUDA + SEPARACION_TITULO_AYUDA + LINEAS_AYUDA.length * INTERLINEA_AYUDA;
+            arriba -= (altoCartel + 24f) * alfaAyuda();
+        }
+        float abajo = arriba - ALTO_CUADRO_ARMA;
+        ui.rectangulo(batch, rectAux.set(x, abajo, ANCHO_CUADRO_ARMA, ALTO_CUADRO_ARMA), FONDO_CUADRO_ARMA);
+        TipoArma arma = jugador.getArma();
+        if (arma == null) {
+            String vacia = "MANO VACIA";
+            float ancho = ui.anchoTexto(vacia, 0.8f);
+            ui.texto(batch, vacia, x + (ANCHO_CUADRO_ARMA - ancho) / 2f, abajo + ALTO_CUADRO_ARMA / 2f + 6f, 0.8f, Color.GRAY);
+            return;
+        }
+        batch.setColor(1f, 1f, 1f, 0.85f);
+        batch.draw(recursos.brillo, x + 4f, abajo + 4f, ANCHO_CUADRO_ARMA - 8f, ALTO_CUADRO_ARMA - 8f);
+        batch.setColor(Color.WHITE);
+        Texture textura = arma == TipoArma.ESPADA ? recursos.espada
+            : arma == TipoArma.ESCOPETA ? recursos.escopeta : recursos.pistola;
+        // el arma entra en el cuadro sin deformarse
+        float maximoAncho = ANCHO_CUADRO_ARMA - 16f;
+        float maximoAlto = ALTO_CUADRO_ARMA - 16f;
+        float escala = Math.min(maximoAncho / textura.getWidth(), maximoAlto / textura.getHeight());
+        float ancho = textura.getWidth() * escala;
+        float alto = textura.getHeight() * escala;
+        batch.draw(textura, x + (ANCHO_CUADRO_ARMA - ancho) / 2f, abajo + (ALTO_CUADRO_ARMA - alto) / 2f, ancho, alto);
+        int maximo = arma.getBalasIniciales();
+        for (int i = 0; i < maximo; i++) {
+            float bx = aLaIzquierda
+                ? x + i * (ANCHO_BALA_HUD + SEPARACION_BALA_HUD)
+                : x + ANCHO_CUADRO_ARMA - ANCHO_BALA_HUD - i * (ANCHO_BALA_HUD + SEPARACION_BALA_HUD);
+            rectAux.set(bx, abajo - 6f - ALTO_BALA_HUD, ANCHO_BALA_HUD, ALTO_BALA_HUD);
+            ui.rectangulo(batch, rectAux, i < jugador.getBalas() ? tinte : COLOR_VIDA_PERDIDA);
         }
     }
 

@@ -42,8 +42,8 @@ public class PantallaEditor extends ScreenAdapter {
     private static final float Y_BARRA = ALTO_UI - ALTO_BARRA;
     private static final float Y_FILA_HERRAMIENTAS = 488f;
     private static final float Y_FILA_ACCIONES = 444f;
-    private static final float ANCHO_BOTON = 110f;
-    private static final float PASO_BOTON = 118f;
+    private static final float ANCHO_BOTON = 90f;
+    private static final float PASO_BOTON = 94f;
     private static final float MARGEN = 10f;
 
     private static final Rectangle PANEL_LISTA = new Rectangle(180f, 60f, 600f, 380f);
@@ -59,9 +59,12 @@ public class PantallaEditor extends ScreenAdapter {
     private static final Color COLOR_VELO = new Color(0f, 0f, 0f, 0.6f);
 
     /** Caracteres de la grilla que se pueden poner con la herramienta; '1' y '2' son los spawns. */
-    private static final char[] HERRAMIENTAS = {'#', 'T', 'L', 'R', 'X', '1', '2', '.'};
+    private static final char[] HERRAMIENTAS = {'#', 'T', 'L', 'R', 'X', '1', '2', 'P', 'E', '.'};
     private static final String[] ETIQUETAS = {
-        "1 BLOQUE", "2 TRAMPOLIN", "3 CINTA <", "4 CINTA >", "5 PINCHO", "6 SPAWN J1", "7 SPAWN J2", "8 BORRAR"};
+        "1 BLOQUE", "2 TRAMPOLIN", "3 CINTA <", "4 CINTA >", "5 PINCHO", "6 SPAWN J1", "7 SPAWN J2",
+        "8 PISTOLAS", "9 ESCOPETAS", "0 BORRAR"};
+    /** Los spawners de armas se ponen siempre de 3x3, sin importar el pincel. */
+    private static final int LADO_SPAWNER_ARMA = 3;
     private static final int TAMANO_PINCEL_MAXIMO = 4;
 
     private final RecursosGraficos recursos;
@@ -175,7 +178,9 @@ public class PantallaEditor extends ScreenAdapter {
                 return;
             }
             for (int i = 0; i < HERRAMIENTAS.length; i++) {
-                if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1 + i)) {
+                // las teclas 1 a 9 y despues el 0, como en la barra
+                int tecla = i < 9 ? Input.Keys.NUM_1 + i : Input.Keys.NUM_0;
+                if (Gdx.input.isKeyJustPressed(tecla)) {
                     herramienta = HERRAMIENTAS[i];
                 }
             }
@@ -214,7 +219,7 @@ public class PantallaEditor extends ScreenAdapter {
             ponerSpawn(celda[0], celda[1], nuevo);
             return;
         }
-        int tamano = tamanoPincel;
+        int tamano = esSpawnerDeArma(nuevo) ? LADO_SPAWNER_ARMA : tamanoPincel;
         for (int fila = celda[1]; fila < celda[1] + tamano && fila < Arena.FILAS; fila++) {
             for (int columna = celda[0]; columna < celda[0] + tamano && columna < Arena.COLUMNAS; columna++) {
                 if (celdas[fila][columna] != nuevo) {
@@ -236,6 +241,10 @@ public class PantallaEditor extends ScreenAdapter {
         }
         celdas[fila][columna] = spawn;
         cambiado = true;
+    }
+
+    private static boolean esSpawnerDeArma(char caracter) {
+        return caracter == 'P' || caracter == 'E';
     }
 
     private static boolean esSpawn(char caracter) {
@@ -441,7 +450,7 @@ public class PantallaEditor extends ScreenAdapter {
             dibujarJugador(celda[0], celda[1], tinte);
             return;
         }
-        int tamano = tamanoPincel;
+        int tamano = esSpawnerDeArma(herramienta) ? LADO_SPAWNER_ARMA : tamanoPincel;
         Rectangle area = new Rectangle(celda[0] * Arena.CELDA, celda[1] * Arena.CELDA,
             tamano * Arena.CELDA, tamano * Arena.CELDA);
         Bloque vista = Arena.bloquePara(herramienta, area);
@@ -483,7 +492,7 @@ public class PantallaEditor extends ScreenAdapter {
         for (int i = 0; i < HERRAMIENTAS.length; i++) {
             boolean seleccionada = herramienta == HERRAMIENTAS[i];
             boolean resaltada = seleccionada || botonesHerramienta[i].contains(mouseUi);
-            ui.boton(batch, botonesHerramienta[i], resaltada, ETIQUETAS[i], 1.0f);
+            ui.boton(batch, botonesHerramienta[i], resaltada, ETIQUETAS[i], 0.85f);
         }
         ui.boton(batch, botonGuardar, botonGuardar.contains(mouseUi), "GUARDAR", 1.1f);
         ui.boton(batch, botonCargar, botonCargar.contains(mouseUi), "CARGAR", 1.1f);

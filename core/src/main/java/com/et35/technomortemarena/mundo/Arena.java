@@ -16,7 +16,8 @@ import com.badlogic.gdx.math.Vector2;
  *
  * <p>Los bloques de construccion se describen con texto sobre una grilla de {@link #COLUMNAS} columnas.
  * Cada caracter es una celda: {@code #} bloque solido, {@code T} trampolin, {@code L} y {@code R} cinta
- * transportadora hacia la izquierda y hacia la derecha, {@code X} pincho y {@code .} aire. La primera fila
+ * transportadora hacia la izquierda y hacia la derecha, {@code X} pincho, {@code P} y {@code E} spawner de
+ * pistolas y de escopetas y {@code .} aire. La primera fila
  * del texto es la de arriba y la ultima es la del piso.
  */
 public class Arena {
@@ -184,6 +185,10 @@ public class Arena {
                 return new CintaTransportadora(area, 1f);
             case 'X':
                 return new Pincho(area);
+            case 'P':
+                return new SpawnerArma(area, false);
+            case 'E':
+                return new SpawnerArma(area, true);
             default:
                 return null;
         }

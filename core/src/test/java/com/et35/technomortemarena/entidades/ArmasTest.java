@@ -464,10 +464,27 @@ class ArmasTest {
 
         arma[1] = a.getPosicion().x;
         pasos(a, d, 1);
-        assertEquals(tipo, a.getArma());
-        assertEquals(tipo.getBalasIniciales(), a.getBalas());
-        assertEquals(1, armas.getEnElSuelo().size(), "la espada que tenia queda en el suelo");
-        assertEquals(TipoArma.codigoDe(TipoArma.ESPADA), (int) armas.getEnElSuelo().get(0)[0]);
+        assertEquals(TipoArma.ESPADA, a.getArma(), "con la espada en la mano no la agarra");
+        assertEquals(1, armas.getEnElSuelo().size());
+
+        armas.getEnElSuelo().clear();
+        Jugador vacio = desarmado(1000f);
+        armas.dejarEnElSuelo(tipo, vacio.getPosicion().x, PISO, 0f);
+        pasos(vacio, d, 1);
+        assertEquals(tipo, vacio.getArma(), "con la mano vacia si");
+        assertEquals(tipo.getBalasIniciales(), vacio.getBalas());
+        assertTrue(armas.getEnElSuelo().isEmpty());
+    }
+
+    @Test
+    void conUnArmaDeFuegoEnLaManoNoSeAgarraOtra() {
+        Jugador a = tirador(1000f);
+        Jugador d = blanco(3000f);
+        a.equipar(TipoArma.PISTOLA);
+        armas.dejarEnElSuelo(TipoArma.ESCOPETA, 1000f, PISO, 0f);
+        pasos(a, d, 5);
+        assertEquals(TipoArma.PISTOLA, a.getArma());
+        assertEquals(1, armas.getEnElSuelo().size());
     }
 
     @Test
@@ -706,13 +723,114 @@ class ArmasTest {
     }
 
     @Test
-    void laInvulnerabilidadDeUnPerdigonNoFrenaAOtroDisparo() {
+    void losPerdigonesPeganAunqueElRivalEsteInvulnerable() {
         Jugador d = blanco(1000f);
-        assertTrue(d.recibirDanio(1, 1f, true, 7));
-        assertTrue(d.recibirDanio(1, 1f, true, 7), "otro perdigon del mismo disparo pasa");
-        assertFalse(d.recibirDanio(2, 1f, true), "una bala en el medio no");
-        assertFalse(d.recibirDanio(1, 1f, true, 8), "ni un perdigon de otro disparo");
-        assertEquals(VIDA_LLENA - 2, d.getPartes());
+        assertTrue(d.recibirDanio(CORAZON, 1f, false), "un espadazo: un segundo de invulnerabilidad");
+        assertFalse(d.recibirDanio(TipoArma.DANIO_BALA, 1f, true), "una bala no pasa");
+        for (int i = 0; i < TipoArma.PERDIGONES; i++) {
+            assertTrue(d.recibirPerdigon(TipoArma.DANIO_PERDIGON, 1f), "pero cada perdigon si");
+        }
+        assertEquals(VIDA_LLENA - CORAZON - TipoArma.PERDIGONES, d.getPartes());
+    }
+
+    @Test
+    void unEscopetazoJustoDespuesDeUnEspadazoPegaLosCinco() {
+        Jugador a = tirador(1000f);
+        Jugador d = blanco(1350f);
+        a.equipar(TipoArma.ESCOPETA);
+        apuntarALaDerecha();
+        pasos(a, d, 3);
+        // una bala justo antes: lo deja invulnerable sin moverlo
+        d.recibirDanio(TipoArma.DANIO_BALA, 0f, true);
+        guion.clic = true;
+        pasos(a, d, 30);
+        assertEquals(VIDA_LLENA - TipoArma.DANIO_BALA - TipoArma.PERDIGONES * TipoArma.DANIO_PERDIGON, d.getPartes());
+    }
+
+    // ---- bloques spawner
+
+    /** Piso con un spawner de pistolas de 3x3 en las columnas 40 a 42, apoyado sobre el piso. */
+    private static Arena conSpawner(String celdas) {
+        String aire = repetir('.', Arena.COLUMNAS);
+        String spawner = repetir('.', 40) + celdas + repetir('.', Arena.COLUMNAS - 40 - celdas.length());
+        String piso = repetir('#', Arena.COLUMNAS);
+        return Arena.desdeGrilla(aire, aire, spawner, spawner, spawner, piso, piso, piso);
+    }
+
+    @Test
+    void elSpawnerEsUnBloqueSolido() {
+        Arena mapa = conSpawner("PPP");
+        assertTrue(mapa.getBloques().stream().anyMatch(b -> b instanceof com.et35.technomortemarena.mundo.SpawnerArma));
+    }
+
+    @Test
+    void elSpawnerHaceAparecerSuArmaEncimaCadaCincoSegundosYNoApila() {
+        Arena mapa = conSpawner("PPP");
+        Jugador a = blanco(200f);
+        Jugador d = blanco(3000f);
+        int cinco = (int) (ArmasEnJuego.INTERVALO_SPAWNER / DT) + 2;
+        for (int i = 0; i < cinco - 10; i++) {
+            armas.actualizar(DT, mapa, a, d);
+        }
+        assertTrue(armas.getEnElSuelo().isEmpty(), "todavia no pasaron 5 s");
+        for (int i = 0; i < 12; i++) {
+            armas.actualizar(DT, mapa, a, d);
+        }
+        assertEquals(1, armas.getEnElSuelo().size());
+        float[] arma = armas.getEnElSuelo().get(0);
+        assertEquals(TipoArma.codigoDe(TipoArma.PISTOLA), (int) arma[0]);
+        assertEquals((3 + 3) * Arena.CELDA, arma[2], 0.01f, "encima del spawner");
+        float centro = arma[1] + ArmasEnJuego.ANCHO_EN_EL_SUELO / 2f;
+        assertEquals(41.5f * Arena.CELDA, centro, 1f, "al medio del spawner");
+
+        for (int i = 0; i < 3 * cinco; i++) {
+            armas.actualizar(DT, mapa, a, d);
+        }
+        assertEquals(1, deSpawner(), "con una arriba no apila otra");
+
+        armas.getEnElSuelo().clear(); // alguien la agarro
+        for (int i = 0; i < cinco; i++) {
+            armas.actualizar(DT, mapa, a, d);
+        }
+        assertEquals(1, deSpawner(), "cuando se la llevan, aparece otra");
+    }
+
+    /** Cuantas armas del suelo puso un spawner (las sueltas que aparecen cada 8 s no cuentan). */
+    private int deSpawner() {
+        int cantidad = 0;
+        for (float[] arma : armas.getEnElSuelo()) {
+            if (arma[5] == 1f) {
+                cantidad++;
+            }
+        }
+        return cantidad;
+    }
+
+    @Test
+    void cadaGrupoDeCeldasEsUnSpawnerDeSuTipo() {
+        Arena mapa = conSpawner("PPP..........EEE");
+        java.util.List<float[]> spawners = ArmasEnJuego.buscarSpawners(mapa);
+        assertEquals(2, spawners.size());
+        boolean pistola = false;
+        boolean escopeta = false;
+        for (float[] s : spawners) {
+            pistola |= (int) s[0] == TipoArma.codigoDe(TipoArma.PISTOLA);
+            escopeta |= (int) s[0] == TipoArma.codigoDe(TipoArma.ESCOPETA);
+        }
+        assertTrue(pistola && escopeta);
+    }
+
+    @Test
+    void lasArmasDeLosSpawnersNoFrenanLasQueAparecenSueltas() {
+        Arena mapa = conSpawner("PPP..........EEE");
+        Jugador a = blanco(200f);
+        Jugador d = blanco(3000f);
+        int ocho = (int) (ArmasEnJuego.INTERVALO_APARICION / DT) + 2;
+        for (int i = 0; i < ocho; i++) {
+            armas.actualizar(DT, mapa, a, d);
+        }
+        // las dos de los spawners y la suelta
+        assertEquals(3, armas.getEnElSuelo().size());
     }
 
     @Test

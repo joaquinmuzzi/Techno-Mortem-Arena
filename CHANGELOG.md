@@ -9,6 +9,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Bloques spawner de armas (`mundo.SpawnerArma`, `P` y `E` en la grilla): en el editor, las herramientas
+  "8 PISTOLAS" y "9 ESCOPETAS" ponen un bloque sólido de 3x3 que hace aparecer su arma encima cada 5 s, una
+  sola a la vez (si ya hay una encima, espera a que la agarren). También están entre los objetos que se
+  sortean para colocar entre rondas. Viajan por la red con el mapa.
+- Interfaz de arma: en la esquina de arriba de cada jugador, el arma que tiene en la mano sobre un fondo con
+  brillo y, debajo, las balas como rectángulos verticales (llenos los que quedan), en el estilo de las vidas.
+  Reemplaza el texto "BALAS n". Mientras se ve el cartel de controles, la del Jugador 1 va debajo.
 - Desarme con la espada: si el último tercio de tu hoja pega en el primer tercio de la del rival mientras
   la movés (giro rápido o estocada), su espada sale volando hacia arriba sin herir a nadie y cae al mapa.
   `entidades.Hoja.puntoDeContacto` calcula dónde se tocan las dos hojas (los puntos más cercanos entre sus
@@ -108,6 +115,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- Las armas se agarran solo con la mano vacía (la espada también cuenta): pasar por encima con algo en la
+  mano no hace nada. Para cambiar de arma, primero hay que tirar la que se tiene.
+- Los perdigones de la escopeta no respetan ni dejan invulnerabilidad: cada perdigón que toca saca su parte,
+  aunque el rival venga de recibir otro golpe (antes la invulnerabilidad de un espadazo, un puñetazo o una
+  bala podía comerse varios perdigones de cerca).
 - Escopeta: los perdigones de un mismo disparo ya no se frenan con la invulnerabilidad que deja el primero
   (cada disparo tiene su número y los demás perdigones de ese disparo la atraviesan), así un escopetazo de
   cerca pega con los cinco. El abanico es más cerrado (unos 17 grados), cada perdigón sale corrido un poco

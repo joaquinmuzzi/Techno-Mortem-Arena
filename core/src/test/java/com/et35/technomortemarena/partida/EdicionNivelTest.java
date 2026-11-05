@@ -70,7 +70,12 @@ class EdicionNivelTest {
         assertEquals(2, PiezaNivel.CINTA_DERECHA.getAlto());
         assertEquals(6 + 4 + 6, PiezaNivel.PINCHOS_CON_CINTAS.getAncho());
         assertEquals(2, PiezaNivel.PINCHOS_CON_CINTAS.getAlto());
-        assertEquals(8, PiezaNivel.values().length);
+        assertEquals(3, PiezaNivel.SPAWNER_PISTOLA.getAncho());
+        assertEquals(3, PiezaNivel.SPAWNER_PISTOLA.getAlto());
+        assertEquals('P', PiezaNivel.SPAWNER_PISTOLA.celda(1, 1));
+        assertEquals(3, PiezaNivel.SPAWNER_ESCOPETA.getAncho());
+        assertEquals('E', PiezaNivel.SPAWNER_ESCOPETA.celda(2, 2));
+        assertEquals(10, PiezaNivel.values().length);
     }
 
     @Test
@@ -123,7 +128,7 @@ class EdicionNivelTest {
                 vistas.add(e.getOpcion(i));
             }
         }
-        assertEquals(8, vistas.size());
+        assertEquals(PiezaNivel.values().length, vistas.size(), "salen todas, los spawners tambien");
     }
 
     @Test

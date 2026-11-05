@@ -7,6 +7,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.mundo.Arena;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -16,17 +17,21 @@ import java.util.Random;
  * Las armas fuera de las manos durante una ronda: las balas y las armas tiradas que vuelan, y las armas
  * que aparecen en el mapa para que los duelistas las agarren.
  *
- * <p>Cada {@link #INTERVALO_APARICION} segundos, si hay menos de {@link #MAX_EN_EL_SUELO} armas de fuego en
- * el suelo, aparece una pistola o una escopeta (la que haya menos en el suelo) en un lugar al azar sobre el
- * piso o una plataforma, fuera de las zonas prohibidas (los spawns). Quien pasa por encima la agarra y reemplaza lo que tenia en la mano
- * (si tenia la espada, la espada cae a sus pies): la idea es que las armas cambien todo el tiempo. Las
- * armas tiradas o que se caen de la mano quedan en el suelo con las balas que tenian; las espadas solo
- * las agarra quien tiene las manos vacias. Lo simula el anfitrion (o el modo de prueba); el cliente solo dibuja lo que le llega.
+ * <p>Cada {@link #INTERVALO_APARICION} segundos, si hay menos de {@link #MAX_EN_EL_SUELO} armas de fuego
+ * sueltas en el suelo, aparece una pistola o una escopeta (la que haya menos) en un lugar al azar sobre el
+ * piso o una plataforma, fuera de las zonas prohibidas (los spawns). Ademas, cada bloque spawner del mapa
+ * ({@code P} o {@code E} en la grilla) hace aparecer su arma encima cada {@link #INTERVALO_SPAWNER}
+ * segundos, una sola a la vez. Las armas tiradas o que se caen de la mano quedan en el suelo con las balas
+ * que tenian. Cualquier arma la agarra solo quien tiene la mano vacia, pasando por encima: para cambiar de
+ * arma, primero hay que tirar la que se tiene. Lo simula el anfitrion (o el modo de prueba); el cliente
+ * solo dibuja lo que le llega.
  */
 public final class ArmasEnJuego {
 
     /** Segundos entre una aparicion y la siguiente. */
     public static final float INTERVALO_APARICION = 8f;
+    /** Segundos entre un arma y la siguiente en cada bloque spawner. */
+    public static final float INTERVALO_SPAWNER = 5f;
     public static final int MAX_EN_EL_SUELO = 2;
     private static final float ESCALA = Arena.ESCALA;
     /** Caja de un arma de fuego en el suelo (la de la espada es su largo): con eso se agarra. */
@@ -41,12 +46,19 @@ public final class ArmasEnJuego {
     private static final Color COLOR_BALA = new Color(1f, 0.85f, 0.3f, 1f);
 
     private final List<Proyectil> proyectiles = new ArrayList<>();
-    /** Cada una como {@code {codigo de TipoArma, x, y, segundos hasta que se pueda agarrar, balas}}. */
+    /**
+     * Cada una como {@code {codigo de TipoArma, x, y, segundos hasta que se pueda agarrar, balas, 1 si la
+     * hizo aparecer un spawner}}.
+     */
     private final List<float[]> enElSuelo = new ArrayList<>();
     private final List<Proyectil> nuevos = new ArrayList<>();
     private final Random azar;
     private final List<float[]> zonasProhibidas;
     private float tiempoParaAparicion = INTERVALO_APARICION;
+    /** Los spawners del mapa, como {@code {codigo de TipoArma, x0, x1, y de arriba, segundos para la proxima}}. */
+    private final List<float[]> spawners = new ArrayList<>();
+    /** La arena de la que salieron {@link #spawners}: si el mapa cambia (la edicion entre rondas), se vuelven a buscar. */
+    private Arena arenaDeLosSpawners;
     private float tiempoAnimacion;
 
     /** @param zonasProhibidas zonas {@code {x0, y0, x1, y1}} en celdas donde no aparecen armas */
@@ -60,6 +72,7 @@ public final class ArmasEnJuego {
         proyectiles.clear();
         enElSuelo.clear();
         tiempoParaAparicion = INTERVALO_APARICION;
+        arenaDeLosSpawners = null;
     }
 
     /**
@@ -102,8 +115,94 @@ public final class ArmasEnJuego {
                 aparecerArma(arena);
             }
         }
+        actualizarSpawners(delta, arena);
         agarrar(uno);
         agarrar(dos);
+    }
+
+    /** Cada spawner cuenta su tiempo y, si no tiene un arma encima, hace aparecer la suya. */
+    private void actualizarSpawners(float delta, Arena arena) {
+        if (arena != arenaDeLosSpawners) {
+            arenaDeLosSpawners = arena;
+            spawners.clear();
+            spawners.addAll(buscarSpawners(arena));
+        }
+        for (float[] spawner : spawners) {
+            spawner[4] -= delta;
+            if (spawner[4] > 0f) {
+                continue;
+            }
+            spawner[4] = INTERVALO_SPAWNER;
+            if (!hayArmaEncima(spawner)) {
+                TipoArma tipo = TipoArma.porCodigo((int) spawner[0]);
+                float centro = (spawner[1] + spawner[2]) / 2f;
+                enElSuelo.add(new float[] {spawner[0], centro - anchoEnElSuelo(tipo) / 2f, spawner[3], 0f,
+                    tipo.getBalasIniciales(), 1f});
+            }
+        }
+    }
+
+    /** Verdadero si sobre el spawner ya hay un arma esperando: no apila otra. */
+    private boolean hayArmaEncima(float[] spawner) {
+        for (float[] arma : enElSuelo) {
+            float centro = arma[1] + anchoEnElSuelo(TipoArma.porCodigo((int) arma[0])) / 2f;
+            boolean encima = centro >= spawner[1] && centro <= spawner[2]
+                && arma[2] >= spawner[3] - 1f && arma[2] <= spawner[3] + 2f * Arena.CELDA;
+            if (encima) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Los spawners del mapa: cada grupo de celdas pegadas {@code P} (pistolas) o {@code E} (escopetas) es uno,
+     * y el arma aparece arriba de su fila mas alta, al medio.
+     */
+    static List<float[]> buscarSpawners(Arena arena) {
+        String[] filas = arena.getFilas();
+        int alto = filas.length;
+        boolean[][] visto = new boolean[alto][Arena.COLUMNAS];
+        List<float[]> encontrados = new ArrayList<>();
+        for (int fila = 0; fila < alto; fila++) {
+            for (int columna = 0; columna < Arena.COLUMNAS; columna++) {
+                char celda = celdaDe(filas, columna, fila);
+                if ((celda != 'P' && celda != 'E') || visto[fila][columna]) {
+                    continue;
+                }
+                // recorre el grupo de celdas pegadas del mismo tipo
+                int minimaColumna = columna;
+                int maximaColumna = columna;
+                int filaMasAlta = fila;
+                ArrayDeque<int[]> pendientes = new ArrayDeque<>();
+                pendientes.add(new int[] {columna, fila});
+                visto[fila][columna] = true;
+                while (!pendientes.isEmpty()) {
+                    int[] actual = pendientes.poll();
+                    minimaColumna = Math.min(minimaColumna, actual[0]);
+                    maximaColumna = Math.max(maximaColumna, actual[0]);
+                    filaMasAlta = Math.max(filaMasAlta, actual[1]);
+                    int[][] vecinos = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+                    for (int[] v : vecinos) {
+                        int c = actual[0] + v[0];
+                        int f = actual[1] + v[1];
+                        if (c >= 0 && c < Arena.COLUMNAS && f >= 0 && f < alto && !visto[f][c]
+                            && celdaDe(filas, c, f) == celda) {
+                            visto[f][c] = true;
+                            pendientes.add(new int[] {c, f});
+                        }
+                    }
+                }
+                TipoArma tipo = celda == 'P' ? TipoArma.PISTOLA : TipoArma.ESCOPETA;
+                encontrados.add(new float[] {TipoArma.codigoDe(tipo), minimaColumna * Arena.CELDA,
+                    (maximaColumna + 1) * Arena.CELDA, (filaMasAlta + 1) * Arena.CELDA, INTERVALO_SPAWNER});
+            }
+        }
+        return encontrados;
+    }
+
+    private static char celdaDe(String[] filas, int columna, int fila) {
+        return filas[filas.length - 1 - fila].charAt(columna);
     }
 
     private void agarrar(Jugador jugador) {
@@ -114,15 +213,11 @@ public final class ArmasEnJuego {
         for (Iterator<float[]> it = enElSuelo.iterator(); it.hasNext(); ) {
             float[] arma = it.next();
             TipoArma tipo = TipoArma.porCodigo((int) arma[0]);
-            if (arma[3] > 0f || (tipo == TipoArma.ESPADA && jugador.getArma() != null)) {
-                continue; // recien caida, o una espada para quien ya tiene algo en la mano
+            if (arma[3] > 0f || jugador.getArma() != null) {
+                continue; // recien caida, o quien la pisa ya tiene algo en la mano: para cambiar, primero hay que tirarla
             }
             if (cuerpo.overlaps(new Rectangle(arma[1], arma[2], anchoEnElSuelo(tipo), ALTO_EN_EL_SUELO))) {
                 it.remove();
-                if (jugador.getArma() == TipoArma.ESPADA) {
-                    // cambia la espada por el arma de fuego: la espada queda en el piso
-                    dejarEnElSuelo(TipoArma.ESPADA, jugador.getPosicion().x, jugador.getPosicion().y, ESPERA_PARA_AGARRAR);
-                }
                 jugador.equipar(tipo, (int) arma[4]);
                 return;
             }
@@ -147,7 +242,7 @@ public final class ArmasEnJuego {
     }
 
     void dejarEnElSuelo(TipoArma tipo, float x, float y, float espera, int balas) {
-        enElSuelo.add(new float[] {TipoArma.codigoDe(tipo), x, y, espera, balas});
+        enElSuelo.add(new float[] {TipoArma.codigoDe(tipo), x, y, espera, balas, 0f});
         while (enElSuelo.size() > EstadoArmas.MAX_EN_EL_SUELO) {
             enElSuelo.remove(0);
         }
@@ -160,7 +255,8 @@ public final class ArmasEnJuego {
     private int cuantasHay(TipoArma tipo) {
         int cantidad = 0;
         for (float[] arma : enElSuelo) {
-            if (TipoArma.porCodigo((int) arma[0]) == tipo) {
+            // las que puso un spawner no cuentan: esas aparecen por su cuenta
+            if (TipoArma.porCodigo((int) arma[0]) == tipo && arma[5] == 0f) {
                 cantidad++;
             }
         }

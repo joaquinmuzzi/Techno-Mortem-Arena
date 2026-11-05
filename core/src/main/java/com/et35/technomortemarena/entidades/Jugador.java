@@ -9,7 +9,6 @@ import com.badlogic.gdx.math.Vector2;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entrada.EntradaJugador;
@@ -166,13 +165,6 @@ public class Jugador {
     /** El arma que se le cayo de la mano por un punetazo, hasta que la junta {@link ArmasEnJuego}. */
     private TipoArma armaSoltada;
     private Random azar = new Random();
-    /** Numeros de disparo de escopeta, unicos entre todos los jugadores: los perdigones de un disparo comparten el suyo. */
-    private static final AtomicInteger RAFAGAS = new AtomicInteger();
-    /**
-     * Disparo de escopeta que causo la invulnerabilidad actual (0 si no la causo una escopeta): los demas
-     * perdigones de ese mismo disparo la atraviesan, si no la invulnerabilidad del primero cortaria al resto.
-     */
-    private int rafagaDeLaInvulnerabilidad;
     /** Balas y armas tiradas en este fotograma: las junta {@link ArmasEnJuego}. */
     private final List<Proyectil> lanzados = new ArrayList<>();
     private final Hoja hoja = new Hoja();
@@ -439,15 +431,13 @@ public class Jugador {
         float x = pivoteX() + (float) Math.cos(angulo) * LARGO_PISTOLA;
         float y = pivoteY() + (float) Math.sin(angulo) * LARGO_PISTOLA;
         if (arma == TipoArma.ESCOPETA) {
-            // cada disparo tiene su numero (nunca 0), para que sus perdigones no se corten entre si
-            int rafaga = (RAFAGAS.incrementAndGet() & Integer.MAX_VALUE) + 1;
             for (int i = 0; i < TipoArma.PERDIGONES; i++) {
                 // un abanico parejo, con cada perdigon corrido un poco al azar
                 float desvio = ABANICO_ESCOPETA * ((float) i / (TipoArma.PERDIGONES - 1) - 0.5f)
                     + (azar.nextFloat() * 2f - 1f) * DISPERSION_PERDIGON;
                 float velocidad = Proyectil.VELOCIDAD_PERDIGON
                     * (1f + (azar.nextFloat() * 2f - 1f) * VARIACION_VELOCIDAD_PERDIGON);
-                lanzados.add(new Proyectil(Proyectil.Tipo.PERDIGON, this, x, y, angulo + desvio, velocidad).deLaRafaga(rafaga));
+                lanzados.add(new Proyectil(Proyectil.Tipo.PERDIGON, this, x, y, angulo + desvio, velocidad));
             }
             recargaDisparo = RECARGA_ESCOPETA;
         } else {
@@ -921,27 +911,30 @@ public class Jugador {
      * @return {@code false} si no le hizo nada (muerto o todavia invulnerable por el golpe anterior)
      */
     public boolean recibirDanio(int partes, float direccion, boolean esBala) {
-        return recibirDanio(partes, direccion, esBala, 0);
-    }
-
-    /**
-     * Igual que {@link #recibirDanio(int, float, boolean)}, para un perdigon del disparo de escopeta numero
-     * {@code rafaga}: si la invulnerabilidad actual la causo otro perdigon de ese mismo disparo, no lo frena.
-     * Asi un escopetazo de cerca pega con todos sus perdigones.
-     */
-    public boolean recibirDanio(int partes, float direccion, boolean esBala, int rafaga) {
-        boolean mismaRafaga = rafaga != 0 && rafaga == rafagaDeLaInvulnerabilidad;
-        if (!vivo || (tiempoRestanteFlash > 0f && !mismaRafaga)) {
+        if (!vivo || tiempoRestanteFlash > 0f) {
             return false;
         }
-        if (!mismaRafaga) {
-            tiempoRestanteFlash = esBala ? FLASH_BALA : 1f;
-        }
-        rafagaDeLaInvulnerabilidad = rafaga;
+        tiempoRestanteFlash = esBala ? FLASH_BALA : 1f;
         empujar(direccion, esBala ? EMPUJE_BALA : EMPUJE_GOLPE);
         if (!esBala) {
             velocidad.y += 400f * ESCALA;
         }
+        quitarVida(partes);
+        return true;
+    }
+
+    /**
+     * Lo toca un perdigon de escopeta. Los perdigones no respetan ni dejan invulnerabilidad: cada uno que
+     * toca saca su parte, asi un escopetazo de cerca pega con todos aunque el rival venga de recibir otro
+     * golpe (si no, la invulnerabilidad de ese golpe se comeria varios perdigones).
+     *
+     * @return {@code false} si ya estaba muerto
+     */
+    boolean recibirPerdigon(int partes, float direccion) {
+        if (!vivo) {
+            return false;
+        }
+        empujar(direccion, EMPUJE_BALA);
         quitarVida(partes);
         return true;
     }

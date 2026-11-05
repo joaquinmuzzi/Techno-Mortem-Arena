@@ -540,6 +540,168 @@ class ArmasTest {
         assertEquals(VIDA_LLENA, copia.getPartes());
     }
 
+    // ---- correcciones: rebote, armas con balas, aparicion alternada, desarme con la hoja
+
+    @Test
+    void laEspadaNuncaSeQuedaFlotandoEnElAire() {
+        Proyectil espada = Proyectil.inofensiva(Proyectil.Tipo.ESPADA_LANZADA, null, 1500f, 1400f, 300f, 900f);
+        for (int i = 0; i < 600 && espada.isActivo(); i++) {
+            espada.actualizar(DT, arena, null, null);
+        }
+        assertTrue(espada.dejaArmaEnElSuelo());
+        assertEquals(PISO + Proyectil.LADO_LANZADA / 2f, espada.getY(), 5f, "se frena apoyada en el piso, no en el aire");
+    }
+
+    @Test
+    void laEspadaReboteaPoco() {
+        float altura = 600f;
+        Proyectil espada = Proyectil.inofensiva(Proyectil.Tipo.ESPADA_LANZADA, null, 1500f, PISO + altura, 0f, 0f);
+        boolean pico = false;
+        float maxima = 0f;
+        float anterior = espada.getY();
+        for (int i = 0; i < 600 && espada.isActivo(); i++) {
+            espada.actualizar(DT, arena, null, null);
+            if (espada.getY() > anterior) {
+                pico = true; // ya reboto y esta subiendo
+            }
+            if (pico) {
+                maxima = Math.max(maxima, espada.getY() - PISO);
+            }
+            anterior = espada.getY();
+        }
+        assertTrue(pico, "rebota algo");
+        assertTrue(maxima < 0.15f * altura, "pero sube menos del 15% de lo que cayo: subio " + maxima);
+    }
+
+    @Test
+    void unArmaDeFuegoTiradaConBalasQuedaEnElPisoConSusBalas() {
+        Jugador a = tirador(1000f);
+        Jugador d = blanco(3500f);
+        a.equipar(TipoArma.PISTOLA);
+        guion.apuntaX = 0f;
+        guion.apuntaY = PISO + 112f; // dispara y tira hacia la izquierda, lejos del blanco
+        pasos(a, d, 30);
+        guion.clic = true;
+        pasos(a, d, 20);
+        guion.clic = true;
+        pasos(a, d, 20);
+        assertEquals(4, a.getBalas());
+        guion.lanzar = true;
+        pasos(a, d, 1);
+        pasos(a, d, 240);
+
+        assertEquals(1, armas.getEnElSuelo().size(), "no se rompe: queda en el piso");
+        float[] arma = armas.getEnElSuelo().get(0);
+        assertEquals(TipoArma.codigoDe(TipoArma.PISTOLA), (int) arma[0]);
+        assertEquals(4, (int) arma[4], "con las balas que le quedaban");
+
+        arma[1] = a.getPosicion().x;
+        arma[2] = a.getPosicion().y;
+        pasos(a, d, 1);
+        assertEquals(TipoArma.PISTOLA, a.getArma());
+        assertEquals(4, a.getBalas());
+    }
+
+    @Test
+    void unArmaDeFuegoSinBalasSeRompeAlChocar() {
+        Proyectil vacia = new Proyectil(Proyectil.Tipo.PISTOLA_LANZADA, null, 1500f, PISO + 200f, -1f, 500f);
+        for (int i = 0; i < 120 && vacia.isActivo(); i++) {
+            vacia.actualizar(DT, arena, null, null);
+        }
+        assertFalse(vacia.isActivo());
+        assertFalse(vacia.dejaArmaEnElSuelo());
+    }
+
+    @Test
+    void apareceElTipoQueFaltaEnElSuelo() {
+        armas.dejarEnElSuelo(TipoArma.PISTOLA, 500f, PISO, 0f);
+        armas.aparecerArma(arena);
+        assertEquals(TipoArma.codigoDe(TipoArma.ESCOPETA), (int) armas.getEnElSuelo().get(1)[0]);
+
+        ArmasEnJuego otras = new ArmasEnJuego(new Random(1), new ArrayList<>());
+        otras.dejarEnElSuelo(TipoArma.ESCOPETA, 500f, PISO, 0f);
+        otras.aparecerArma(arena);
+        assertEquals(TipoArma.codigoDe(TipoArma.PISTOLA), (int) otras.getEnElSuelo().get(1)[0]);
+    }
+
+    @Test
+    void elPunetazoDesarmaYElArmaCaeConSusBalas() {
+        Jugador a = desarmado(1000f);
+        Jugador d = rivalArmado(1130f);
+        d.equipar(TipoArma.ESCOPETA, 2);
+        d.setAzar(new Random() {
+            @Override
+            public int nextInt(int limite) {
+                return 0;
+            }
+        });
+        apuntarALaDerecha();
+        pasos(a, d, 20);
+        guion.clic = true;
+        pasos(a, d, 5);
+
+        assertNull(d.getArma());
+        float[] arma = armas.getEnElSuelo().get(0);
+        assertEquals(TipoArma.codigoDe(TipoArma.ESCOPETA), (int) arma[0]);
+        assertEquals(2, (int) arma[4]);
+    }
+
+    /** Una hoja horizontal hacia la derecha con la base en (1000, 500): la "suya". */
+    private static Hoja suya() {
+        Hoja hoja = new Hoja();
+        hoja.colocar(1000f, 500f, 0f, 0f);
+        return hoja;
+    }
+
+    /** Una hoja vertical hacia abajo que cruza y = 500 en x, a {@code largo} de su base. */
+    private static Hoja miaCruzandoEn(float x, float largo) {
+        Hoja hoja = new Hoja();
+        hoja.colocar(x, 500f + largo, (float) -Math.PI / 2f, 0f);
+        return hoja;
+    }
+
+    @Test
+    void laPuntaDeMiHojaContraLaBaseDeLaSuyaDesarma() {
+        assertTrue(Jugador.esDesarme(miaCruzandoEn(1020f, 100f), suya(), true));
+    }
+
+    @Test
+    void sinMoverLaEspadaNoDesarma() {
+        assertFalse(Jugador.esDesarme(miaCruzandoEn(1020f, 100f), suya(), false));
+    }
+
+    @Test
+    void contraElMedioOLaPuntaDeLaSuyaNoDesarma() {
+        assertFalse(Jugador.esDesarme(miaCruzandoEn(1060f, 100f), suya(), true), "le pegue en el medio");
+        assertFalse(Jugador.esDesarme(miaCruzandoEn(1100f, 100f), suya(), true), "le pegue en la punta");
+    }
+
+    @Test
+    void conElMedioDeMiHojaNoDesarma() {
+        assertFalse(Jugador.esDesarme(miaCruzandoEn(1020f, 56f), suya(), true));
+    }
+
+    @Test
+    void laEspadaDesarmadaVuelaHaciaArribaSinHerirYQuedaEnElMapa() {
+        // lejos de la hoja en la mano, pero en el camino de la espada que cae
+        Jugador a = blanco(1300f);
+        Jugador d = rivalArmado(1000f);
+        pasos(d, a, 3);
+        d.soltarEspadaAlAire(1f);
+        assertNull(d.getArma());
+        pasos(d, a, 1);
+        Proyectil espada = armas.getProyectiles().get(0);
+        float yInicial = espada.getY();
+        pasos(d, a, 10);
+        assertTrue(espada.getY() > yInicial, "sale hacia arriba");
+
+        pasos(d, a, 300);
+        assertEquals(VIDA_LLENA, a.getPartes(), "no lastima a nadie");
+        assertEquals(VIDA_LLENA, d.getPartes());
+        assertEquals(1, armas.getEnElSuelo().size());
+        assertEquals(TipoArma.codigoDe(TipoArma.ESPADA), (int) armas.getEnElSuelo().get(0)[0]);
+    }
+
     private List<Proyectil> disparoHastaVaciar(Jugador a, Jugador d) {
         List<Proyectil> salidas = new ArrayList<>();
         for (int i = 0; i < 400 && a.getArma() != null; i++) {

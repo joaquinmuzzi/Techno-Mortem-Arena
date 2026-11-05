@@ -8,9 +8,12 @@ import com.et35.technomortemarena.mundo.Bloque;
  * Algo que vuela por la arena: una bala, un perdigon de escopeta o un arma tirada.
  *
  * <p>Todos caen con gravedad: las balas un poco (de lejos hay que apuntar mas arriba), las armas tiradas
- * bastante. La espada tirada rebota en el piso y las paredes perdiendo velocidad y, cuando se frena, queda
- * en el mapa para que cualquiera la agarre ({@link #dejaEspadaEnElSuelo}). El resto se destruye al tocar un
- * bloque. Todos hieren al primer duelista que tocan que no sea quien los lanzo.
+ * bastante. Un arma tirada rebota poco en el piso y las paredes y, cuando se frena apoyada sobre un bloque,
+ * queda en el mapa para que cualquiera la agarre ({@link #dejaArmaEnElSuelo}), con las balas que tenia. Un
+ * arma de fuego sin balas se rompe al chocar. Las balas y perdigones se destruyen al tocar un bloque.
+ *
+ * <p>Hiere al primer duelista que toca que no sea quien lo lanzo, salvo que sea inofensivo: la espada que
+ * sale volando por un desarme no lastima a nadie.
  */
 public final class Proyectil {
 
@@ -20,25 +23,24 @@ public final class Proyectil {
     private static final float ESCALA = Arena.ESCALA;
     public static final float VELOCIDAD_BALA = 1500f * ESCALA;
     public static final float VELOCIDAD_PERDIGON = 1300f * ESCALA;
-    public static final float VELOCIDAD_LANZADA = 1600f * ESCALA;
+    /** Tirar el arma es un ultimo recurso: sale mas despacio que una estocada de lejos. */
+    public static final float VELOCIDAD_LANZADA = 1200f * ESCALA;
     /** Las balas caen poco: a media pantalla bajan como medio cuerpo. */
     static final float GRAVEDAD_BALA = -250f * ESCALA;
-    /** La espada tirada cae bastante: hay que tirarla en arco para llegar lejos. */
-    static final float GRAVEDAD_ESPADA = -1100f * ESCALA;
-    private static final float GRAVEDAD_ARMA_DE_FUEGO = -800f * ESCALA;
+    /** Un arma tirada cae bastante: hay que tirarla en arco para llegar lejos. */
+    static final float GRAVEDAD_LANZADA = -1100f * ESCALA;
     /** Segundos que vuela un perdigon antes de perderse: la escopeta es de corto alcance. */
     static final float VIDA_PERDIGON = 0.35f;
-    /** Cuanto de la velocidad conserva la espada al rebotar, y cuanto de la horizontal en cada pique. */
-    private static final float REBOTE = 0.5f;
-    private static final float ROCE = 0.75f;
+    /** Cuanto de la velocidad conserva al rebotar: poco, para que un rebote no sirva de ataque. */
+    private static final float REBOTE = 0.25f;
+    /** Cuanto de la velocidad horizontal le queda en cada pique contra el piso. */
+    private static final float ROCE = 0.6f;
     /** Si cae mas lento que esto, ya no rebota: queda apoyada y se arrastra por el piso. */
-    private static final float VELOCIDAD_PARA_REBOTAR = 150f * ESCALA;
+    private static final float VELOCIDAD_PARA_REBOTAR = 200f * ESCALA;
     /** Cuanto frena por segundo arrastrandose por el piso. */
-    private static final float FRICCION = 6f;
-    /** Por debajo de esta velocidad, apoyada en el piso, la espada se queda quieta en el mapa. */
+    private static final float FRICCION = 8f;
+    /** Por debajo de esta velocidad, apoyada sobre un bloque, se queda quieta en el mapa. */
     private static final float VELOCIDAD_PARA_FRENAR = 60f * ESCALA;
-    /** Si sigue rebotando despues de este tiempo, igual se queda donde este. */
-    private static final float VUELO_MAXIMO_ESPADA = 4f;
     /** Vueltas por segundo del arma tirada, en radianes. */
     private static final float GIRO_LANZADA = 14f;
     /** Lado de la caja con que choca: la bala es chica, el arma tirada mas grande. */
@@ -57,11 +59,13 @@ public final class Proyectil {
     private float angulo;
     private float tiempoDeVuelo;
     private boolean activo = true;
-    /** La espada hiere una sola vez: despues de tocar a alguien sigue cayendo sin herir. */
+    /** Un arma tirada hiere una sola vez: despues de tocar a alguien sigue cayendo sin herir. */
     private boolean yaHirio;
-    private boolean dejaEspada;
-    /** Si en este fotograma la espada quedo apoyada sobre un bloque. */
+    private boolean dejaArma;
+    /** Si en este fotograma quedo apoyada sobre un bloque. */
     private boolean apoyada;
+    /** Las balas que le quedan a un arma de fuego tirada: con balas queda en el mapa, sin balas se rompe. */
+    private int balas;
     private final Rectangle caja = new Rectangle();
 
     public Proyectil(Tipo tipo, Jugador duenio, float x, float y, float angulo, float velocidad) {
@@ -79,6 +83,24 @@ public final class Proyectil {
         return new Proyectil(tipo, null, x, y, angulo, 0f);
     }
 
+    /**
+     * Un arma que sale volando sin herir a nadie, con la velocidad dada: la espada que se suelta en un
+     * desarme. Cae y queda en el mapa como cualquier arma tirada.
+     */
+    static Proyectil inofensiva(Tipo tipo, Jugador duenio, float x, float y, float vx, float vy) {
+        Proyectil p = new Proyectil(tipo, duenio, x, y, 0f, 0f);
+        p.vx = vx;
+        p.vy = vy;
+        p.yaHirio = true;
+        return p;
+    }
+
+    /** Le pone las balas que tenia el arma de fuego en la mano al tirarla. */
+    Proyectil conBalas(int balas) {
+        this.balas = balas;
+        return this;
+    }
+
     /** El proyectil que deja el arma {@code arma} al tirarla. */
     static Tipo lanzadaDe(TipoArma arma) {
         switch (arma) {
@@ -91,6 +113,20 @@ public final class Proyectil {
         }
     }
 
+    /** El arma que es, si es un arma tirada; {@code null} para balas y perdigones. */
+    public TipoArma getArma() {
+        switch (tipo) {
+            case ESPADA_LANZADA:
+                return TipoArma.ESPADA;
+            case PISTOLA_LANZADA:
+                return TipoArma.PISTOLA;
+            case ESCOPETA_LANZADA:
+                return TipoArma.ESCOPETA;
+            default:
+                return null;
+        }
+    }
+
     /** Partes de corazon que saca al tocar a un duelista. */
     public int getDanio() {
         switch (tipo) {
@@ -98,12 +134,8 @@ public final class Proyectil {
                 return TipoArma.DANIO_BALA;
             case PERDIGON:
                 return TipoArma.DANIO_PERDIGON;
-            case ESPADA_LANZADA:
-                return TipoArma.ESPADA.getDanioLanzada();
-            case PISTOLA_LANZADA:
-                return TipoArma.PISTOLA.getDanioLanzada();
             default:
-                return TipoArma.ESCOPETA.getDanioLanzada();
+                return getArma().getDanioLanzada();
         }
     }
 
@@ -111,11 +143,9 @@ public final class Proyectil {
         return tipo == Tipo.BALA || tipo == Tipo.PERDIGON;
     }
 
-    private float gravedad() {
-        if (esDisparo()) {
-            return GRAVEDAD_BALA;
-        }
-        return tipo == Tipo.ESPADA_LANZADA ? GRAVEDAD_ESPADA : GRAVEDAD_ARMA_DE_FUEGO;
+    /** La espada siempre queda en el mapa; un arma de fuego solo si le quedan balas. */
+    private boolean rebota() {
+        return tipo == Tipo.ESPADA_LANZADA || (!esDisparo() && balas > 0);
     }
 
     /**
@@ -132,10 +162,10 @@ public final class Proyectil {
             activo = false;
             return null;
         }
-        vy += gravedad() * delta;
+        vy += (esDisparo() ? GRAVEDAD_BALA : GRAVEDAD_LANZADA) * delta;
         if (esDisparo()) {
             angulo = (float) Math.atan2(vy, vx);
-        } else {
+        } else if (!apoyada) {
             angulo += (vx >= 0f ? -GIRO_LANZADA : GIRO_LANZADA) * delta;
         }
         float dx = vx * delta;
@@ -144,7 +174,7 @@ public final class Proyectil {
         Jugador herido = null;
         apoyada = false;
         for (int i = 0; i < pasos && activo; i++) {
-            if (tipo == Tipo.ESPADA_LANZADA) {
+            if (rebota()) {
                 moverRebotando(delta / pasos, arena);
             } else {
                 x += dx / pasos;
@@ -167,16 +197,13 @@ public final class Proyectil {
                 activo = false; // se cayo por un agujero del mapa
             }
         }
-        if (tipo == Tipo.ESPADA_LANZADA && activo && apoyada) {
+        if (rebota() && activo && apoyada) {
             vx *= (float) Math.exp(-FRICCION * delta);
             if (Math.abs(vx) < VELOCIDAD_PARA_FRENAR) {
                 quedarEnElSuelo();
             }
         }
-        if (tipo == Tipo.ESPADA_LANZADA && activo && tiempoDeVuelo >= VUELO_MAXIMO_ESPADA) {
-            quedarEnElSuelo();
-        }
-        if (!esDisparo() && tipo != Tipo.ESPADA_LANZADA && (x < -LADO_LANZADA || x > arena.getAncho() + LADO_LANZADA)) {
+        if (!rebota() && !esDisparo() && (x < -LADO_LANZADA || x > arena.getAncho() + LADO_LANZADA)) {
             activo = false;
         }
         return herido;
@@ -187,18 +214,19 @@ public final class Proyectil {
         if (tocado.recibirDanio(getDanio(), direccion, esDisparo()) && duenio != null) {
             duenio.registrarGolpe();
         }
-        if (tipo == Tipo.ESPADA_LANZADA) {
-            // rebota en el cuerpo y sigue cayendo, sin volver a herir
+        if (rebota()) {
+            // pega y cae casi recta a los pies del herido, sin volver a herir
             yaHirio = true;
-            vx = -vx * 0.3f;
+            vx = -vx * 0.1f;
+            vy = Math.min(vy, 0f);
         } else {
             activo = false;
         }
     }
 
     /**
-     * Mueve la espada un paso y, si choca, rebota en el eje del choque: en una pared se da vuelta la
-     * velocidad horizontal y en el piso o el techo la vertical, perdiendo parte en cada rebote. Si cae
+     * Mueve el arma un paso y, si choca, rebota en el eje del choque: en una pared se da vuelta la
+     * velocidad horizontal y en el piso o el techo la vertical, perdiendo casi toda la velocidad. Si cae
      * despacio ya no pica: queda apoyada y se arrastra hasta frenar. Las paredes de la arena tambien la
      * hacen rebotar.
      */
@@ -226,15 +254,20 @@ public final class Proyectil {
 
     private void quedarEnElSuelo() {
         activo = false;
-        dejaEspada = true;
+        dejaArma = true;
     }
 
     /**
-     * Verdadero si es una espada que termino de rebotar: hay que dejarla en el mapa, en {@link #getX} y
-     * {@link #getY}, para que la agarre cualquiera.
+     * Verdadero si es un arma que termino de rebotar apoyada sobre un bloque: hay que dejarla en el mapa,
+     * en {@link #getX} y {@link #getY}, para que la agarre cualquiera.
      */
-    public boolean dejaEspadaEnElSuelo() {
-        return dejaEspada;
+    public boolean dejaArmaEnElSuelo() {
+        return dejaArma;
+    }
+
+    /** Las balas que le quedan al arma de fuego tirada. */
+    public int getBalas() {
+        return balas;
     }
 
     private Jugador tocaA(Jugador jugador) {

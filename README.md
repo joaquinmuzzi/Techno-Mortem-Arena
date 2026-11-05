@@ -127,13 +127,16 @@ core/src/main/java/com/et35/technomortemarena/
 **Armas.** Cada duelista tiene 3 corazones, que se pierden por sextos: la espada (en la mano o tirada)
 saca un corazón entero, una bala de pistola un tercio, y un perdigón de escopeta o un puñetazo un sexto.
 Las balas caen un poco con la gravedad: de lejos hay que apuntar más arriba. Con clic derecho se tira lo
-que se tiene en la mano hacia el cursor. La espada tirada cae en arco, rebota en el piso y las paredes y
-queda en el mapa: cualquiera de los dos la puede agarrar pasando por encima con las manos vacías. Las
-armas de fuego tiradas se rompen al chocar. Sin arma, el clic pega un puñetazo de corto alcance que
-empuja al rival y, una de cada tres veces, le hace soltar el arma (cae a sus pies). Cada 8 s aparece una
-pistola (6 balas) o una escopeta (3 disparos de 5 perdigones, alcance corto) en un lugar al azar del
-mapa, lejos de los spawns; quien pasa por encima la agarra y, si tenía la espada, la deja en el piso. Sin
-balas se queda con las manos vacías. Al empezar cada ronda todos vuelven a tener la espada.
+que se tiene en la mano hacia el cursor (más despacio que una estocada: es un último recurso). El arma
+tirada cae en arco, rebota poco y, al frenarse apoyada sobre un bloque, queda en el mapa con las balas que
+tenía; un arma de fuego sin balas, o que se va del mapa, desaparece. Las armas del suelo brillan: las de
+fuego las agarra cualquiera pasando por encima, y la espada solo quien tiene las manos vacías. Sin arma, el
+clic pega un puñetazo de corto alcance que empuja al rival y, una de cada tres veces, le hace soltar el
+arma. Con la espada también se puede desarmar: si la punta de tu hoja (su último tercio) pega en la base
+de la del rival (su primer tercio) mientras la movés, su espada sale volando hacia arriba y cae al mapa.
+Cada 8 s aparece una pistola (6 balas) o una escopeta (3 disparos de 5 perdigones, alcance corto), la que
+haya menos en el suelo, en un lugar al azar lejos de los spawns. Al empezar cada ronda todos vuelven a
+tener la espada.
 
 Al rodar (solo desde el piso, 0,35 s y con una recarga de 0,9 s) el cuerpo se achica a la mitad de
 alto y va más rápido que corriendo, pero no es invulnerable: la espada rival lo hiere igual. Si hay un

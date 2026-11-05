@@ -9,6 +9,14 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Desarme con la espada: si el último tercio de tu hoja pega en el primer tercio de la del rival mientras
+  la movés (giro rápido o estocada), su espada sale volando hacia arriba sin herir a nadie y cae al mapa.
+  `entidades.Hoja.puntoDeContacto` calcula dónde se tocan las dos hojas (los puntos más cercanos entre sus
+  ejes), en lugar de partir cada hoja en tres cajas.
+- Las armas de fuego tiradas o que se caen de la mano rebotan y quedan en el mapa con las balas que tenían.
+  Sin balas, o si se van del mapa, desaparecen.
+- Sprites propios para la pistola, la escopeta y el halo de las armas que se pueden agarrar
+  (`sprites/pistola.png`, `sprites/escopeta.png`, `sprites/brillo.png`).
 - Escopeta (`entidades.TipoArma.ESCOPETA`): 3 disparos de 5 perdigones en abanico, de corto alcance, que
   sacan un sexto de corazón cada uno. En el mapa aparecen pistolas o escopetas al azar.
 - Puñetazo: sin arma, el clic izquierdo pega con la mano. Saca un sexto de corazón (menos que una bala),
@@ -100,6 +108,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- El arma tirada rebota mucho menos (conserva un 25 % por pique) y, si le pega al rival, cae casi recta a
+  sus pies. Solo se queda quieta apoyada sobre un bloque: ya no se congela en el aire después de un
+  rebote alto. Se tira más despacio, para que sea un último recurso y no mejor que la estocada.
+- La pistola y la escopeta aparecen alternadas (la que haya menos en el suelo): antes, con dos pistolas en el
+  piso no aparecía más nada y la escopeta podía no salir nunca.
 - La vida se cuenta en sextos de corazón (antes en tercios) para que el puñetazo y los perdigones hagan
   menos que una bala.
 - Las balas caen un poco con la gravedad, así es más difícil acertar de lejos.

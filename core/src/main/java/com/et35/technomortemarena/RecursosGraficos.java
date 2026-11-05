@@ -28,11 +28,25 @@ public class RecursosGraficos implements Disposable {
     /** Baldosa del piso, 64x64 px, disenada para repetirse en horizontal. */
     public final Texture piso;
 
+    /** Pistola, 20x9 px, con la boca a la derecha. */
+    public final Texture pistola;
+
+    /** Escopeta, 32x9 px, con la culata de madera a la izquierda y el cano a la derecha. */
+    public final Texture escopeta;
+
+    /** Halo amarillo suave, 48x20 px con transparencia: marca las armas que se pueden agarrar. */
+    public final Texture brillo;
+
     public RecursosGraficos() {
         jugador = cargar("sprites/jugador.png");
         espada = cargar("sprites/espada.png");
         brazo = cargar("sprites/brazo.png");
         piso = cargar("sprites/piso.png");
+        pistola = cargar("sprites/pistola.png");
+        escopeta = cargar("sprites/escopeta.png");
+        brillo = cargar("sprites/brillo.png");
+        // el halo es un degrade: con Nearest se veria en escalones
+        brillo.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
 
     /**
@@ -57,5 +71,8 @@ public class RecursosGraficos implements Disposable {
         espada.dispose();
         brazo.dispose();
         piso.dispose();
+        pistola.dispose();
+        escopeta.dispose();
+        brillo.dispose();
     }
 }

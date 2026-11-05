@@ -9,6 +9,12 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Editor de niveles: las herramientas pasan a un panel lateral con barra de desplazamiento, que se abre y se
+  cierra con el botón hamburguesa de la barra de arriba (o la tecla `TAB`). Cada herramienta muestra su color
+  y su tecla; la barra de arriba queda en una sola fila con las acciones y la herramienta elegida, y la
+  grilla gana espacio.
+- `pantallas.BarraDeDesplazamiento`: barra vertical reutilizable (manija que se arrastra, clic en la pista
+  para pasar de página), la usan la lista de "Mis mapas" y el panel del editor.
 - Bloques spawner de armas (`mundo.SpawnerArma`, `P` y `E` en la grilla): en el editor, las herramientas
   "8 PISTOLAS" y "9 ESCOPETAS" ponen un bloque sólido de 3x3 que hace aparecer su arma encima cada 5 s, una
   sola a la vez (si ya hay una encima, espera a que la agarren). También están entre los objetos que se
@@ -184,6 +190,10 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Corregido
 
+- Selección de mapa, "Mis mapas": con más de 5 mapas guardados, las filas se caían fuera de la pantalla
+  apenas aparecían (el rectángulo de cada fila se usaba también como punto de partida de la lista, y
+  terminaba en la última fila). Además, la lista se movía con el movimiento del mouse y no con la rueda.
+  Ahora entran 7 mapas a la vez con texto más chico, y el resto se ve con la rueda o la barra de la derecha.
 - Rodar en red: `red.ClienteSala` no copiaba la bandera `rodando` del estado que llega, así que en el
   cliente nadie se veía agachado al rodar (en el anfitrión sí).
 - Reloj de la ronda: en el modo de prueba y en el anfitrión mientras espera rival no hay rondas, y el

@@ -38,13 +38,26 @@ public class PantallaEditor extends ScreenAdapter {
 
     private static final float ANCHO_UI = 960f;
     private static final float ALTO_UI = 540f;
-    private static final float ALTO_BARRA = 100f;
+    /** Una sola fila arriba: el boton de las herramientas y las acciones. */
+    private static final float ALTO_BARRA = 54f;
     private static final float Y_BARRA = ALTO_UI - ALTO_BARRA;
-    private static final float Y_FILA_HERRAMIENTAS = 488f;
-    private static final float Y_FILA_ACCIONES = 444f;
-    private static final float ANCHO_BOTON = 90f;
-    private static final float PASO_BOTON = 94f;
+    private static final float Y_FILA_ACCIONES = Y_BARRA + 9f;
+    private static final float ANCHO_BOTON = 110f;
+    private static final float PASO_BOTON = 118f;
     private static final float MARGEN = 10f;
+    /** El boton "hamburguesa" que abre y cierra el panel de herramientas, y donde empiezan las acciones. */
+    private static final float ANCHO_HAMBURGUESA = 44f;
+    private static final float X_ACCIONES = MARGEN + ANCHO_HAMBURGUESA + 10f;
+
+    /** El panel de herramientas de la izquierda: una lista vertical con barra de desplazamiento. */
+    private static final float ANCHO_PANEL = 222f;
+    private static final float ANCHO_HERRAMIENTA = 182f;
+    private static final float ALTO_HERRAMIENTA = 44f;
+    private static final float PASO_HERRAMIENTA = 52f;
+    private static final float ANCHO_BARRA_PANEL = 12f;
+    /** Cuantas herramientas entran a la vez en el panel: las demas se ven desplazandolo. */
+    private static final int HERRAMIENTAS_VISIBLES = (int) ((Y_BARRA - 2f * MARGEN) / PASO_HERRAMIENTA);
+    private static final float LADO_MUESTRA = 22f;
 
     private static final Rectangle PANEL_LISTA = new Rectangle(180f, 60f, 600f, 380f);
     private static final float ALTO_ITEM = 44f;
@@ -91,12 +104,21 @@ public class PantallaEditor extends ScreenAdapter {
     private List<MapaGuardado> mapasGuardados;
     private int primerVisible;
 
-    private final Rectangle[] botonesHerramienta = new Rectangle[HERRAMIENTAS.length];
-    private final Rectangle botonGuardar = new Rectangle(MARGEN, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
-    private final Rectangle botonCargar = new Rectangle(MARGEN + PASO_BOTON, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
-    private final Rectangle botonProbar = new Rectangle(MARGEN + 2 * PASO_BOTON, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
-    private final Rectangle botonVolver = new Rectangle(MARGEN + 3 * PASO_BOTON, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
-    private final Rectangle botonPincel = new Rectangle(MARGEN + 4 * PASO_BOTON, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
+    private final Rectangle botonHerramientas = new Rectangle(MARGEN, Y_FILA_ACCIONES, ANCHO_HAMBURGUESA, 36f);
+    private final Rectangle botonGuardar = new Rectangle(X_ACCIONES, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
+    private final Rectangle botonCargar = new Rectangle(X_ACCIONES + PASO_BOTON, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
+    private final Rectangle botonProbar = new Rectangle(X_ACCIONES + 2 * PASO_BOTON, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
+    private final Rectangle botonVolver = new Rectangle(X_ACCIONES + 3 * PASO_BOTON, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
+    private final Rectangle botonPincel = new Rectangle(X_ACCIONES + 4 * PASO_BOTON, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
+    /** El panel de herramientas: se abre y se cierra con el boton hamburguesa (o la tecla TAB). */
+    private boolean panelAbierto = true;
+    private final Rectangle panel = new Rectangle(0f, 0f, ANCHO_PANEL, Y_BARRA);
+    private final BarraDeDesplazamiento barraPanel = new BarraDeDesplazamiento(
+        MARGEN + ANCHO_HERRAMIENTA + 8f, MARGEN, ANCHO_BARRA_PANEL, Y_BARRA - 2f * MARGEN);
+    /** Rectangulo de trabajo para cada herramienta del panel, que se arma de cero en cada fotograma. */
+    private final Rectangle filaHerramienta = new Rectangle();
+    /** Filas que movio la rueda del mouse sobre el panel desde el ultimo fotograma. */
+    private int ruedaPanel;
     private final Rectangle botonCerrarLista = new Rectangle(380f, 70f, 200f, 36f);
     private int tamanoPincel = 1;
 
@@ -128,11 +150,15 @@ public class PantallaEditor extends ScreenAdapter {
 
         @Override
         public boolean scrolled(float desplazamientoX, float desplazamientoY) {
-            if (!listaAbierta) {
-                return false;
+            if (listaAbierta) {
+                desplazarLista(desplazamientoY > 0 ? 1 : -1);
+                return true;
             }
-            desplazarLista(desplazamientoY > 0 ? 1 : -1);
-            return true;
+            if (panelAbierto) {
+                ruedaPanel += desplazamientoY > 0 ? 1 : -1;
+                return true;
+            }
+            return false;
         }
     };
 
@@ -147,9 +173,7 @@ public class PantallaEditor extends ScreenAdapter {
         this.recursos = recursos;
         this.audio = audio;
         Gdx.input.setInputProcessor(entrada);
-        for (int i = 0; i < HERRAMIENTAS.length; i++) {
-            botonesHerramienta[i] = new Rectangle(MARGEN + i * PASO_BOTON, Y_FILA_HERRAMIENTAS, ANCHO_BOTON, 40f);
-        }
+        barraPanel.setContenido(HERRAMIENTAS.length, HERRAMIENTAS_VISIBLES);
         for (int fila = 0; fila < Arena.FILAS; fila++) {
             for (int columna = 0; columna < Arena.COLUMNAS; columna++) {
                 celdas[fila][columna] = fila < Arena.FILAS_PISO ? '#' : '.';
@@ -187,14 +211,21 @@ public class PantallaEditor extends ScreenAdapter {
             if (Gdx.input.isKeyJustPressed(Input.Keys.B)) {
                 cambiarTamanoPincel();
             }
+            if (Gdx.input.isKeyJustPressed(Input.Keys.TAB)) {
+                panelAbierto = !panelAbierto;
+            }
             boolean enBarra = mouseUi.y >= Y_BARRA;
+            boolean enPanel = panelAbierto && panel.contains(mouseUi);
             if (enBarra) {
                 if (Gdx.input.justTouched() && atenderBarra(mouseUi)) {
                     return;
                 }
+            } else if (enPanel || barraPanel.estaArrastrando()) {
+                atenderPanel(mouseUi);
             } else {
                 pintarBajoElMouse();
             }
+            ruedaPanel = 0;
         }
 
         if (cambiado) {
@@ -263,11 +294,35 @@ public class PantallaEditor extends ScreenAdapter {
     }
 
     /** Devuelve verdadero si el clic cambio de pantalla y el fotograma tiene que cortarse. */
-    private boolean atenderBarra(Vector2 mouseUi) {
-        for (int i = 0; i < HERRAMIENTAS.length; i++) {
-            if (botonesHerramienta[i].contains(mouseUi)) {
-                herramienta = HERRAMIENTAS[i];
+    /** El rectangulo de la herramienta visible numero {@code numero} del panel (0 es la de arriba). */
+    private Rectangle herramientaVisible(int numero) {
+        float y = Y_BARRA - MARGEN - ALTO_HERRAMIENTA - numero * PASO_HERRAMIENTA;
+        return filaHerramienta.set(MARGEN, y, ANCHO_HERRAMIENTA, ALTO_HERRAMIENTA);
+    }
+
+    /** El panel de herramientas: la rueda y la barra lo desplazan, y un clic en una herramienta la elige. */
+    private void atenderPanel(Vector2 mouseUi) {
+        if (ruedaPanel != 0) {
+            barraPanel.desplazar(ruedaPanel);
+        }
+        boolean presionado = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
+        if (barraPanel.actualizar(mouseUi, presionado, Gdx.input.justTouched()) || !Gdx.input.justTouched()) {
+            return;
+        }
+        for (int numero = 0; numero < HERRAMIENTAS_VISIBLES; numero++) {
+            int indice = barraPanel.getPrimero() + numero;
+            if (indice < HERRAMIENTAS.length && herramientaVisible(numero).contains(mouseUi)) {
+                herramienta = HERRAMIENTAS[indice];
+                ui.clic();
+                return;
             }
+        }
+    }
+
+    private boolean atenderBarra(Vector2 mouseUi) {
+        if (botonHerramientas.contains(mouseUi)) {
+            panelAbierto = !panelAbierto;
+            return false;
         }
         if (botonGuardar.contains(mouseUi)) {
             iniciarNombre();
@@ -402,7 +457,7 @@ public class PantallaEditor extends ScreenAdapter {
         }
         batch.setColor(Color.WHITE);
         dibujarSpawns();
-        if (!nombrando && !listaAbierta && mouseUi.y < Y_BARRA) {
+        if (!nombrando && !listaAbierta && mouseUi.y < Y_BARRA && !(panelAbierto && panel.contains(mouseUi))) {
             resaltarCeldaBajoElMouse();
         }
         batch.end();
@@ -411,8 +466,12 @@ public class PantallaEditor extends ScreenAdapter {
         batch.setProjectionMatrix(viewportUi.getCamera().combined);
         batch.begin();
         dibujarBarra(mouseUi);
+        if (panelAbierto) {
+            dibujarPanel(mouseUi);
+        }
         if (tiempoMensaje > 0f) {
-            ui.texto(batch, mensaje, MARGEN, Y_BARRA - 8f, 1.1f, Color.WHITE);
+            float xMensaje = panelAbierto ? ANCHO_PANEL + MARGEN : MARGEN;
+            ui.texto(batch, mensaje, xMensaje, Y_BARRA - 8f, 1.1f, Color.WHITE);
         }
         String etiquetaMapa = "Mapa: " + (nombreMapa != null ? nombreMapa : "sin guardar");
         ui.texto(batch, etiquetaMapa, ANCHO_UI - 330f, Y_BARRA - 8f, 1.1f, Color.WHITE);
@@ -489,16 +548,59 @@ public class PantallaEditor extends ScreenAdapter {
 
     private void dibujarBarra(Vector2 mouseUi) {
         ui.rectangulo(batch, new Rectangle(0f, Y_BARRA, ANCHO_UI, ALTO_BARRA), COLOR_BARRA);
-        for (int i = 0; i < HERRAMIENTAS.length; i++) {
-            boolean seleccionada = herramienta == HERRAMIENTAS[i];
-            boolean resaltada = seleccionada || botonesHerramienta[i].contains(mouseUi);
-            ui.boton(batch, botonesHerramienta[i], resaltada, ETIQUETAS[i], 0.85f);
+        // el boton hamburguesa: tres rayas
+        ui.boton(batch, botonHerramientas, panelAbierto || botonHerramientas.contains(mouseUi), "", 1f);
+        for (int i = 0; i < 3; i++) {
+            ui.rectangulo(batch, new Rectangle(botonHerramientas.x + 11f, botonHerramientas.y + 9f + i * 8f, 22f, 3f),
+                Color.WHITE);
         }
+        String actual = "HERRAMIENTA: " + ETIQUETAS[indiceHerramienta()].substring(2);
+        ui.texto(batch, actual, X_ACCIONES + 5 * PASO_BOTON + 6f, Y_FILA_ACCIONES + 26f, 1.0f, Color.LIGHT_GRAY);
         ui.boton(batch, botonGuardar, botonGuardar.contains(mouseUi), "GUARDAR", 1.1f);
         ui.boton(batch, botonCargar, botonCargar.contains(mouseUi), "CARGAR", 1.1f);
         ui.boton(batch, botonProbar, botonProbar.contains(mouseUi), "PROBAR", 1.1f);
         ui.boton(batch, botonVolver, botonVolver.contains(mouseUi), "VOLVER", 1.1f);
         ui.boton(batch, botonPincel, botonPincel.contains(mouseUi), "PINCEL " + tamanoPincel + "x" + tamanoPincel, 1.0f);
+    }
+
+    private int indiceHerramienta() {
+        for (int i = 0; i < HERRAMIENTAS.length; i++) {
+            if (HERRAMIENTAS[i] == herramienta) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * El panel de herramientas a la izquierda: cada una con una muestra de su color y su tecla, la elegida
+     * resaltada, y la barra para ver las que no entran.
+     */
+    private void dibujarPanel(Vector2 mouseUi) {
+        ui.rectangulo(batch, panel, COLOR_BARRA);
+        for (int numero = 0; numero < HERRAMIENTAS_VISIBLES; numero++) {
+            int indice = barraPanel.getPrimero() + numero;
+            if (indice >= HERRAMIENTAS.length) {
+                break;
+            }
+            Rectangle fila = herramientaVisible(numero);
+            boolean resaltada = HERRAMIENTAS[indice] == herramienta || fila.contains(mouseUi);
+            // la identidad del sonido es la herramienta: las filas comparten el mismo Rectangle
+            ui.boton(batch, fila, resaltada, "", 1f, HERRAMIENTAS[indice]);
+            Rectangle muestra = new Rectangle(fila.x + 10f, fila.y + (fila.height - LADO_MUESTRA) / 2f, LADO_MUESTRA, LADO_MUESTRA);
+            ui.rectangulo(batch, muestra, colorDeHerramienta(HERRAMIENTAS[indice]));
+            ui.texto(batch, ETIQUETAS[indice], muestra.x + LADO_MUESTRA + 10f, fila.y + fila.height / 2f + 7f, 1.0f, Color.WHITE);
+        }
+        barraPanel.dibujar(batch, ui, mouseUi);
+    }
+
+    /** El color con que se ve cada herramienta en el panel: el del bloque que pone, o el del spawn. */
+    private Color colorDeHerramienta(char caracter) {
+        if (esSpawn(caracter)) {
+            return colorDeSpawn(caracter);
+        }
+        Bloque bloque = Arena.bloquePara(caracter, new Rectangle(0f, 0f, 1f, 1f));
+        return bloque != null ? bloque.getColor() : COLOR_BORRAR;
     }
 
     private void dibujarLista(Vector2 mouseUi) {

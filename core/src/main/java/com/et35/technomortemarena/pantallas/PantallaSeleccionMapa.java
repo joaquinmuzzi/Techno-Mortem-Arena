@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
@@ -28,7 +29,8 @@ import com.et35.technomortemarena.niveles.RepositorioMapas;
  * Menu de seleccion de mapa, entre el menu principal y la ronda.
  *
  * <p>Esta en dos columnas: a la izquierda los mapas predefinidos (teclas 1 a 5) y a la derecha los
- * mapas guardados por el editor ("MIS MAPAS"), que se listan desde {@link RepositorioMapas}. Asi
+ * mapas guardados por el editor ("MIS MAPAS"), que se listan desde {@link RepositorioMapas}, con una
+ * barra de desplazamiento cuando no entran todos. Asi
  * el editor deja de ser una isla: los niveles que arma el jugador se juegan desde el flujo normal.
  *
  * <p>Cada boton arma una {@link Arena} distinta y se la pasa a {@link PantallaArena}. Para agregar
@@ -43,8 +45,18 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     private static final float ANCHO_BOTON = 300f;
     private static final float ALTO_BOTON = 46f;
     private static final float SEPARACION_BOTON = 56f;
-    /** Cantidad de mapas de la columna de la derecha que entran en pantalla a la vez. */
-    private static final int MAPAS_VISIBLES = 5;
+    /**
+     * La columna de la derecha ("MIS MAPAS") tiene filas mas bajas y texto mas chico, para que entren mas,
+     * y una barra de desplazamiento cuando hay mas de las que entran.
+     */
+    private static final int MAPAS_VISIBLES = 7;
+    private static final float X_LISTA = 520f;
+    private static final float ALTO_FILA = 32f;
+    private static final float PASO_FILA = 40f;
+    /** Borde de abajo de la primera fila (la de arriba). */
+    private static final float Y_PRIMERA_FILA = 384f;
+    private static final float ESCALA_NOMBRE = 1.0f;
+    private static final float ANCHO_BARRA = 12f;
 
     private final RecursosGraficos recursos;
     private final RecursosAudio audio;
@@ -58,13 +70,26 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     private final Rectangle botonArenaTrampolin = new Rectangle(140f, 232f, ANCHO_BOTON, ALTO_BOTON);
     private final Rectangle botonArenaCintas = new Rectangle(140f, 176f, ANCHO_BOTON, ALTO_BOTON);
     private final Rectangle botonVolver = new Rectangle(ANCHO_MUNDO / 2f - 150f, 40f, 300f, 50f);
-    /** Area de clic de cada fila de la columna derecha; se recoloca por fotograma segun el scroll. */
-    private final Rectangle areaMapaGuardado = new Rectangle(520f, 400f, ANCHO_BOTON, ALTO_BOTON);
+    /** Toda la columna de los mapas guardados: con el mouse encima, la rueda la desplaza. */
+    private final Rectangle areaLista = new Rectangle(X_LISTA, Y_PRIMERA_FILA - (MAPAS_VISIBLES - 1) * PASO_FILA,
+        ANCHO_BOTON + 8f + ANCHO_BARRA, (MAPAS_VISIBLES - 1) * PASO_FILA + ALTO_FILA);
+    private final BarraDeDesplazamiento barra = new BarraDeDesplazamiento(X_LISTA + ANCHO_BOTON + 8f,
+        Y_PRIMERA_FILA - (MAPAS_VISIBLES - 1) * PASO_FILA, ANCHO_BARRA, (MAPAS_VISIBLES - 1) * PASO_FILA + ALTO_FILA);
+    /** Rectangulo de trabajo para cada fila, que se arma de cero en cada fotograma. */
+    private final Rectangle fila = new Rectangle();
+    /** Filas que movio la rueda del mouse desde el ultimo fotograma. */
+    private int ruedaPendiente;
+    /** La rueda llega como evento, no se puede preguntar en el fotograma: la junta este procesador. */
+    private final InputAdapter entrada = new InputAdapter() {
+        @Override
+        public boolean scrolled(float desplazamientoX, float desplazamientoY) {
+            ruedaPendiente += desplazamientoY > 0 ? 1 : -1;
+            return true;
+        }
+    };
 
     /** Mapas guardados por el editor, en el mismo orden en que los devuelve el repositorio. */
     private final List<MapaGuardado> mapasGuardados;
-    /** Primera fila de {@link #mapasGuardados} visible en pantalla; se mueve con la rueda del mouse. */
-    private int desplazamientoGuardados;
 
     /** Pantalla a la que se pasa con el mapa elegido, y a la que se vuelve con ESC o el boton Volver. */
     private final Function<Arena, Screen> alElegir;
@@ -88,6 +113,8 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
         this.alVolver = alVolver;
         ui.setAudio(audio);
         this.mapasGuardados = RepositorioMapas.cargarTodos();
+        barra.setContenido(mapasGuardados.size(), MAPAS_VISIBLES);
+        Gdx.input.setInputProcessor(entrada);
     }
 
     @Override
@@ -100,7 +127,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
         boolean sobreCintas = botonArenaCintas.contains(mouse);
         boolean sobreVolver = botonVolver.contains(mouse);
 
-        actualizarScroll();
+        boolean usoLaBarra = actualizarScroll(mouse);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1) || (Gdx.input.justTouched() && sobreClasica)) {
             ui.clic();
@@ -127,7 +154,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
             jugarEn(Arena.conCintasYPinchos());
             return;
         }
-        int indiceGuardado = indiceMapaGuardadoEn(mouse);
+        int indiceGuardado = usoLaBarra ? -1 : indiceMapaGuardadoEn(mouse);
         if (Gdx.input.justTouched() && indiceGuardado >= 0) {
             ui.clic();
             jugarEn(Arena.desdeGrilla(mapasGuardados.get(indiceGuardado).getFilas()));
@@ -140,44 +167,38 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
         }
 
         dibujar(sobreClasica, sobreAgujero, sobrePlataformas, sobreTrampolin, sobreCintas, sobreVolver,
-            indiceGuardadoEn(indiceGuardado));
+            indiceGuardado, mouse);
     }
 
     /**
-     * Mueve la lista de mapas guardados con la rueda del mouse, pero solo cuando hay mas mapas que
-     * filas en pantalla. {@code getDeltaY()} es positivo al subir la rueda.
+     * Mueve la lista de mapas guardados con la rueda del mouse (si esta encima de la lista) o con la barra.
+     *
+     * @return {@code true} si el mouse lo uso la barra: ese clic no elige ningun mapa
      */
-    private void actualizarScroll() {
-        int desplazamientoMaximo = Math.max(0, mapasGuardados.size() - MAPAS_VISIBLES);
-        float rueda = Gdx.input.getDeltaY();
-        if (rueda > 0f) {
-            desplazamientoGuardados = Math.max(0, desplazamientoGuardados - 1);
-        } else if (rueda < 0f) {
-            desplazamientoGuardados = Math.min(desplazamientoMaximo, desplazamientoGuardados + 1);
+    private boolean actualizarScroll(Vector2 mouse) {
+        if (ruedaPendiente != 0 && areaLista.contains(mouse)) {
+            barra.desplazar(ruedaPendiente);
         }
+        ruedaPendiente = 0;
+        return barra.actualizar(mouse, Gdx.input.isButtonPressed(Input.Buttons.LEFT), Gdx.input.justTouched());
+    }
+
+    /** El rectangulo de la fila visible numero {@code numero} (0 es la de arriba). */
+    private Rectangle filaVisible(int numero) {
+        return fila.set(X_LISTA, Y_PRIMERA_FILA - numero * PASO_FILA, ANCHO_BOTON, ALTO_FILA);
     }
 
     /**
      * @return el indice del mapa guardado bajo el mouse, o {@code -1} si no hay ninguno
      */
     private int indiceMapaGuardadoEn(Vector2 mouse) {
-        if (!areaMapaGuardado.contains(mouse)) {
-            return -1;
-        }
-        float y = areaMapaGuardado.y;
-        for (int fila = 0; fila < MAPAS_VISIBLES; fila++) {
-            if (mouse.y >= y && mouse.y <= y + ALTO_BOTON) {
-                int indice = desplazamientoGuardados + fila;
-                return indice < mapasGuardados.size() ? indice : -1;
+        for (int numero = 0; numero < MAPAS_VISIBLES; numero++) {
+            int indice = barra.getPrimero() + numero;
+            if (indice < mapasGuardados.size() && filaVisible(numero).contains(mouse)) {
+                return indice;
             }
-            y -= SEPARACION_BOTON;
         }
         return -1;
-    }
-
-    /** Convierte el indice de mapa guardado en el indice de fila visible, o {@code -1}. */
-    private int indiceGuardadoEn(int indiceGuardado) {
-        return indiceGuardado < 0 ? -1 : indiceGuardado - desplazamientoGuardados;
     }
 
     private void jugarEn(Arena arena) {
@@ -193,14 +214,14 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
 
     private void dibujar(boolean sobreClasica, boolean sobreAgujero, boolean sobrePlataformas,
                          boolean sobreTrampolin, boolean sobreCintas, boolean sobreVolver,
-                         int filaGuardadoResaltada) {
+                         int indiceResaltado, Vector2 mouse) {
         ScreenUtils.clear(FONDO);
         viewport.apply();
         batch.setProjectionMatrix(viewport.getCamera().combined);
 
         batch.begin();
         dibujarPredefinidos(sobreClasica, sobreAgujero, sobrePlataformas, sobreTrampolin, sobreCintas);
-        dibujarMapasGuardados(filaGuardadoResaltada);
+        dibujarMapasGuardados(indiceResaltado, mouse);
         ui.boton(batch, botonVolver, sobreVolver, "VOLVER", 1.3f);
         String titulo = "ELEGI EL MAPA";
         dibujarTextoCentrado(titulo, 2f, ALTO_MUNDO - 60f, Color.WHITE);
@@ -221,10 +242,10 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     }
 
     /**
-     * Lista los mapas guardados por el editor, con scroll por la rueda del mouse. Si no hay ninguno
-     * avisa, para que el jugador sepa que tiene que crearlos en el editor de niveles.
+     * Lista los mapas guardados por el editor, con la rueda del mouse o la barra de la derecha para ver el
+     * resto. Si no hay ninguno avisa, para que el jugador sepa que tiene que crearlos en el editor.
      */
-    private void dibujarMapasGuardados(int filaGuardadoResaltada) {
+    private void dibujarMapasGuardados(int indiceResaltado, Vector2 mouse) {
         String columna = "MIS MAPAS";
         float yColumna = ALTO_MUNDO - 100f;
         ui.texto(batch, columna, 670f - ui.anchoTexto(columna, 1.25f) / 2f, yColumna, 1.25f, Color.LIGHT_GRAY);
@@ -235,23 +256,17 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
             ui.texto(batch, ayuda, 670f - ui.anchoTexto(ayuda, 1.1f) / 2f, 320f, 1.1f, Color.LIGHT_GRAY);
             return;
         }
-        float y = areaMapaGuardado.y;
-        for (int fila = 0; fila < MAPAS_VISIBLES; fila++) {
-            int indice = desplazamientoGuardados + fila;
+        for (int numero = 0; numero < MAPAS_VISIBLES; numero++) {
+            int indice = barra.getPrimero() + numero;
             if (indice >= mapasGuardados.size()) {
                 break;
             }
             // El nombre se corta con puntos si es mas ancho que el boton, para no salirse del rectangulo.
-            areaMapaGuardado.set(520f, y, ANCHO_BOTON, ALTO_BOTON);
             String nombre = nombreAcotado(mapasGuardados.get(indice).getNombre());
             // Las filas comparten el mismo Rectangle, por eso la identidad del sonido es el indice del mapa.
-            ui.boton(batch, areaMapaGuardado, fila == filaGuardadoResaltada, nombre, 1.3f, indice);
-            y -= SEPARACION_BOTON;
+            ui.boton(batch, filaVisible(numero), indice == indiceResaltado, nombre, ESCALA_NOMBRE, indice);
         }
-        if (mapasGuardados.size() > MAPAS_VISIBLES) {
-            String pista = "RUEDA DEL MOUSE PARA VER MAS";
-            ui.texto(batch, pista, 670f - ui.anchoTexto(pista, 0.9f) / 2f, 130f, 0.9f, Color.LIGHT_GRAY);
-        }
+        barra.dibujar(batch, ui, mouse);
     }
 
     /**
@@ -259,11 +274,11 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
      * boton: el nombre lo escribe el jugador y puede ser cualquier cosa.
      */
     private String nombreAcotado(String nombre) {
-        if (ui.anchoTexto(nombre, 1.3f) <= ANCHO_BOTON - 20f) {
+        if (ui.anchoTexto(nombre, ESCALA_NOMBRE) <= ANCHO_BOTON - 20f) {
             return nombre;
         }
         String recortado = nombre;
-        while (!recortado.isEmpty() && ui.anchoTexto(recortado + "...", 1.3f) > ANCHO_BOTON - 20f) {
+        while (!recortado.isEmpty() && ui.anchoTexto(recortado + "...", ESCALA_NOMBRE) > ANCHO_BOTON - 20f) {
             recortado = recortado.substring(0, recortado.length() - 1);
         }
         return recortado + "...";
@@ -281,6 +296,10 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
 
     @Override
     public void dispose() {
+        // Solo si sigue siendo el nuestro: la pantalla siguiente ya puede haber puesto el suyo.
+        if (Gdx.input.getInputProcessor() == entrada) {
+            Gdx.input.setInputProcessor(null);
+        }
         batch.dispose();
         ui.dispose();
     }

@@ -106,10 +106,11 @@ core/src/main/java/com/et35/technomortemarena/
 └── pantallas/
     ├── PantallaMenu.java          Menú principal (Modo de prueba / Multijugador / Editor de niveles / Salir)
     ├── PantallaMultijugador.java  Crear una sala o unirse a la de otro
-    ├── PantallaSeleccionMapa.java Elección del mapa: predefinidos y "Mis mapas" del editor
+    ├── PantallaSeleccionMapa.java Elección del mapa: predefinidos y "Mis mapas" del editor (con scroll)
     ├── PantallaArena.java         Modo de prueba, anfitrión o cliente: rondas, HUD, marcador y pausa
     ├── PanelEdicion.java          Tarjetas y vista previa de la edición entre rondas
-    ├── PantallaEditor.java        Editor de niveles
+    ├── PantallaEditor.java        Editor de niveles (herramientas en un panel lateral con menú hamburguesa)
+    ├── BarraDeDesplazamiento.java Barra de scroll vertical para listas
     └── Ui.java                    Interfaz común (botones, texto, rectángulos)
 ```
 

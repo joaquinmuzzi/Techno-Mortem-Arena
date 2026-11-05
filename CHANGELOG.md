@@ -247,6 +247,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Corregido
 
+- Elegir mapa: el rótulo "PREDEFINIDOS" quedaba tapado por el botón "1 - ARENA CLASICA"; el título y los
+  rótulos de las columnas subieron.
 - Red: cuando un jugador se iba o llegaba a la sala, las armas del suelo y las que volaban quedaban en la
   partida nueva hasta el primer reinicio de ronda. Ahora la partida arranca sin armas (lo mismo en la
   revancha).

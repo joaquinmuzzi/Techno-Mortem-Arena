@@ -225,7 +225,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
         dibujarMapasGuardados(indiceResaltado, mouse);
         ui.boton(batch, botonVolver, sobreVolver, "VOLVER", 1.3f);
         String titulo = "ELEGI EL MAPA";
-        dibujarTextoCentrado(titulo, 2f, ALTO_MUNDO - 60f, Color.WHITE);
+        dibujarTextoCentrado(titulo, 2f, ALTO_MUNDO - 34f, Color.WHITE);
         batch.end();
     }
 
@@ -234,7 +234,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
         String columna = "PREDEFINIDOS";
         // El encabezado se centra sobre su columna (290), no sobre toda la pantalla.
         float centroColumna = 290f - ui.anchoTexto(columna, 1.25f) / 2f;
-        ui.texto(batch, columna, centroColumna, ALTO_MUNDO - 88f, 1.25f, Color.LIGHT_GRAY);
+        ui.texto(batch, columna, centroColumna, ALTO_MUNDO - 72f, 1.25f, Color.LIGHT_GRAY);
         ui.boton(batch, botonArenaClasica, sobreClasica, "1 - ARENA CLASICA", 1.3f);
         ui.boton(batch, botonArenaAgujero, sobreAgujero, "2 - ARENA CON AGUJERO", 1.3f);
         ui.boton(batch, botonArenaPlataformas, sobrePlataformas, "3 - ESCALERA", 1.3f);
@@ -248,7 +248,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
      */
     private void dibujarMapasGuardados(int indiceResaltado, Vector2 mouse) {
         String columna = "MIS MAPAS";
-        float yColumna = ALTO_MUNDO - 88f;
+        float yColumna = ALTO_MUNDO - 72f;
         ui.texto(batch, columna, 670f - ui.anchoTexto(columna, 1.25f) / 2f, yColumna, 1.25f, Color.LIGHT_GRAY);
         if (mapasGuardados.isEmpty()) {
             String vacio = "SIN MAPAS GUARDADOS";

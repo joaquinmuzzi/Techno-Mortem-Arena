@@ -156,11 +156,11 @@ public final class ClienteSala implements AutoCloseable {
     }
 
     private void atenderFila(ByteBuffer paquete) {
-        if (fase != Fase.CONECTANDO || !bienvenida || paquete.remaining() < 2) {
+        if (fase != Fase.CONECTANDO || !bienvenida || paquete.remaining() < 3) {
             return;
         }
         int indice = paquete.get() & 0xFF;
-        int largo = paquete.get() & 0xFF;
+        int largo = paquete.getShort() & 0xFFFF;
         if (indice >= filas.length || largo > paquete.remaining()) {
             return;
         }
@@ -245,17 +245,25 @@ public final class ClienteSala implements AutoCloseable {
 
     /** El saludo lleva una mascara con las filas que faltan: el anfitrion reenvia solo esas. */
     private void enviarHello() {
-        long faltantes = -1L;
+        // dos mascaras de 64 bits: las filas 0 a 63 y las 64 a 127
+        long faltantesBajas = -1L;
+        long faltantesAltas = -1L;
         if (bienvenida) {
-            faltantes = 0L;
+            faltantesBajas = 0L;
+            faltantesAltas = 0L;
             for (int i = 0; i < filas.length; i++) {
                 if (filas[i] == null) {
-                    faltantes |= 1L << i;
+                    if (i < 64) {
+                        faltantesBajas |= 1L << i;
+                    } else {
+                        faltantesAltas |= 1L << (i - 64);
+                    }
                 }
             }
         }
         ByteBuffer hello = Protocolo.nuevo(Protocolo.HELLO);
-        hello.putLong(faltantes);
+        hello.putLong(faltantesBajas);
+        hello.putLong(faltantesAltas);
         Protocolo.enviar(canal, hello, servidor);
     }
 

@@ -359,7 +359,7 @@ class SalaLoopbackTest {
     /** Un "cliente" hecho a mano: se une a la sala y devuelve el token que le dio el anfitrion. */
     private int unirseACrudo(DatagramChannel canal) throws Exception {
         ByteBuffer hello = Protocolo.nuevo(Protocolo.HELLO);
-        hello.putLong(0L);
+        hello.putLong(0L).putLong(0L);
         hello.flip();
         canal.send(hello, direccionDeLaSala());
         Thread.sleep(30);
@@ -435,9 +435,35 @@ class SalaLoopbackTest {
     }
 
     @Test
+    void unMapaDeMasDe64FilasYDe180ColumnasLlegaEntero() throws Exception {
+        servidor.close();
+        // un mapa del alto maximo, con filas que codificadas pasan de 255 bytes (celdas alternadas)
+        String[] grande = new String[Arena.FILAS];
+        StringBuilder alternada = new StringBuilder();
+        for (int c = 0; c < Arena.COLUMNAS; c++) {
+            alternada.append(c % 2 == 0 ? '#' : '.');
+        }
+        for (int i = 0; i < grande.length; i++) {
+            grande[i] = i == 70 ? alternada.toString() : fila(i % 3 == 0 ? '#' : '.', Arena.COLUMNAS);
+        }
+        servidor = ServidorSala.abrir(0, grande, reloj::get);
+        conectarCliente();
+
+        assertArrayEquals(grande, cliente.getFilas());
+    }
+
+    private static String fila(char c, int veces) {
+        StringBuilder texto = new StringBuilder();
+        for (int i = 0; i < veces; i++) {
+            texto.append(c);
+        }
+        return texto.toString();
+    }
+
+    @Test
     void elAnfitrionRespondeSoloConLasFilasQueFaltan() throws Exception {
         ByteBuffer hello = Protocolo.nuevo(Protocolo.HELLO);
-        hello.putLong(1L << 2);
+        hello.putLong(1L << 2).putLong(0L);
         mandarCrudo(hello);
         Thread.sleep(30);
         servidor.sondear();

@@ -66,7 +66,6 @@ public class PantallaEditor extends ScreenAdapter {
     private static final int LARGO_MAXIMO_NOMBRE = 30;
 
     private static final Color FONDO = new Color(0.09f, 0.10f, 0.14f, 1f);
-    private static final Color COLOR_GRILLA = new Color(1f, 1f, 1f, 0.22f);
     private static final Color COLOR_BORRAR = new Color(1f, 0.3f, 0.3f, 0.35f);
     private static final Color COLOR_BARRA = new Color(0f, 0f, 0f, 0.75f);
     private static final Color COLOR_VELO = new Color(0f, 0f, 0f, 0.6f);
@@ -84,8 +83,32 @@ public class PantallaEditor extends ScreenAdapter {
     private final RecursosAudio audio;
     private final SpriteBatch batch = new SpriteBatch();
     private final Ui ui = new Ui();
-    private final Viewport viewportMundo = new FitViewport(Arena.ANCHO_MUNDO, Arena.ALTO_MUNDO,
-        new OrthographicCamera());
+    /**
+     * La grilla tiene su propia camara: con el mapa grande no entra entera a un tamano comodo. La rueda
+     * acerca y aleja (hacia el cursor), las flechas o WASD y el boton del medio la mueven, y F muestra el
+     * mapa entero. Las celdas siempre se ven cuadradas: el ancho del mundo visible es fijo y el alto sale de
+     * la proporcion de la zona de la grilla en la ventana.
+     */
+    private final OrthographicCamera camaraGrilla = new OrthographicCamera();
+    private final Viewport viewportMundo = new FitViewport(Arena.ANCHO_VISTA, Arena.ALTO_VISTA, camaraGrilla);
+    private static final float ZOOM_MINIMO = 0.35f;
+    /** Alcanza para ver el mapa entero aun con la zona de la grilla mas ancha que alta (la del editor lo es). */
+    private static final float ZOOM_MAXIMO = 3f;
+    /** Cuanto acerca o aleja cada paso de la rueda. */
+    private static final float PASO_ZOOM = 1.15f;
+    /** Mundo por segundo que se mueve la camara con las teclas, con zoom 1. */
+    private static final float VELOCIDAD_CAMARA = 2400f;
+    /** Donde estaba el mouse al arrastrar con el boton del medio, en pixeles de pantalla; -1 si no se arrastra. */
+    private float arrastreX = -1f;
+    private float arrastreY;
+    private static final Color COLOR_FUERA = new Color(0.06f, 0.07f, 0.10f, 1f);
+    private static final Color COLOR_DENTRO = new Color(0.11f, 0.12f, 0.17f, 1f);
+    private static final Color COLOR_LINEA = new Color(1f, 1f, 1f, 0.09f);
+    private static final Color COLOR_LINEA_GUIA = new Color(1f, 1f, 1f, 0.22f);
+    private static final Color COLOR_CENTRO = new Color(0.45f, 0.70f, 1f, 0.30f);
+    private static final Color COLOR_BORDE = new Color(0.55f, 0.65f, 0.85f, 0.70f);
+    /** Una linea mas marcada cada tantas celdas, para orientarse en el mapa grande. */
+    private static final int CELDAS_POR_GUIA = 10;
     private final Viewport viewportUi = new FitViewport(ANCHO_UI, ALTO_UI, new OrthographicCamera());
 
     /** celdas[fila][columna], con la fila 0 en el piso. */
@@ -174,6 +197,8 @@ public class PantallaEditor extends ScreenAdapter {
         this.audio = audio;
         Gdx.input.setInputProcessor(entrada);
         barraPanel.setContenido(HERRAMIENTAS.length, HERRAMIENTAS_VISIBLES);
+        // arranca al centro y pegada abajo (limitarCamara la sube lo justo), asi se ve el piso
+        camaraGrilla.position.set(Arena.ANCHO_MUNDO / 2f, 0f, 0f);
         for (int fila = 0; fila < Arena.FILAS; fila++) {
             for (int columna = 0; columna < Arena.COLUMNAS; columna++) {
                 celdas[fila][columna] = fila < Arena.FILAS_PISO ? '#' : '.';
@@ -214,6 +239,9 @@ public class PantallaEditor extends ScreenAdapter {
             if (Gdx.input.isKeyJustPressed(Input.Keys.TAB)) {
                 panelAbierto = !panelAbierto;
             }
+            if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
+                verMapaEntero();
+            }
             boolean enBarra = mouseUi.y >= Y_BARRA;
             boolean enPanel = panelAbierto && panel.contains(mouseUi);
             if (enBarra) {
@@ -225,7 +253,11 @@ public class PantallaEditor extends ScreenAdapter {
             } else {
                 pintarBajoElMouse();
             }
+            if (!enPanel && !enBarra && ruedaPanel != 0) {
+                acercar(ruedaPanel > 0 ? PASO_ZOOM : 1f / PASO_ZOOM);
+            }
             ruedaPanel = 0;
+            moverCamara(delta);
         }
 
         if (cambiado) {
@@ -291,6 +323,71 @@ public class PantallaEditor extends ScreenAdapter {
             return null;
         }
         return new int[] {columna, fila};
+    }
+
+    /** Acerca ({@code factor > 1} aleja) dejando quieto el punto del mapa que esta bajo el cursor. */
+    private void acercar(float factor) {
+        Vector2 antes = viewportMundo.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
+        camaraGrilla.zoom = Math.max(ZOOM_MINIMO, Math.min(ZOOM_MAXIMO, camaraGrilla.zoom * factor));
+        camaraGrilla.update();
+        Vector2 despues = viewportMundo.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
+        camaraGrilla.position.add(antes.x - despues.x, antes.y - despues.y, 0f);
+        limitarCamara();
+    }
+
+    /** Las flechas o WASD mueven la camara, y tambien arrastrar con el boton del medio. */
+    private void moverCamara(float delta) {
+        float paso = VELOCIDAD_CAMARA * camaraGrilla.zoom * delta;
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A)) {
+            camaraGrilla.position.x -= paso;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D)) {
+            camaraGrilla.position.x += paso;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.W)) {
+            camaraGrilla.position.y += paso;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S)) {
+            camaraGrilla.position.y -= paso;
+        }
+        if (Gdx.input.isButtonPressed(Input.Buttons.MIDDLE)) {
+            if (arrastreX >= 0f) {
+                float mundoPorPixel = viewportMundo.getWorldWidth() * camaraGrilla.zoom / viewportMundo.getScreenWidth();
+                camaraGrilla.position.x -= (Gdx.input.getX() - arrastreX) * mundoPorPixel;
+                camaraGrilla.position.y += (Gdx.input.getY() - arrastreY) * mundoPorPixel;
+            }
+            arrastreX = Gdx.input.getX();
+            arrastreY = Gdx.input.getY();
+        } else {
+            arrastreX = -1f;
+        }
+        limitarCamara();
+    }
+
+    /** Aleja la camara hasta ver el mapa entero, centrado. */
+    private void verMapaEntero() {
+        float zoomAncho = Arena.ANCHO_MUNDO / viewportMundo.getWorldWidth();
+        float zoomAlto = Arena.ALTO_MUNDO / viewportMundo.getWorldHeight();
+        camaraGrilla.zoom = Math.min(ZOOM_MAXIMO, Math.max(zoomAncho, zoomAlto) * 1.02f);
+        camaraGrilla.position.set(Arena.ANCHO_MUNDO / 2f, Arena.ALTO_MUNDO / 2f, 0f);
+        limitarCamara();
+    }
+
+    /** Que la camara no se vaya lejos del mapa: a lo sumo deja ver un par de celdas de afuera. */
+    private void limitarCamara() {
+        float margen = 2f * Arena.CELDA;
+        float medioAncho = viewportMundo.getWorldWidth() * camaraGrilla.zoom / 2f;
+        float medioAlto = viewportMundo.getWorldHeight() * camaraGrilla.zoom / 2f;
+        camaraGrilla.position.x = limitarEje(camaraGrilla.position.x, medioAncho, Arena.ANCHO_MUNDO, margen);
+        camaraGrilla.position.y = limitarEje(camaraGrilla.position.y, medioAlto, Arena.ALTO_MUNDO, margen);
+        camaraGrilla.update();
+    }
+
+    private static float limitarEje(float centro, float medio, float largo, float margen) {
+        if (2f * medio >= largo + 2f * margen) {
+            return largo / 2f; // se ve todo ese eje: centrado
+        }
+        return Math.max(medio - margen, Math.min(largo - medio + margen, centro));
     }
 
     /** Devuelve verdadero si el clic cambio de pantalla y el fotograma tiene que cortarse. */
@@ -475,6 +572,9 @@ public class PantallaEditor extends ScreenAdapter {
         }
         String etiquetaMapa = "Mapa: " + (nombreMapa != null ? nombreMapa : "sin guardar");
         ui.texto(batch, etiquetaMapa, ANCHO_UI - 330f, Y_BARRA - 8f, 1.1f, Color.WHITE);
+        String ayuda = "RUEDA: ZOOM   FLECHAS / WASD O BOTON DEL MEDIO: MOVER   F: VER TODO";
+        float xAyuda = panelAbierto ? ANCHO_PANEL + MARGEN : MARGEN;
+        ui.texto(batch, ayuda, xAyuda, 22f, 0.85f, Color.LIGHT_GRAY);
         if (listaAbierta) {
             dibujarLista(mouseUi);
         }
@@ -484,17 +584,41 @@ public class PantallaEditor extends ScreenAdapter {
         batch.end();
     }
 
+    /**
+     * La grilla: el mapa con un fondo un poco mas claro que lo de afuera, lineas finas por celda (solo si
+     * las celdas se ven lo bastante grandes como para que no sea ruido), una linea mas marcada cada
+     * {@link #CELDAS_POR_GUIA} celdas, la del centro resaltada para armar mapas parejos, y el borde del mapa.
+     */
     private void dibujarGrilla() {
-        // Dos pixeles de pantalla, sin importar cuanto se achique la arena para entrar en la ventana.
-        float grosor = 2f * viewportMundo.getWorldWidth() / viewportMundo.getScreenWidth();
+        float ancho = Arena.COLUMNAS * Arena.CELDA;
+        float alto = Arena.FILAS * Arena.CELDA;
+        float mundoPorPixel = viewportMundo.getWorldWidth() * camaraGrilla.zoom / viewportMundo.getScreenWidth();
+        float fuera = viewportMundo.getWorldWidth() * camaraGrilla.zoom;
+        ui.rectangulo(batch, new Rectangle(-fuera, -fuera, ancho + 2f * fuera, alto + 2f * fuera), COLOR_FUERA);
+        ui.rectangulo(batch, new Rectangle(0f, 0f, ancho, alto), COLOR_DENTRO);
+        boolean celdasVisibles = Arena.CELDA / mundoPorPixel >= 6f;
+        float fina = mundoPorPixel;
+        float guia = 1.5f * mundoPorPixel;
         for (int columna = 0; columna <= Arena.COLUMNAS; columna++) {
-            ui.rectangulo(batch, new Rectangle(columna * Arena.CELDA, 0f, grosor, Arena.FILAS * Arena.CELDA),
-                COLOR_GRILLA);
+            boolean esGuia = columna % CELDAS_POR_GUIA == 0;
+            if (esGuia || celdasVisibles) {
+                ui.rectangulo(batch, new Rectangle(columna * Arena.CELDA, 0f, esGuia ? guia : fina, alto),
+                    esGuia ? COLOR_LINEA_GUIA : COLOR_LINEA);
+            }
         }
         for (int fila = 0; fila <= Arena.FILAS; fila++) {
-            ui.rectangulo(batch, new Rectangle(0f, fila * Arena.CELDA, Arena.COLUMNAS * Arena.CELDA, grosor),
-                COLOR_GRILLA);
+            boolean esGuia = fila % CELDAS_POR_GUIA == 0;
+            if (esGuia || celdasVisibles) {
+                ui.rectangulo(batch, new Rectangle(0f, fila * Arena.CELDA, ancho, esGuia ? guia : fina),
+                    esGuia ? COLOR_LINEA_GUIA : COLOR_LINEA);
+            }
         }
+        ui.rectangulo(batch, new Rectangle(ancho / 2f - mundoPorPixel, 0f, 2f * mundoPorPixel, alto), COLOR_CENTRO);
+        float borde = 2f * mundoPorPixel;
+        ui.rectangulo(batch, new Rectangle(-borde, -borde, ancho + 2f * borde, borde), COLOR_BORDE);
+        ui.rectangulo(batch, new Rectangle(-borde, alto, ancho + 2f * borde, borde), COLOR_BORDE);
+        ui.rectangulo(batch, new Rectangle(-borde, 0f, borde, alto), COLOR_BORDE);
+        ui.rectangulo(batch, new Rectangle(ancho, 0f, borde, alto), COLOR_BORDE);
     }
 
     /** Vista previa del objeto que se colocaria en la celda bajo el mouse, del tamaño exacto de la celda. */
@@ -639,10 +763,13 @@ public class PantallaEditor extends ScreenAdapter {
     @Override
     public void resize(int width, int height) {
         viewportUi.update(width, height, true);
-        viewportMundo.update(width, height, true);
-        // La grilla ocupa lo que queda debajo de la barra de herramientas.
-        int alturaGrilla = (int) (height * (Y_BARRA / ALTO_UI));
+        // La grilla ocupa lo que queda debajo de la barra de herramientas. El ancho del mundo visible es
+        // fijo y el alto sale de la proporcion de esa zona, asi las celdas se ven cuadradas.
+        int alturaGrilla = Math.max(1, (int) (height * (Y_BARRA / ALTO_UI)));
+        viewportMundo.setWorldSize(Arena.ANCHO_VISTA, Arena.ANCHO_VISTA * alturaGrilla / Math.max(1, width));
         viewportMundo.setScreenBounds(0, 0, width, alturaGrilla);
+        viewportMundo.apply();
+        limitarCamara();
     }
 
     @Override

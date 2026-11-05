@@ -330,6 +330,22 @@ class CodecsTest {
     }
 
     @Test
+    void laEdicionEnLasColumnasDeLaDerechaDelMapaGrandeViaja() {
+        EstadoPartida partida = new EstadoPartida();
+        partida.cursorColumna = Arena.COLUMNAS - 1;
+        partida.cursorFila = Arena.FILAS - 1;
+        partida.piezas.add(new int[] {1, Arena.COLUMNAS - 5, Arena.FILAS - 3});
+        ByteBuffer buffer = ByteBuffer.allocate(128);
+        CodecEstado.escribir(buffer, partida);
+        buffer.flip();
+        EstadoPartida leida = new EstadoPartida();
+        assertTrue(CodecEstado.leer(buffer, leida));
+        assertEquals(Arena.COLUMNAS - 1, leida.cursorColumna);
+        assertEquals(Arena.FILAS - 1, leida.cursorFila);
+        assertArrayEquals(new int[] {1, Arena.COLUMNAS - 5, Arena.FILAS - 3}, leida.piezas.get(0));
+    }
+
+    @Test
     void laCabeceraSoloAceptaPaquetesDeEsteProtocolo() {
         ByteBuffer bueno = Protocolo.nuevo(Protocolo.ENTRADA);
         bueno.flip();

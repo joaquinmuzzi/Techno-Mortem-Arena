@@ -17,11 +17,11 @@ import java.util.Random;
  * que aparecen en el mapa para que los duelistas las agarren.
  *
  * <p>Cada {@link #INTERVALO_APARICION} segundos, si hay menos de {@link #MAX_EN_EL_SUELO} armas de fuego en
- * el suelo, aparece una pistola o una escopeta en un lugar al azar sobre el piso o una plataforma, fuera de
- * las zonas prohibidas (los spawns). Quien pasa por encima la agarra y reemplaza lo que tenia en la mano
+ * el suelo, aparece una pistola o una escopeta (la que haya menos en el suelo) en un lugar al azar sobre el
+ * piso o una plataforma, fuera de las zonas prohibidas (los spawns). Quien pasa por encima la agarra y reemplaza lo que tenia en la mano
  * (si tenia la espada, la espada cae a sus pies): la idea es que las armas cambien todo el tiempo. Las
- * espadas tiradas o que se caen por un punetazo quedan en el suelo y solo las agarra quien tiene las
- * manos vacias. Lo simula el anfitrion (o el modo de prueba); el cliente solo dibuja lo que le llega.
+ * armas tiradas o que se caen de la mano quedan en el suelo con las balas que tenian; las espadas solo
+ * las agarra quien tiene las manos vacias. Lo simula el anfitrion (o el modo de prueba); el cliente solo dibuja lo que le llega.
  */
 public final class ArmasEnJuego {
 
@@ -29,17 +29,19 @@ public final class ArmasEnJuego {
     public static final float INTERVALO_APARICION = 8f;
     public static final int MAX_EN_EL_SUELO = 2;
     private static final float ESCALA = Arena.ESCALA;
-    /** Caja del arma en el suelo: con eso se agarra. */
+    /** Caja de un arma de fuego en el suelo (la de la espada es su largo): con eso se agarra. */
     public static final float ANCHO_EN_EL_SUELO = 56f * ESCALA;
     public static final float ALTO_EN_EL_SUELO = 22f * ESCALA;
+    /** Medidas con que se dibujan la pistola y la escopeta, en el suelo y en vuelo. */
+    private static final float ANCHO_PISTOLA = 40f * ESCALA;
+    private static final float ANCHO_ESCOPETA = 64f * ESCALA;
+    private static final float ALTO_ARMA = 18f * ESCALA;
     /** Segundos que un arma recien caida no se puede agarrar: si no, quien la solto la levantaria al instante. */
     static final float ESPERA_PARA_AGARRAR = 0.8f;
-    private static final Color COLOR_PISTOLA = new Color(0.55f, 0.58f, 0.65f, 1f);
-    private static final Color COLOR_ESCOPETA = new Color(0.62f, 0.45f, 0.30f, 1f);
     private static final Color COLOR_BALA = new Color(1f, 0.85f, 0.3f, 1f);
 
     private final List<Proyectil> proyectiles = new ArrayList<>();
-    /** Cada una como {@code {codigo de TipoArma, x, y, segundos hasta que se pueda agarrar}}. */
+    /** Cada una como {@code {codigo de TipoArma, x, y, segundos hasta que se pueda agarrar, balas}}. */
     private final List<float[]> enElSuelo = new ArrayList<>();
     private final List<Proyectil> nuevos = new ArrayList<>();
     private final Random azar;
@@ -76,10 +78,11 @@ public final class ArmasEnJuego {
             Proyectil proyectil = it.next();
             proyectil.actualizar(delta, arena, uno, dos);
             if (!proyectil.isActivo()) {
-                if (proyectil.dejaEspadaEnElSuelo()) {
-                    // la espada termino de rebotar: queda apoyada donde freno
-                    dejarEnElSuelo(TipoArma.ESPADA, proyectil.getX() - anchoEnElSuelo(TipoArma.ESPADA) / 2f,
-                        proyectil.getY() - Proyectil.LADO_LANZADA / 2f, 0f);
+                if (proyectil.dejaArmaEnElSuelo()) {
+                    // el arma termino de rebotar: queda apoyada donde freno, con las balas que tenia
+                    TipoArma tipo = proyectil.getArma();
+                    dejarEnElSuelo(tipo, proyectil.getX() - anchoEnElSuelo(tipo) / 2f,
+                        proyectil.getY() - Proyectil.LADO_LANZADA / 2f, 0f, proyectil.getBalas());
                 }
                 it.remove();
             }
@@ -120,7 +123,7 @@ public final class ArmasEnJuego {
                     // cambia la espada por el arma de fuego: la espada queda en el piso
                     dejarEnElSuelo(TipoArma.ESPADA, jugador.getPosicion().x, jugador.getPosicion().y, ESPERA_PARA_AGARRAR);
                 }
-                jugador.equipar(tipo);
+                jugador.equipar(tipo, (int) arma[4]);
                 return;
             }
         }
@@ -133,21 +136,31 @@ public final class ArmasEnJuego {
         }
         TipoArma soltada = jugador.tomarArmaSoltada();
         if (soltada != null) {
-            dejarEnElSuelo(soltada, jugador.getPosicion().x, jugador.getPosicion().y, ESPERA_PARA_AGARRAR);
+            dejarEnElSuelo(soltada, jugador.getPosicion().x, jugador.getPosicion().y, ESPERA_PARA_AGARRAR,
+                jugador.getBalasSoltadas());
         }
     }
 
+    /** Deja un arma recien aparecida (cargada) en el suelo. */
     void dejarEnElSuelo(TipoArma tipo, float x, float y, float espera) {
-        enElSuelo.add(new float[] {TipoArma.codigoDe(tipo), x, y, espera});
+        dejarEnElSuelo(tipo, x, y, espera, tipo.getBalasIniciales());
+    }
+
+    void dejarEnElSuelo(TipoArma tipo, float x, float y, float espera, int balas) {
+        enElSuelo.add(new float[] {TipoArma.codigoDe(tipo), x, y, espera, balas});
         while (enElSuelo.size() > EstadoArmas.MAX_EN_EL_SUELO) {
             enElSuelo.remove(0);
         }
     }
 
     private int armasDeFuegoEnElSuelo() {
+        return cuantasHay(TipoArma.PISTOLA) + cuantasHay(TipoArma.ESCOPETA);
+    }
+
+    private int cuantasHay(TipoArma tipo) {
         int cantidad = 0;
         for (float[] arma : enElSuelo) {
-            if (TipoArma.porCodigo((int) arma[0]) != TipoArma.ESPADA) {
+            if (TipoArma.porCodigo((int) arma[0]) == tipo) {
                 cantidad++;
             }
         }
@@ -159,6 +172,10 @@ public final class ArmasEnJuego {
         return tipo == TipoArma.ESPADA ? Jugador.ANCHO_ESPADA : ANCHO_EN_EL_SUELO;
     }
 
+    private static float anchoDibujado(TipoArma tipo) {
+        return tipo == TipoArma.ESCOPETA ? ANCHO_ESCOPETA : ANCHO_PISTOLA;
+    }
+
     /** Pone una pistola o una escopeta sobre una superficie al azar. Sin lugar (un mapa sin piso), no pone nada. */
     void aparecerArma(Arena arena) {
         List<float[]> lugares = superficies(arena);
@@ -166,7 +183,15 @@ public final class ArmasEnJuego {
             return;
         }
         float[] lugar = lugares.get(azar.nextInt(lugares.size()));
-        TipoArma tipo = azar.nextBoolean() ? TipoArma.PISTOLA : TipoArma.ESCOPETA;
+        // la que haya menos en el suelo: asi con dos pistolas tiradas igual aparece una escopeta
+        int pistolas = cuantasHay(TipoArma.PISTOLA);
+        int escopetas = cuantasHay(TipoArma.ESCOPETA);
+        TipoArma tipo;
+        if (pistolas != escopetas) {
+            tipo = pistolas < escopetas ? TipoArma.PISTOLA : TipoArma.ESCOPETA;
+        } else {
+            tipo = azar.nextBoolean() ? TipoArma.PISTOLA : TipoArma.ESCOPETA;
+        }
         dejarEnElSuelo(tipo, lugar[0], lugar[1], 0f);
     }
 
@@ -251,17 +276,20 @@ public final class ArmasEnJuego {
         float flote = (float) Math.sin(tiempoAnimacion * 4f) * 4f * ESCALA;
         for (float[] arma : enElSuelo) {
             TipoArma tipo = TipoArma.porCodigo((int) arma[0]);
-            float ancho = anchoEnElSuelo(tipo);
-            // un brillo que late detras, para que se vea de lejos que hay algo para agarrar
-            float brillo = 0.25f + 0.15f * (float) Math.sin(tiempoAnimacion * 6f);
-            batch.setColor(COLOR_BALA.r, COLOR_BALA.g, COLOR_BALA.b, brillo);
-            float margen = 10f * ESCALA;
-            batch.draw(recursos.brazo, arma[1] - margen, arma[2] + flote, ancho + 2f * margen, ALTO_EN_EL_SUELO + 2f * margen);
+            float ancho = tipo == TipoArma.ESPADA ? Jugador.ANCHO_ESPADA : anchoDibujado(tipo);
+            float x = arma[1] + (anchoEnElSuelo(tipo) - ancho) / 2f;
+            float y = arma[2] + 6f * ESCALA + flote;
+            // un halo propio que late detras, para que se vea de lejos que hay algo para agarrar
+            float brillo = 0.6f + 0.3f * (float) Math.sin(tiempoAnimacion * 6f);
+            batch.setColor(1f, 1f, 1f, brillo);
+            float margenX = 18f * ESCALA;
+            float margenY = 14f * ESCALA;
+            batch.draw(recursos.brillo, x - margenX, y - margenY, ancho + 2f * margenX, ALTO_ARMA + 2f * margenY);
+            batch.setColor(Color.WHITE);
             if (tipo == TipoArma.ESPADA) {
-                batch.setColor(Color.WHITE);
-                batch.draw(recursos.espada, arma[1], arma[2] + 6f * ESCALA + flote, ancho, Jugador.ALTO_ESPADA);
+                batch.draw(recursos.espada, x, y, ancho, Jugador.ALTO_ESPADA);
             } else {
-                dibujarArmaDeFuego(batch, recursos.brazo, tipo, arma[1], arma[2] + 6f * ESCALA + flote, 0f);
+                batch.draw(texturaDe(recursos, tipo), x, y, ancho, ALTO_ARMA);
             }
         }
         for (Proyectil p : proyectiles) {
@@ -278,24 +306,18 @@ public final class ArmasEnJuego {
                     batch.setColor(Color.WHITE);
                     dibujarCentrado(batch, recursos.espada, p.getX(), p.getY(), Jugador.ANCHO_ESPADA, Jugador.ALTO_ESPADA, p.getAngulo());
                     break;
-                case PISTOLA_LANZADA:
-                    dibujarArmaDeFuego(batch, recursos.brazo, TipoArma.PISTOLA, p.getX() - ANCHO_EN_EL_SUELO / 2f, p.getY(), p.getAngulo());
-                    break;
                 default:
-                    dibujarArmaDeFuego(batch, recursos.brazo, TipoArma.ESCOPETA, p.getX() - ANCHO_EN_EL_SUELO / 2f, p.getY(), p.getAngulo());
+                    batch.setColor(Color.WHITE);
+                    TipoArma tipo = p.getArma();
+                    dibujarCentrado(batch, texturaDe(recursos, tipo), p.getX(), p.getY(), anchoDibujado(tipo), ALTO_ARMA, p.getAngulo());
                     break;
             }
         }
         batch.setColor(Color.WHITE);
     }
 
-    /** Una pistola (gris) o una escopeta (marron y mas larga): un cuerpo liso con la textura del brazo. */
-    static void dibujarArmaDeFuego(SpriteBatch batch, Texture textura, TipoArma tipo, float x, float y, float angulo) {
-        boolean escopeta = tipo == TipoArma.ESCOPETA;
-        batch.setColor(escopeta ? COLOR_ESCOPETA : COLOR_PISTOLA);
-        float ancho = escopeta ? ANCHO_EN_EL_SUELO * 1.3f : ANCHO_EN_EL_SUELO;
-        batch.draw(textura, x, y, 0f, 0f, ancho, ALTO_EN_EL_SUELO * (escopeta ? 0.8f : 1f), 1f, 1f,
-            angulo * MathUtils.radiansToDegrees, 0, 0, textura.getWidth(), textura.getHeight(), false, false);
+    private static Texture texturaDe(RecursosGraficos recursos, TipoArma tipo) {
+        return tipo == TipoArma.ESCOPETA ? recursos.escopeta : recursos.pistola;
     }
 
     private static void dibujarCentrado(SpriteBatch batch, Texture textura, float x, float y, float ancho, float alto, float angulo) {

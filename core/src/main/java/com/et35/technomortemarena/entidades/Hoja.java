@@ -83,6 +83,43 @@ public final class Hoja {
         return (vertices[5] + vertices[7]) / 2f;
     }
 
+    /**
+     * Donde se tocan dos hojas: la posicion del contacto a lo largo de cada una, de 0 (la base, junto a la
+     * guarda) a 1 (la punta). Son los puntos mas cercanos entre los ejes de las dos hojas, que alcanzan para
+     * saber si la punta de una pego en la base de la otra sin partir cada hoja en cajas.
+     *
+     * @return {@code {en esta hoja, en la otra}}
+     */
+    public float[] puntoDeContacto(Hoja otra) {
+        float d1x = (float) Math.cos(angulo) * LARGO;
+        float d1y = (float) Math.sin(angulo) * LARGO;
+        float d2x = (float) Math.cos(otra.angulo) * LARGO;
+        float d2y = (float) Math.sin(otra.angulo) * LARGO;
+        float rx = baseX - otra.baseX;
+        float ry = baseY - otra.baseY;
+        float a = d1x * d1x + d1y * d1y;
+        float e = d2x * d2x + d2y * d2y;
+        float f = d2x * rx + d2y * ry;
+        float c = d1x * rx + d1y * ry;
+        float b = d1x * d2x + d1y * d2y;
+        float denominador = a * e - b * b;
+        // hojas paralelas: cualquier punto sirve, se toma la base de esta
+        float s = denominador > 1e-6f ? limitar01((b * f - c * e) / denominador) : 0f;
+        float t = (b * s + f) / e;
+        if (t < 0f) {
+            t = 0f;
+            s = limitar01(-c / a);
+        } else if (t > 1f) {
+            t = 1f;
+            s = limitar01((b - c) / a);
+        }
+        return new float[] {s, t};
+    }
+
+    private static float limitar01(float valor) {
+        return Math.max(0f, Math.min(1f, valor));
+    }
+
     /** Rectangulo alineado con los ejes que contiene a la hoja. Sirve para estimar cuanto se superponen. */
     public Rectangle limites(Rectangle destino) {
         float minX = vertices[0];

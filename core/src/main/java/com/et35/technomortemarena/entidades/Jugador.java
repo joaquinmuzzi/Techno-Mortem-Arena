@@ -85,6 +85,16 @@ public class Jugador {
     private static final float LADO_PUNIO = 36f * ESCALA;
     /** Uno de cada tantos punetazos que conectan le hace soltar el arma al rival. */
     static final int CHANCE_DESARME = 3;
+    /**
+     * Desarme con la hoja: si la punta de mi hoja (su ultimo tercio) pega en la base de la del rival (su
+     * primer tercio) mientras muevo la espada, al rival se le vuela la espada.
+     */
+    static final float TERCIO_DE_LA_HOJA = 1f / 3f;
+    /** Radianes por segundo que tiene que estar girando la espada para que cuente como un golpe que desarma. */
+    static final float GIRO_PARA_DESARMAR = 4f;
+    /** Velocidad con que sale volando la espada desarmada: hacia arriba y un poco para el lado del golpe. */
+    private static final float VUELO_DESARME_Y = 900f * ESCALA;
+    private static final float VUELO_DESARME_X = 220f * ESCALA;
     /** Invulnerabilidad despues de una bala: corta, para que una rafaga lastime pero no mate de golpe. */
     private static final float FLASH_BALA = 0.25f;
     private static final float EMPUJE_BALA = 0.08f * VELOCIDAD;
@@ -142,6 +152,10 @@ public class Jugador {
     private TipoArma arma = TipoArma.ESPADA;
     private int balas;
     private float recargaDisparo;
+    /** Que tan rapido giro la espada en este fotograma, en radianes por segundo. */
+    private float velocidadDeGiro;
+    /** Balas que tenia el arma que se le cayo por un punetazo. */
+    private int balasSoltadas;
     /** Si el punetazo en curso ya pego: cada punetazo hiere una sola vez. */
     private boolean punioConecto;
     /** El arma que se le cayo de la mano por un punetazo, hasta que la junta {@link ArmasEnJuego}. */
@@ -185,9 +199,7 @@ public class Jugador {
 
     private static final float ANCHO_PISTOLA = 30f * ESCALA;
     private static final float ALTO_PISTOLA = 12f * ESCALA;
-    private static final Color COLOR_PISTOLA = new Color(0.55f, 0.58f, 0.65f, 1f);
     private static final float ANCHO_ESCOPETA = 46f * ESCALA;
-    private static final Color COLOR_ESCOPETA = new Color(0.62f, 0.45f, 0.30f, 1f);
 
     private static final float ANCHO_BRAZO = 22f * ESCALA;
     private static final float ALTO_BRAZO = 8f * ESCALA;
@@ -281,6 +293,7 @@ public class Jugador {
         integrarFisica(delta, arena, oponente);
         // La hoja se coloca despues de mover al jugador, asi sigue al hombro y al cursor del fotograma.
         apuntar(delta);
+        velocidadDeGiro = delta > 0f ? Math.abs(Hoja.diferenciaAngular(anguloPrevio, angulo)) / delta : 0f;
         actualizarArma();
         actualizarHoja();
         resolverColisiones(arena, oponente);
@@ -438,7 +451,8 @@ public class Jugador {
         if (arma == null || !vivo || desarmado || !entrada.lanzar) {
             return;
         }
-        lanzados.add(new Proyectil(Proyectil.lanzadaDe(arma), this, pivoteX(), pivoteY(), angulo, Proyectil.VELOCIDAD_LANZADA));
+        lanzados.add(new Proyectil(Proyectil.lanzadaDe(arma), this, pivoteX(), pivoteY(), angulo, Proyectil.VELOCIDAD_LANZADA)
+            .conBalas(balas));
         arma = null;
         balas = 0;
         tiempoEstocada = 0f;
@@ -670,11 +684,17 @@ public class Jugador {
 
         // Choque de hojas: los dos se empujan para separarse.
         if (tieneEspada() && oponente.tieneEspada() && hoja.solapa(hojaOponente)) {
-            float penetracionX = penetracionEnX(hoja.limites(limitesPropios), hojaOponente.limites(limitesAjenos));
-            if (penetracionX > 0f) {
-                float direccion = separarDe(oponente, penetracionX, arena);
-                empujar(direccion, EMPUJE_CHOQUE);
-                bloqueadoTimer = 1f;
+            if (desarmaAlChocar(hojaOponente)) {
+                float lado = oponente.posicion.x >= posicion.x ? 1f : -1f;
+                oponente.soltarEspadaAlAire(lado);
+                registrarGolpe();
+            } else {
+                float penetracionX = penetracionEnX(hoja.limites(limitesPropios), hojaOponente.limites(limitesAjenos));
+                if (penetracionX > 0f) {
+                    float direccion = separarDe(oponente, penetracionX, arena);
+                    empujar(direccion, EMPUJE_CHOQUE);
+                    bloqueadoTimer = 1f;
+                }
             }
         }
 
@@ -757,11 +777,11 @@ public class Jugador {
             if (arma == TipoArma.ESPADA) {
                 dibujarEspada(batch, recursos);
             } else if (arma == TipoArma.PISTOLA) {
-                batch.setColor(COLOR_PISTOLA);
-                dibujarGirado(batch, recursos.brazo, ANCHO_PISTOLA, ALTO_PISTOLA);
+                batch.setColor(Color.WHITE);
+                dibujarGirado(batch, recursos.pistola, ANCHO_PISTOLA, ALTO_PISTOLA);
             } else if (arma == TipoArma.ESCOPETA) {
-                batch.setColor(COLOR_ESCOPETA);
-                dibujarGirado(batch, recursos.brazo, ANCHO_ESCOPETA, ALTO_PISTOLA);
+                batch.setColor(Color.WHITE);
+                dibujarGirado(batch, recursos.escopeta, ANCHO_ESCOPETA, ALTO_PISTOLA);
             }
         }
         batch.setColor(Color.WHITE);
@@ -786,6 +806,37 @@ public class Jugador {
 	    quitarVida(PARTES_POR_CORAZON);
     }
 
+    /**
+     * Verdadero si este choque de hojas desarma al rival: muevo la espada (giro rapido o estocada) y el
+     * tercio de la punta de mi hoja pega en el tercio de la base de la suya.
+     */
+    private boolean desarmaAlChocar(Hoja hojaOponente) {
+        return esDesarme(hoja, hojaOponente, velocidadDeGiro >= GIRO_PARA_DESARMAR || tiempoEstocada > 0f);
+    }
+
+    /**
+     * La regla del desarme, sola: con la hoja en movimiento, la punta de {@code mia} (su ultimo tercio)
+     * tiene que pegar en la base de {@code suya} (su primer tercio).
+     */
+    static boolean esDesarme(Hoja mia, Hoja suya, boolean laMuevo) {
+        if (!laMuevo || !mia.solapa(suya)) {
+            return false;
+        }
+        float[] contacto = mia.puntoDeContacto(suya);
+        return contacto[0] >= 1f - TERCIO_DE_LA_HOJA && contacto[1] <= TERCIO_DE_LA_HOJA;
+    }
+
+    /** Se le vuela la espada de la mano hacia arriba: cae al mapa sin herir y la agarra cualquiera. */
+    void soltarEspadaAlAire(float lado) {
+        lanzados.add(Proyectil.inofensiva(Proyectil.Tipo.ESPADA_LANZADA, this, hoja.getBaseX(), hoja.getBaseY(),
+            lado * VUELO_DESARME_X, VUELO_DESARME_Y));
+        arma = null;
+        balas = 0;
+        tiempoEstocada = 0f;
+        extension = 0f;
+        bloqueadoTimer = 0f;
+    }
+
     /** Verdadero si la mano (adelante del brazo, en la base de la hoja) toca el cuerpo. */
     private boolean punioToca(Rectangle cuerpoAjeno) {
         float x = hoja.getBaseX() + (float) Math.cos(angulo) * LADO_PUNIO / 2f;
@@ -808,6 +859,7 @@ public class Jugador {
         quitarVida(TipoArma.DANIO_PUNIO);
         if (!desarmado && arma != null && azar.nextInt(CHANCE_DESARME) == 0) {
             armaSoltada = arma;
+            balasSoltadas = balas;
             arma = null;
             balas = 0;
             tiempoEstocada = 0f;
@@ -821,6 +873,11 @@ public class Jugador {
         TipoArma soltada = armaSoltada;
         armaSoltada = null;
         return soltada;
+    }
+
+    /** Las balas que tenia el arma que devolvio el ultimo {@link #tomarArmaSoltada}. */
+    public int getBalasSoltadas() {
+        return balasSoltadas;
     }
 
     /** Para los tests: hace que el desarme sea predecible. */
@@ -862,10 +919,15 @@ public class Jugador {
         contadorGolpes++;
     }
 
-    /** Agarra un arma del mapa: reemplaza lo que tenia en la mano. Las armas de fuego vienen cargadas. */
+    /** Agarra un arma recien aparecida en el mapa: reemplaza lo que tenia en la mano y viene cargada. */
     public void equipar(TipoArma nueva) {
+        equipar(nueva, nueva.getBalasIniciales());
+    }
+
+    /** Agarra un arma con las balas que le quedan (una que alguien tiro o se le cayo). */
+    public void equipar(TipoArma nueva, int balasQueTrae) {
         arma = nueva;
-        balas = nueva.getBalasIniciales();
+        balas = nueva.esDeFuego() ? balasQueTrae : 0;
         tiempoEstocada = 0f;
         extension = 0f;
     }

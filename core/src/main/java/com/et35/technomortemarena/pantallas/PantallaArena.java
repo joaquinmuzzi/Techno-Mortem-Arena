@@ -616,11 +616,16 @@ public class PantallaArena extends ScreenAdapter {
         }
     }
 
-    /** Las zonas donde no se puede colocar nada: alrededor de cada spawn. */
+    /**
+     * Las zonas donde no se puede colocar nada: alrededor de cada spawn y del centro, donde la muerte subita
+     * pone a los dos duelistas (unos pinchos ahi los matarian a los dos apenas arranca).
+     */
     private List<float[]> crearZonasProhibidas() {
         List<float[]> zonas = new ArrayList<>();
         zonas.add(ColocadorPiezas.zonaDeSpawn(spawnUno.x, spawnUno.y, Jugador.ANCHO, Jugador.ALTO));
         zonas.add(ColocadorPiezas.zonaDeSpawn(spawnDos.x, spawnDos.y, Jugador.ANCHO, Jugador.ALTO));
+        float yPiso = Arena.FILAS_PISO * Arena.CELDA;
+        zonas.add(ColocadorPiezas.zonaDeSpawn(arena.getAncho() / 2f - 80f, yPiso, 160f, Jugador.ALTO));
         return zonas;
     }
 

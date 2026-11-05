@@ -116,8 +116,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 ### Cambiado
 
 - Edición entre rondas: las piezas se pueden colocar encima de lo que ya hay (piso, bloques u otras piezas,
-  que quedan reemplazados; los huecos de la forma, como el de la esquina, no borran nada). La única zona
-  prohibida es alrededor de los spawns: se sacó la del centro, que protegía el lugar de la muerte súbita.
+  que quedan reemplazados; los huecos de la forma, como el de la esquina, no borran nada). Las zonas
+  prohibidas son las de los spawns y la del centro, donde la muerte súbita pone a los dos duelistas.
 - Quien mira la edición del rival ve el mapa oscurecido, para que se entienda que no es su turno; las
   tarjetas y la vista previa de lo que elige y coloca el rival van encima y se ven claras.
 - Las vidas del Jugador 1 (azul) se vacían de izquierda a derecha, en espejo de las del Jugador 2: antes cada

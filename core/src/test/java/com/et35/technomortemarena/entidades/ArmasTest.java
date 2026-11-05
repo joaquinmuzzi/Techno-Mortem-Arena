@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.et35.technomortemarena.entrada.EntradaJugador;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
-import com.et35.technomortemarena.partida.ColocadorPiezas;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -506,7 +505,7 @@ class ArmasTest {
     @Test
     void noAparecenArmasEnLasZonasProhibidas() {
         List<float[]> zonas = new ArrayList<>();
-        zonas.add(ColocadorPiezas.zonaDeSpawn(24f * Arena.CELDA, PISO, Jugador.ANCHO, Jugador.ALTO));
+        zonas.add(ArmasEnJuego.zonaDeSpawn(24f * Arena.CELDA, PISO, Jugador.ANCHO, Jugador.ALTO));
         ArmasEnJuego conZonas = new ArmasEnJuego(new Random(3), zonas);
         for (float[] lugar : conZonas.superficies(arena)) {
             float columna = lugar[0] / Arena.CELDA;
@@ -603,19 +602,6 @@ class ArmasTest {
         assertEquals(1, armas.getEnElSuelo().size(), "termina apoyada en el mapa");
         assertTrue(armas.getContadorEspadasAlCaer() >= 2,
             "cuenta el primer golpe y los rebotes: " + armas.getContadorEspadasAlCaer());
-    }
-
-    @Test
-    void elArmaYLasBalasViajanAlCliente() {
-        Jugador a = tirador(1000f);
-        a.equipar(TipoArma.ESCOPETA);
-        EstadoJugador estado = new EstadoJugador();
-        a.exportar(estado);
-        Jugador copia = new Jugador(FuenteEntrada.NINGUNA, 0f, PISO, true, Color.WHITE, 3);
-        copia.importar(estado);
-        assertEquals(TipoArma.ESCOPETA, copia.getArma());
-        assertEquals(3, copia.getBalas());
-        assertEquals(VIDA_LLENA, copia.getPartes());
     }
 
     // ---- correcciones: rebote, armas con balas, aparicion alternada, desarme con la hoja

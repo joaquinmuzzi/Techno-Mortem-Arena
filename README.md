@@ -1,7 +1,10 @@
 # Techno Mortem Arena
 
-Videojuego 2D de duelos de esgrima con multijugador en red local, desarrollado en Java con
-[libGDX](https://libgdx.com/).
+Videojuego 2D de duelos de esgrima, desarrollado en Java con [libGDX](https://libgdx.com/).
+
+> **Rama `sin-red`:** esta versión no tiene la parte de red. No hay Multijugador: se juega el modo de
+> prueba al mejor de 5 rondas contra un blanco quieto y con `TAB` se cambia de duelista (el azul o el
+> rojo). El juego completo, con red, está en `main`.
 
 Proyecto Final de **Programación sobre Redes / Desarrollo de Sistemas**
 Escuela Técnica N° 35 D.E. 18 "Ing. Eduardo Latzina" — Automotores / Computación
@@ -31,8 +34,7 @@ distinta resultan letales. A eso se suman desarmes, lanzamiento de la espada, co
 A diferencia de *Nidhogg*, los escenarios no son un avance territorial lineal sino **arenas cerradas**
 al estilo de los juegos de pelea tradicionales. Las partidas se juegan al mejor de 5 rondas, con un
 límite de 1 minuto por ronda y una mecánica de **muerte súbita** que fuerza el duelo en el centro de
-la arena cuando se agota el tiempo. El multijugador funciona en red local: un jugador crea la partida
-como anfitrión (con nombre de sala y contraseña opcional) y el otro la encuentra y se une como cliente.
+la arena cuando se agota el tiempo.
 
 La propuesta completa y detallada está en la Wiki del proyecto (ver más abajo).
 
@@ -44,15 +46,13 @@ La propuesta completa y detallada está en la Wiki del proyecto (ver más abajo)
   [gdx-liftoff](https://github.com/libgdx/gdx-liftoff) 1.14.2.1 (plantilla *Classic*).
 - **Build system:** Gradle 9.6.1 (mediante el Gradle Wrapper incluido en el repositorio).
 - **IDE de referencia:** Eclipse IDE (importado como *Existing Gradle Project*).
-- **Redes:** sockets de Java sobre red local (LAN), con arquitectura cliente–servidor. A implementarse
-  en las etapas siguientes del proyecto.
 
 ### Plataformas objetivo
 
 - **Escritorio (Windows / Linux / macOS)** — plataforma principal y única de esta entrega, mediante el
   backend LWJGL3.
-- Web y móvil **no** forman parte del alcance del proyecto: el multijugador en red local y el esquema
-  de controles están pensados para escritorio.
+- Web y móvil **no** forman parte del alcance del proyecto: el esquema de controles está pensado para
+  escritorio.
 
 ### Módulos del proyecto
 
@@ -79,37 +79,23 @@ core/src/main/java/com/et35/technomortemarena/
 │   ├── TipoArma.java          Espadas y armas de fuego: daño al tirarlas, de la hoja y balas
 │   ├── Proyectil.java         Balas, perdigones y armas tiradas (la espada rebota)
 │   ├── ArmasEnJuego.java      Proyectiles y armas que aparecen en el mapa para agarrar
-│   ├── EstadoJugador.java     Lo necesario para dibujar a un jugador (viaja por la red)
 │   └── Hoja.java              La espada como caja rotada: choque exacto (SAT) y barrido de tajos
 ├── entrada/
 │   ├── Controles.java         Mapeo de teclas de cada duelista
-│   ├── FuenteEntrada.java     De dónde lee un jugador lo que hace (teclado o red)
+│   ├── FuenteEntrada.java     De dónde lee un jugador lo que hace (teclado o nada)
 │   ├── EntradaJugador.java    Lo que un jugador quiere hacer en un fotograma
 │   └── EntradaLocal.java      Teclado (mover, saltar) y mouse (apuntar, estocar) locales
-├── red/                       Multijugador por UDP (ver "Multijugador")
-│   ├── Protocolo.java         Cabecera, tipos de paquete y constantes
-│   ├── ServidorSala.java      Lado del anfitrión: recibe entradas y manda el estado
-│   ├── ClienteSala.java       Lado del cliente: se une, baja el mapa y recibe el estado
-│   ├── EntradaRemota.java     Entrada de un jugador que llega por la red
-│   ├── CodecMapa.java         Filas del mapa a bytes (con repeticiones comprimidas)
-│   └── CodecEstado.java       Estado de un jugador a bytes
 ├── partida/
 │   ├── MarcadorPartida.java   Marcador al mejor de 5 rondas y ganador de la partida
-│   ├── RondasPartida.java     Ronda, espera entre rondas, edición y victoria (lógica pura)
-│   ├── PiezaNivel.java        Los 8 objetos que se colocan entre rondas
-│   ├── ColocadorPiezas.java   Reglas para colocar: grilla, choques y zonas de los spawns
-│   ├── EdicionNivel.java      Sorteo, elección, colocación y autocolocado (anfitrión)
-│   └── EstadoPartida.java     Estado de la partida que viaja por la red
+│   └── RondasPartida.java     Ronda, espera entre rondas y victoria (lógica pura)
 ├── niveles/
 │   ├── MapaGuardado.java      Mapa con nombre creado en el editor
 │   └── RepositorioMapas.java  Guardado y lectura de mapas
 └── pantallas/
-    ├── PantallaMenu.java          Menú principal (Modo de prueba / Multijugador / Editor de niveles / Salir)
-    ├── PantallaMultijugador.java  Crear una sala o unirse a la de otro
+    ├── PantallaMenu.java          Menú principal (Modo de prueba / Editor de niveles / Opciones / Salir)
     ├── PantallaSeleccionMapa.java Elección del mapa: predefinidos y "Mis mapas" del editor (con scroll)
-    ├── PantallaArena.java         Modo de prueba, anfitrión o cliente: rondas, HUD, marcador y pausa
+    ├── PantallaArena.java         Modo de prueba: rondas, HUD, marcador, pausa y cambio de duelista (TAB)
     ├── CamaraDuelo.java           Cámara que sigue a los duelistas y se aleja cuando se separan
-    ├── PanelEdicion.java          Tarjetas y vista previa de la edición entre rondas
     ├── PantallaEditor.java        Editor de niveles (herramientas en un panel lateral con menú hamburguesa)
     ├── BarraDeDesplazamiento.java Barra de scroll vertical para listas
     └── Ui.java                    Interfaz común (botones, texto, rectángulos)
@@ -119,7 +105,7 @@ core/src/main/java/com/et35/technomortemarena/
 
 El mapa mide 180 x 101 celdas, el doble de ancho y de alto que lo que entra en pantalla con la cámara
 cerca. La cámara sigue a los dos duelistas y se aleja cuando se separan, hasta mostrar el mapa entero;
-nunca muestra lo que hay fuera del mapa. Durante la edición entre rondas muestra el mapa entero. En el
+nunca muestra lo que hay fuera del mapa. En el
 editor de niveles, la rueda del mouse acerca y aleja la grilla, las flechas o WASD (o arrastrar con el
 botón del medio) la mueven y `F` muestra el mapa entero.
 
@@ -172,60 +158,12 @@ un instante (más alcance) y tiene una recarga corta. Un tajo rápido hiere a qu
 no solo a quien queda debajo de la hoja al terminar. Al iniciar la ronda se muestra un cartel con los
 controles.
 
-**Modo de prueba** (botón del menú principal): un jugador con mouse contra un blanco quieto y sin
-espada, que reaparece unos segundos después de caer. Sirve para probar mapas (también desde el editor)
-y, más adelante, armas. El 1 contra 1 se juega por Multijugador.
+**Modo de prueba** (botón del menú principal): una partida al mejor de 5 rondas, con el temporizador y
+la muerte súbita, de un duelista manejado con el teclado y el mouse contra un blanco quieto y sin arma.
+Con `TAB` se cambia de duelista: el que se manejaba queda como blanco y el otro (el azul o el rojo) toma
+el teclado y el mouse. Sirve para probar mapas (también desde el editor) y armas.
 
 Controles generales: `ESC` pausa la partida y `F11` alterna la pantalla completa.
-
-## Multijugador
-
-Cada instancia del juego controla **un solo jugador**, con el mismo teclado y mouse de siempre
-(`A`/`D`, `W`, mouse y clic), y varias instancias se conectan a una misma sala. Hoy la sala admite
-dos jugadores. La comunicación es por **UDP**.
-
-Para probarlo en una sola máquina, abrí el juego dos veces:
-
-1. En la primera: `MULTIJUGADOR` → `CREAR SALA` → elegir el mapa. Queda esperando al otro jugador.
-2. En la segunda: `MULTIJUGADOR` → dejar `127.0.0.1:7777` → `UNIRSE A UNA SALA`.
-
-El campo de texto acepta `ip:puerto`. Para jugar entre dos computadoras de la misma red, el
-anfitrión comparte su IP local y el puerto (7777 por defecto; es el mismo que se escribe al crear
-la sala). El firewall de Windows puede preguntar si permite a Java recibir conexiones: para probar
-en la misma máquina no hace falta permitirlo.
-
-La partida es **al mejor de 5 rondas** (gana quien llega a 3): cuando alguien cae se anota la ronda,
-hay una pausa breve con el resultado y la siguiente arranca con los dos de vuelta en sus lugares. En
-empate la ronda se repite sin sumar. El HUD muestra las vidas de cada uno y el marcador, y al final
-aparece el cartel de victoria con la revancha (la pide el anfitrión).
-
-**Edición del nivel entre rondas** (al estilo *Ultimate Chicken Horse*): después del resultado, quien
-perdió la ronda recibe 3 objetos al azar y tiene 20 segundos para elegir uno (clic en la tarjeta o
-teclas `1`, `2` y `3`) y colocarlo con un clic en el mapa. La vista previa se ve verde donde se puede
-y roja donde no: se puede colocar encima de lo que ya hay, pero no cerca de los spawns ni del
-centro, donde la muerte súbita pone a los dos (las zonas rojas). Mientras uno coloca, al otro se le oscurece el mapa: ve lo que elige el rival, pero no es su turno. Si se acaba el tiempo, el objeto elegido se coloca donde estaba el
-cursor (o en el lugar válido más cercano) y, si no eligió ninguno, uno de los tres al azar en un lugar
-al azar. Las piezas se acumulan durante la partida y la revancha vuelve al mapa original. En empate no
-hay edición.
-
-| Objeto | Medidas (largo x alto, en celdas) |
-|---|---|
-| Fila de pinchos | 6 x 2 |
-| Trampolín | 4 x 2 |
-| Bloque | 8 x 8 |
-| Rectángulo | 10 x 4 |
-| Esquina | L de 10 de alto y 4 de largo abajo, brazos de 2 |
-| Cinta izquierda / derecha | 6 x 2 |
-| Pinchos con cintas | 16 x 2: cinta de 6 hacia la derecha, 4 de pinchos, cinta de 6 hacia la izquierda |
-| Spawner de pistolas / escopetas | 3 x 3: hace aparecer su arma encima cada 5 s |
-
-El anfitrión simula todo el juego y le manda el estado al cliente, que solo manda sus teclas y
-dibuja lo que recibe. `R` reinicia la ronda solo en el anfitrión, y en red `ESC` abre el menú
-de pausa sin frenar la partida. Si el anfitrión sale, el cliente vuelve a la pantalla de
-multijugador con el motivo; si el cliente se va, el anfitrión vuelve a esperar a otro.
-
-Todavía no hay descubrimiento de salas ni juego por internet (requiere NAT o un servidor): ver
-`CHANGELOG.md` y la tarea de ClickUp "Red".
 
 ## Propuesta del proyecto (Wiki)
 
@@ -327,11 +265,9 @@ Las tareas específicas de un módulo se invocan con el prefijo del módulo: por
 - [x] Ventana a resolución nativa y pantalla completa con F11.
 - [ ] Desarme, lanzamiento de espada y modo cuerpo a cuerpo.
 - [ ] Rodado para esquivar.
-- [x] Estructura de partida al mejor de 5 rondas, con HUD de vidas y marcador (en Multijugador).
+- [x] Estructura de partida al mejor de 5 rondas, con HUD de vidas y marcador (en el modo de prueba).
 - [ ] Temporizador por ronda y muerte súbita.
 - [ ] Selección de mapa aleatorio por ronda.
-- [x] Multijugador por UDP en red local: crear sala y unirse (2 jugadores, una instancia por jugador).
-- [ ] Multijugador por internet (NAT, relay o servidor dedicado) y descubrimiento de salas.
 - [ ] Pantalla de ajustes (audio y controles) y personalización del personaje.
 - [ ] Animaciones del personaje.
 
@@ -350,8 +286,7 @@ aterrizaje de un salto), `pistol-shot.mp3` y `shotgun-blast.mp3` (el disparo de 
 escopeta), `sword-equipped.mp3` (al recoger la espada), `Weapon-Equip.mp3` (al recoger una pistola o una
 escopeta) y `sword-falling.mp3` (cada vez que la espada tirada toca el piso, también en los rebotes).
 `RecursosAudio` los carga una sola vez como `Sound` (se reproducen desde memoria, sin cortes) y
-`PantallaArena` los dispara según lo que informan cada `Jugador` y `ArmasEnJuego`. Esos eventos también
-viajan por la red, así el cliente escucha lo que hace el otro jugador.
+`PantallaArena` los dispara según lo que informan cada `Jugador` y `ArmasEnJuego`.
 
 A esos se suman los dos sonidos de interfaz, `Boton.wav` (pasar el cursor por encima) y
 `Boton Seleccionado.mp3` (hacer clic). Los dispara `pantallas.Ui` desde el propio dibujo del botón, así

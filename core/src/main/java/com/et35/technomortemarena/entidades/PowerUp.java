@@ -22,7 +22,7 @@ public enum PowerUp {
     /** Cuanto de la abertura del abanico de la escopeta queda con PUNTERIA. */
     public static final float FACTOR_ABANICO = 0.3f;
 
-    /** La mejora con ese numero, o {@code null} si no existe: es el numero que viaja por la red. */
+    /** La mejora con ese numero, o {@code null} si no existe. */
     public static PowerUp porIndice(int indice) {
         PowerUp[] todas = values();
         return indice >= 0 && indice < todas.length ? todas[indice] : null;

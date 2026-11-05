@@ -24,8 +24,7 @@ import java.util.Random;
  * ({@code P} o {@code E} en la grilla) hace aparecer su arma encima cada {@link #INTERVALO_SPAWNER}
  * segundos, una sola a la vez. Las armas tiradas o que se caen de la mano quedan en el suelo con las balas
  * que tenian. Cualquier arma la agarra solo quien tiene la mano vacia, pasando por encima: para cambiar de
- * arma, primero hay que tirar la que se tiene. Lo simula el anfitrion (o el modo de prueba); el cliente
- * solo dibuja lo que le llega.
+ * arma, primero hay que tirar la que se tiene.
  */
 public final class ArmasEnJuego {
 
@@ -45,6 +44,9 @@ public final class ArmasEnJuego {
     /** Segundos entre un arma y la siguiente en cada bloque spawner. */
     public static final float INTERVALO_SPAWNER = 5f;
     public static final int MAX_EN_EL_SUELO = 2;
+    /** Tope de proyectiles en vuelo y de armas tiradas en el mapa a la vez: las mas viejas se van. */
+    static final int MAX_PROYECTILES = 24;
+    static final int MAX_ARMAS_TIRADAS = 6;
     private static final float ESCALA = Arena.ESCALA;
     /** Caja de un arma de fuego en el suelo (la de la espada es su largo): con eso se agarra. */
     public static final float ANCHO_EN_EL_SUELO = 56f * ESCALA;
@@ -63,7 +65,7 @@ public final class ArmasEnJuego {
 
     /** Radio de la explosion del cohete: a quien quede a menos de esto le saca un corazon, tambien al que lo tiro. */
     public static final float RADIO_EXPLOSION = 4f * Arena.CELDA;
-    /** Tope de celdas rotas por ronda: lo que viaja por la red. */
+    /** Tope de celdas rotas por ronda. */
     public static final int MAX_CELDAS_ROTAS = 120;
     /** Una de cada tantas armas que aparecen solas es la espada laser, si no hay otra en el mapa. */
     static final int CHANCE_ESPADA_LASER = 12;
@@ -98,6 +100,19 @@ public final class ArmasEnJuego {
     private final List<int[]> celdasRotas = new ArrayList<>();
     /** Veces que una espada tirada toco el piso desde que empezo la partida, para el sonido. */
     private int contadorEspadasAlCaer;
+
+    /** Celdas libres que se dejan alrededor del cuerpo de un duelista al aparecer: ahi no caen armas. */
+    public static final int MARGEN_SPAWN = 4;
+
+    /**
+     * La zona prohibida alrededor de un spawn, como {@code {x0, y0, x1, y1}} en celdas: el cuerpo con
+     * {@link #MARGEN_SPAWN} celdas de margen en cada lado. Recibe los pies y las medidas en pixeles del mundo.
+     */
+    public static float[] zonaDeSpawn(float x, float y, float ancho, float alto) {
+        return new float[] {
+            x / Arena.CELDA - MARGEN_SPAWN, y / Arena.CELDA - MARGEN_SPAWN,
+            (x + ancho) / Arena.CELDA + MARGEN_SPAWN, (y + alto) / Arena.CELDA + MARGEN_SPAWN};
+    }
 
     /** @param zonasProhibidas zonas {@code {x0, y0, x1, y1}} en celdas donde no aparecen armas */
     public ArmasEnJuego(Random azar, List<float[]> zonasProhibidas) {
@@ -157,7 +172,7 @@ public final class ArmasEnJuego {
                 it.remove(); // se cayo por un agujero del mapa
             }
         }
-        while (proyectiles.size() > EstadoArmas.MAX_PROYECTILES) {
+        while (proyectiles.size() > MAX_PROYECTILES) {
             proyectiles.remove(0);
         }
         tiempoParaAparicion -= delta;
@@ -431,7 +446,7 @@ public final class ArmasEnJuego {
 
     void dejarEnElSuelo(TipoArma tipo, float x, float y, float espera, int balas) {
         enElSuelo.add(new float[] {TipoArma.codigoDe(tipo), x, y, espera, balas, 0f, 0f, 0f});
-        while (enElSuelo.size() > EstadoArmas.MAX_EN_EL_SUELO) {
+        while (enElSuelo.size() > MAX_ARMAS_TIRADAS) {
             enElSuelo.remove(0);
         }
     }
@@ -588,49 +603,6 @@ public final class ArmasEnJuego {
     /** Veces que una espada tirada toco el piso; el contador solo sube, para disparar el sonido. */
     public int getContadorEspadasAlCaer() {
         return contadorEspadasAlCaer;
-    }
-
-    /** Copia en {@code destino} lo que hay que dibujar en el cliente. */
-    public void exportar(EstadoArmas destino) {
-        destino.proyectiles.clear();
-        for (Proyectil p : proyectiles) {
-            destino.proyectiles.add(new float[] {p.getTipo().ordinal(), p.getX(), p.getY(), p.getAngulo()});
-        }
-        destino.enElSuelo.clear();
-        for (float[] arma : enElSuelo) {
-            destino.enElSuelo.add(arma.clone());
-        }
-        destino.powerUps.clear();
-        for (float[] mejora : powerUps) {
-            destino.powerUps.add(new float[] {mejora[0], mejora[1], mejora[2]});
-        }
-        destino.celdasRotas.clear();
-        for (int[] celda : celdasRotas) {
-            destino.celdasRotas.add(celda.clone());
-        }
-        destino.contadorEspadasAlCaer = contadorEspadasAlCaer;
-    }
-
-    /** Pisa lo que hay con lo que mando el anfitrion. Lo usa el cliente, que no simula las armas. */
-    public void importar(EstadoArmas origen, float delta) {
-        tiempoAnimacion += delta;
-        proyectiles.clear();
-        for (float[] p : origen.proyectiles) {
-            proyectiles.add(Proyectil.paraDibujar(Proyectil.Tipo.values()[(int) p[0]], p[1], p[2], p[3]));
-        }
-        enElSuelo.clear();
-        for (float[] arma : origen.enElSuelo) {
-            enElSuelo.add(arma.clone());
-        }
-        powerUps.clear();
-        for (float[] mejora : origen.powerUps) {
-            powerUps.add(mejora.clone());
-        }
-        celdasRotas.clear();
-        for (int[] celda : origen.celdasRotas) {
-            celdasRotas.add(celda.clone());
-        }
-        contadorEspadasAlCaer = origen.contadorEspadasAlCaer;
     }
 
     /** Dibuja las armas en el suelo y los proyectiles. Entre {@code batch.begin()} y {@code end()}. */

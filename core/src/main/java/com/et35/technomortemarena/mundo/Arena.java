@@ -54,7 +54,7 @@ public class Arena {
     private final List<Bloque> bloques;
     private final Vector2 spawnUno;
     private final Vector2 spawnDos;
-    /** Las filas de texto de las que salio la arena, para mandarla por la red. Vacio si no salio de una grilla. */
+    /** Las filas de texto de las que salio la arena. Vacio si no salio de una grilla. */
     private final String[] filas;
 
     /** @param spawnUno, spawnDos posicion de los pies de cada jugador, o {@code null} si el mapa no la define */

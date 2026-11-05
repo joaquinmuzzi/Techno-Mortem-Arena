@@ -35,7 +35,7 @@ public enum TipoArma {
     public static final int DANIO_PUNIO = 1;
     /** Perdigones por disparo de escopeta, abiertos en abanico. */
     public static final int PERDIGONES = 5;
-    /** El mayor numero de balas que puede traer un arma: lo usa la red para validar. */
+    /** El mayor numero de balas que puede traer un arma. */
     public static final int MAX_BALAS = 20;
 
     private final int danioLanzada;
@@ -73,13 +73,13 @@ public enum TipoArma {
         return this == ESPADA || this == ESPADA_LASER;
     }
 
-    /** El arma con ese numero, o {@code null} si es 0 o no existe: es el numero que viaja por la red. */
+    /** El arma con ese numero, o {@code null} si es 0 o no existe. */
     public static TipoArma porCodigo(int codigo) {
         TipoArma[] todas = values();
         return codigo >= 1 && codigo <= todas.length ? todas[codigo - 1] : null;
     }
 
-    /** El numero que viaja por la red: 0 sin arma, 1 espada, 2 pistola, 3 escopeta, y asi. */
+    /** El numero de cada arma: 0 sin arma, 1 espada, 2 pistola, 3 escopeta, y asi. */
     public static int codigoDe(TipoArma arma) {
         return arma == null ? 0 : arma.ordinal() + 1;
     }

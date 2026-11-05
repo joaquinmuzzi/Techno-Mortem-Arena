@@ -148,19 +148,4 @@ class JugadorRodarTest {
         }
         assertTrue(victima.getVida() < 3, "la espada igual lo hiere rodando");
     }
-
-    @Test
-    void elEstadoRodandoViajaAlCliente() {
-        Jugador j = jugador(true);
-        guion.derecha = true;
-        guion.rodar = true;
-        pasos(j, 2);
-        EstadoJugador estado = new EstadoJugador();
-        j.exportar(estado);
-        assertTrue(estado.rodando);
-
-        Jugador copia = new Jugador(FuenteEntrada.NINGUNA, 0f, PISO, true, Color.WHITE, 3);
-        copia.importar(estado);
-        assertTrue(copia.estaRodando());
-    }
 }

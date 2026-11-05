@@ -29,8 +29,7 @@ public class EntradaLocal implements FuenteEntrada {
     }
 
     /**
-     * Si es {@code false} no se lee nada. En una partida en red la pausa no frena la simulacion, asi
-     * que se usa para que el jugador no se mueva ni estoque mientras mira el menu.
+     * Si es {@code false} no se lee nada: entre rondas y en la pausa el jugador no se mueve ni estoca.
      */
     public void setActiva(boolean activa) {
         this.activa = activa;

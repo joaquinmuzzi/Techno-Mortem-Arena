@@ -22,8 +22,8 @@ import com.et35.technomortemarena.mundo.Bloque;
  *
  * <p>Concentra estado (posicion, velocidad, angulo de la espada) y comportamiento (moverse, saltar,
  * estocar, dibujarse). Lo que el jugador quiere hacer llega desde afuera en una {@link FuenteEntrada}
- * (teclado y mouse locales, o paquetes de red), asi la misma clase sirve para un duelista local, uno
- * remoto y un blanco de prueba.
+ * (el teclado y el mouse, o ninguna), asi la misma clase sirve para el duelista que se maneja y para el
+ * blanco de prueba.
  *
  * <p>La espada es una {@link Hoja}: una caja rotada que apunta al punto del mouse desde el hombro. Lo
  * que se dibuja es lo que choca. Cualquier contacto de la hoja con el cuerpo del rival lo hiere; el
@@ -120,7 +120,7 @@ public class Jugador {
     /** Cuanto se corre el hombro hacia el lado al que mira el jugador, desde el centro del cuerpo. */
     private static final float DESPLAZAMIENTO_HOMBRO = 10f * ESCALA;
 
-    private final FuenteEntrada fuente;
+    private FuenteEntrada fuente;
     private final EntradaJugador entrada = new EntradaJugador();
     private final Color tinte;
     /** Vidas con las que arranca cada ronda: ver {@link #reiniciar}. */
@@ -189,10 +189,10 @@ public class Jugador {
     private boolean acabaDeAterrizar;
     /** Verdadero solo en el fotograma en que su espada toca el cuerpo del rival. */
     private boolean acabaDeGolpear;
-    /** Cuantas veces ocurrieron: viajan por la red para que los clientes disparen los sonidos. */
+    /** Cuantas veces ocurrieron: la pantalla los compara para disparar los sonidos. */
     private int contadorGolpes;
     private int contadorAterrizajes;
-    /** Disparos de cada arma de fuego, para que el cliente de red reproduzca el efecto. */
+    /** Disparos de cada arma de fuego, para reproducir el efecto. */
     private int contadorDisparosPistola;
     private int contadorDisparosEscopeta;
     /** Armas recogidas del suelo, separadas por tipo de sonido. */
@@ -246,8 +246,8 @@ public class Jugador {
     /**
      * Vuelve al estado inicial para empezar una ronda nueva en el mismo mapa: posicion de spawn,
      * vida completa, la espada mirando hacia adelante y sin efectos pendientes (flash, empuje,
-     * estocada). Los contadores de golpes y aterrizajes no se tocan: solo suben, y los clientes de
-     * una partida en red los comparan para disparar los sonidos.
+     * estocada). Los contadores de golpes y aterrizajes no se tocan: solo suben, y la pantalla los
+     * compara para disparar los sonidos.
      *
      * <p>La partida al mejor de 5 resetea a los duelistas en vez de reconstruir la pantalla, asi
      * el marcador y el numero de ronda sobreviven de un duelo al siguiente.
@@ -411,7 +411,7 @@ public class Jugador {
     /**
      * Lanza una estocada si se pidio una y la anterior ya termino y recargo. La hoja sale y vuelve
      * siguiendo una curva suave: {@code extension} sube de 0 a 1 y baja a 0 en {@link #duracionEstocadaActual}
-     * (siempre entre 0 y 1: es lo que viaja por la red).
+     * (siempre entre 0 y 1).
      */
     private void actualizarEstocada(float delta) {
         if (recargaEstocada > 0f) {
@@ -1120,56 +1120,6 @@ public class Jugador {
         return acabaDeAterrizar;
     }
 
-    /** Copia en {@code destino} todo lo necesario para dibujar a este jugador. */
-    public void exportar(EstadoJugador destino) {
-        destino.x = posicion.x;
-        destino.y = posicion.y;
-        destino.vida = vida;
-        destino.mirandoDerecha = mirandoDerecha;
-        destino.vivo = vivo;
-        destino.corriendo = corriendo;
-        destino.rodando = rodando;
-        destino.arma = TipoArma.codigoDe(arma);
-        destino.balas = balas;
-        System.arraycopy(tiempoPowerUp, 0, destino.tiempoPowerUp, 0, tiempoPowerUp.length);
-        destino.anguloEspada = angulo;
-        destino.extension = extension;
-        destino.tiempoRestanteFlash = tiempoRestanteFlash;
-        destino.contadorGolpes = contadorGolpes;
-        destino.contadorAterrizajes = contadorAterrizajes;
-        destino.contadorDisparosPistola = contadorDisparosPistola;
-        destino.contadorDisparosEscopeta = contadorDisparosEscopeta;
-        destino.contadorEspadasEquipadas = contadorEspadasEquipadas;
-        destino.contadorArmasDeFuegoEquipadas = contadorArmasDeFuegoEquipadas;
-    }
-
-    /**
-     * Pisa el estado de este jugador con el que mando el anfitrion. Lo usa el cliente: su copia no
-     * simula nada, solo se dibuja.
-     */
-    public void importar(EstadoJugador origen) {
-        posicion.set(origen.x, origen.y);
-        vida = origen.vida;
-        mirandoDerecha = origen.mirandoDerecha;
-        vivo = origen.vivo;
-        corriendo = origen.corriendo;
-        rodando = origen.rodando;
-        arma = TipoArma.porCodigo(origen.arma);
-        balas = origen.balas;
-        System.arraycopy(origen.tiempoPowerUp, 0, tiempoPowerUp, 0, tiempoPowerUp.length);
-        angulo = origen.anguloEspada;
-        anguloObjetivo = origen.anguloEspada;
-        extension = origen.extension;
-        tiempoRestanteFlash = origen.tiempoRestanteFlash;
-        contadorGolpes = origen.contadorGolpes;
-        contadorAterrizajes = origen.contadorAterrizajes;
-        contadorDisparosPistola = origen.contadorDisparosPistola;
-        contadorDisparosEscopeta = origen.contadorDisparosEscopeta;
-        contadorEspadasEquipadas = origen.contadorEspadasEquipadas;
-        contadorArmasDeFuegoEquipadas = origen.contadorArmasDeFuegoEquipadas;
-        actualizarHoja();
-    }
-
     /** Cantidad de golpes que dio desde que empezo; sube de a uno en cada golpe. */
     public int getContadorGolpes() {
         return contadorGolpes;
@@ -1206,6 +1156,11 @@ public class Jugador {
     }
 
     /** Quita o devuelve la espada. El blanco del modo de prueba esta desarmado. */
+    /** Cambia de donde lee lo que quiere hacer: con esto el modo de prueba pasa el teclado de un duelista al otro. */
+    public void setFuente(FuenteEntrada fuente) {
+        this.fuente = fuente;
+    }
+
     public void setDesarmado(boolean desarmado) {
         this.desarmado = desarmado;
     }

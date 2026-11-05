@@ -10,7 +10,6 @@ import com.et35.technomortemarena.entrada.EntradaJugador;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
@@ -334,26 +333,5 @@ class ArmasNuevasTest {
         }
         assertTrue(laser.getY() > comun.getY() + 50f);
         assertEquals(TipoArma.ESPADA_LASER, laser.getArma());
-    }
-
-    @Test
-    void lasArmasNuevasViajanPorLaRed() {
-        Jugador j = jugador(FuenteEntrada.NINGUNA, 1000f, true);
-        j.equipar(TipoArma.RIFLE_LASER);
-        EstadoJugador estado = new EstadoJugador();
-        j.exportar(estado);
-        Jugador copia = jugador(FuenteEntrada.NINGUNA, 0f, true);
-        copia.importar(estado);
-        assertEquals(TipoArma.RIFLE_LASER, copia.getArma());
-        assertEquals(20, copia.getBalas());
-
-        ArmasEnJuego armas = new ArmasEnJuego(new Random(1), new ArrayList<>());
-        armas.explotar(50.5f * Arena.CELDA, PISO - 0.5f * Arena.CELDA, null, arena, blanco(5000f), null);
-        EstadoArmas exportado = new EstadoArmas();
-        armas.exportar(exportado);
-        ArmasEnJuego delCliente = new ArmasEnJuego(new Random(1), new ArrayList<>());
-        delCliente.importar(exportado, DT);
-        assertEquals(armas.getCeldasRotas().size(), delCliente.getCeldasRotas().size());
-        assertTrue(Arrays.equals(armas.getCeldasRotas().get(0), delCliente.getCeldasRotas().get(0)));
     }
 }

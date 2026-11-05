@@ -3,8 +3,8 @@ package com.et35.technomortemarena.entrada;
 /**
  * De donde lee un {@link com.et35.technomortemarena.entidades.Jugador} lo que tiene que hacer.
  *
- * <p>Separar la fuente del jugador es lo que permite que la misma clase sirva para un duelista con
- * teclado local y para uno controlado por un paquete de red.
+ * <p>Separar la fuente del jugador es lo que permite que la misma clase sirva para el duelista que se
+ * maneja con el teclado y para el blanco quieto, y pasar el teclado de uno al otro.
  */
 public interface FuenteEntrada {
 

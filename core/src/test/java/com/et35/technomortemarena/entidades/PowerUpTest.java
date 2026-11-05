@@ -164,17 +164,6 @@ class PowerUpTest {
     }
 
     @Test
-    void lasMejorasViajanAlCliente() {
-        Jugador j = jugador(new Guion());
-        j.activarPowerUp(PowerUp.PUNTERIA);
-        EstadoJugador estado = new EstadoJugador();
-        j.exportar(estado);
-        Jugador copia = new Jugador(FuenteEntrada.NINGUNA, 0f, PISO, true, Color.WHITE, 3);
-        copia.importar(estado);
-        assertEquals(PowerUp.DURACION, copia.getTiempoPowerUp(PowerUp.PUNTERIA), 0.001f);
-    }
-
-    @Test
     void cadaTantoCaeUnaMejoraDelCieloYLaAgarraQuienPasaAunqueTengaArma() {
         ArmasEnJuego armas = new ArmasEnJuego(new Random(2), new ArrayList<>());
         Guion guion = new Guion();

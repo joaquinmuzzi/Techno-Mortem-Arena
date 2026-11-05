@@ -280,31 +280,6 @@ class JugadorCombateTest {
     }
 
     @Test
-    void elEstadoExportadoYImportadoDibujaLaMismaHoja() {
-        Jugador a = jugador(guionA, 1000f, PISO, true);
-        Jugador d = blanco(3000f, PISO);
-        pasos(a, d, 5);
-        guionA.apuntar(1300f, HOMBRO_Y + 250f);
-        // hasta que la espada termine de girar: el angulo exportado y la hoja dibujada tienen que
-        // coincidir, y eso recien pasa cuando el giro se fija en el cursor
-        pasos(a, d, 30);
-        guionA.hacerClic();
-        pasos(a, d, 4);
-        EstadoJugador estado = new EstadoJugador();
-        a.exportar(estado);
-
-        Jugador copia = jugador(FuenteEntrada.NINGUNA, 0f, 0f, false);
-        copia.importar(estado);
-
-        assertEquals(a.getPosicion().x, copia.getPosicion().x, 0.001f);
-        assertEquals(a.getPosicion().y, copia.getPosicion().y, 0.001f);
-        assertEquals(a.isMirandoDerecha(), copia.isMirandoDerecha());
-        assertEquals(a.getExtension(), copia.getExtension(), 0.0001f);
-        assertTrue(copia.getExtension() > 0f, "la copia tambien ve la hoja adelantada");
-        assertArrayEquals(a.getHoja().getVertices(), copia.getHoja().getVertices(), 0.01f);
-    }
-
-    @Test
     void unJugadorMuertoYaNoApuntaNiEstoca() {
         Jugador a = jugador(guionA, 1000f, PISO, true);
         Jugador d = blanco(3000f, PISO);

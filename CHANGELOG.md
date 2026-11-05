@@ -5,6 +5,25 @@ Todos los cambios significativos de **Techno Mortem Arena** se documentan en est
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto adhiere a
 [Versionado Semántico](https://semver.org/lang/es/).
 
+## [No publicado] - rama `sin-red`
+
+### Quitado
+
+- La parte de red: el paquete `red/` (sala, cliente, protocolo y códecs), la pantalla Multijugador, la
+  edición del nivel entre rondas (`EdicionNivel`, `ColocadorPiezas`, `PiezaNivel`, `PanelEdicion`) y las
+  copias del estado que viajaban por la red (`EstadoJugador`, `EstadoArmas`, `EstadoPartida` y los
+  `exportar` / `importar`).
+
+### Cambiado
+
+- El modo de prueba juega la partida al mejor de 5 rondas, con el marcador, el temporizador y la muerte
+  súbita, contra el blanco quieto (que ya no reaparece solo: su caída termina la ronda).
+
+### Añadido
+
+- `TAB` en el modo de prueba cambia de duelista: el que se manejaba queda como blanco (sin arma) y el
+  otro, el azul o el rojo, toma el teclado y el mouse (`Jugador.setFuente`).
+
 ## [0.5.0] - 2026-11-05
 
 Armas de fuego y espada láser, mejoras que caen del cielo, mapa el doble de grande, fuentes pixeladas

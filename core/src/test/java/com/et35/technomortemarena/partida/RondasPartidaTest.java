@@ -150,22 +150,4 @@ class RondasPartidaTest {
         assertEquals(0, rondas.getRondasGanadasUno());
         assertEquals(0, rondas.getRondasGanadasDos());
     }
-
-    @Test
-    void elEstadoExportadoYImportadoCoincide() {
-        rondas.actualizar(0.016f, true, false);
-        esperarLaProximaRonda();
-        rondas.actualizar(0.016f, false, true);
-        EstadoPartida estado = new EstadoPartida();
-        rondas.exportar(estado);
-
-        RondasPartida copia = new RondasPartida();
-        copia.importar(estado);
-
-        assertEquals(rondas.getFase(), copia.getFase());
-        assertEquals(rondas.getNumeroRonda(), copia.getNumeroRonda());
-        assertEquals(1, copia.getRondasGanadasUno());
-        assertEquals(1, copia.getRondasGanadasDos());
-        assertEquals(1, copia.getGanadorDeLaRonda());
-    }
 }

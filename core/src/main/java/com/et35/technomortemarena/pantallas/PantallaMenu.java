@@ -21,7 +21,7 @@ import com.et35.technomortemarena.entidades.Jugador;
 
 /**
  * Menu principal: titulo del juego, los dos duelistas en guardia a los costados y los botones Modo de
- * prueba, Multijugador, Editor de niveles y Salir.
+ * prueba, Editor de niveles, Opciones y Salir.
  *
  * <p>Usa el mismo mundo de 960x540 que la interfaz de las demas pantallas para que la escala no "salte"
  * al cambiar de pantalla.
@@ -52,11 +52,10 @@ public class PantallaMenu extends ScreenAdapter {
     /** Segundos desde que se abrio el menu: mueve un poco las espadas, como si estuvieran en guardia. */
     private float tiempo;
 
-    private final Rectangle botonJugar = new Rectangle(ANCHO_MUNDO / 2f - 120f, 350f, 240f, 52f);
-    private final Rectangle botonMultijugador = new Rectangle(ANCHO_MUNDO / 2f - 120f, 288f, 240f, 52f);
-    private final Rectangle botonEditor = new Rectangle(ANCHO_MUNDO / 2f - 120f, 226f, 240f, 52f);
-    private final Rectangle botonOpciones = new Rectangle(ANCHO_MUNDO / 2f - 120f, 164f, 240f, 52f);
-    private final Rectangle botonSalir = new Rectangle(ANCHO_MUNDO / 2f - 120f, 102f, 240f, 52f);
+    private final Rectangle botonJugar = new Rectangle(ANCHO_MUNDO / 2f - 120f, 330f, 240f, 60f);
+    private final Rectangle botonEditor = new Rectangle(ANCHO_MUNDO / 2f - 120f, 255f, 240f, 60f);
+    private final Rectangle botonOpciones = new Rectangle(ANCHO_MUNDO / 2f - 120f, 180f, 240f, 60f);
+    private final Rectangle botonSalir = new Rectangle(ANCHO_MUNDO / 2f - 120f, 105f, 240f, 60f);
 
     public PantallaMenu(RecursosGraficos recursos, RecursosAudio audio) {
         this.recursos = recursos;
@@ -70,7 +69,6 @@ public class PantallaMenu extends ScreenAdapter {
         tiempo += delta;
         Vector2 mouse = viewport.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
         boolean sobreJugar = botonJugar.contains(mouse);
-        boolean sobreMultijugador = botonMultijugador.contains(mouse);
         boolean sobreEditor = botonEditor.contains(mouse);
         boolean sobreOpciones = botonOpciones.contains(mouse);
         boolean sobreSalir = botonSalir.contains(mouse);
@@ -78,11 +76,6 @@ public class PantallaMenu extends ScreenAdapter {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || (Gdx.input.justTouched() && sobreJugar)) {
             ui.clic();
             cambiarA(new PantallaSeleccionMapa(recursos, audio));
-            return;
-        }
-        if (Gdx.input.justTouched() && sobreMultijugador) {
-            ui.clic();
-            cambiarA(new PantallaMultijugador(recursos, audio, ""));
             return;
         }
         if (Gdx.input.justTouched() && sobreEditor) {
@@ -100,7 +93,7 @@ public class PantallaMenu extends ScreenAdapter {
             return;
         }
 
-        dibujar(sobreJugar, sobreMultijugador, sobreEditor, sobreOpciones, sobreSalir);
+        dibujar(sobreJugar, sobreEditor, sobreOpciones, sobreSalir);
     }
 
     /**
@@ -113,7 +106,7 @@ public class PantallaMenu extends ScreenAdapter {
         dispose();
     }
 
-    private void dibujar(boolean sobreJugar, boolean sobreMultijugador, boolean sobreEditor, boolean sobreOpciones,
+    private void dibujar(boolean sobreJugar, boolean sobreEditor, boolean sobreOpciones,
                          boolean sobreSalir) {
         ScreenUtils.clear(FONDO);
         viewport.apply();
@@ -122,7 +115,6 @@ public class PantallaMenu extends ScreenAdapter {
         batch.begin();
         dibujarDuelistas();
         ui.boton(batch, botonJugar, sobreJugar, "MODO DE PRUEBA", 1.3f);
-        ui.boton(batch, botonMultijugador, sobreMultijugador, "MULTIJUGADOR", 1.3f);
         ui.boton(batch, botonEditor, sobreEditor, "EDITOR DE NIVELES", 1.3f);
         ui.boton(batch, botonOpciones, sobreOpciones, "OPCIONES", 1.3f);
         ui.boton(batch, botonSalir, sobreSalir, "SALIR", 1.6f);

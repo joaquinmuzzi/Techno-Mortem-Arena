@@ -107,11 +107,6 @@ public final class Proyectil {
         this.vy = (float) Math.sin(angulo) * velocidad;
     }
 
-    /** Una copia que solo se dibuja: la manda el anfitrion y no se simula. */
-    public static Proyectil paraDibujar(Tipo tipo, float x, float y, float angulo) {
-        return new Proyectil(tipo, null, x, y, angulo, 0f);
-    }
-
     /** La explosion de un cohete, que solo se dibuja: crece y se apaga en {@link #DURACION_EXPLOSION}. */
     static Proyectil explosion(float x, float y) {
         return new Proyectil(Tipo.EXPLOSION, null, x, y, 0f, 0f);

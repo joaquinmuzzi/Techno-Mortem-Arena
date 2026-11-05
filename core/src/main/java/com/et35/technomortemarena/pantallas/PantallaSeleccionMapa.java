@@ -102,7 +102,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
     }
 
     /**
-     * @param alElegir pantalla que se muestra con el mapa elegido; la de multijugador abre la sala
+     * @param alElegir pantalla que se muestra con el mapa elegido
      * @param alVolver pantalla a la que se vuelve sin elegir
      */
     public PantallaSeleccionMapa(RecursosGraficos recursos, RecursosAudio audio,

@@ -76,8 +76,8 @@ core/src/main/java/com/et35/technomortemarena/
 │   └── Pincho.java            Bloque letal al tocarlo
 ├── entidades/
 │   ├── Jugador.java           Entidad controlable: física, salto, apuntado, estocada y apilado
-│   ├── TipoArma.java          Espada y pistola: daño al tirarlas y balas
-│   ├── Proyectil.java         Balas y armas tiradas en vuelo
+│   ├── TipoArma.java          Espada, pistola y escopeta: daño al tirarlas y balas
+│   ├── Proyectil.java         Balas, perdigones y armas tiradas (la espada rebota)
 │   ├── ArmasEnJuego.java      Proyectiles y armas que aparecen en el mapa para agarrar
 │   ├── EstadoJugador.java     Lo necesario para dibujar a un jugador (viaja por la red)
 │   └── Hoja.java              La espada como caja rotada: choque exacto (SAT) y barrido de tajos
@@ -121,16 +121,19 @@ core/src/main/java/com/et35/technomortemarena/
 | Saltar | `W` |
 | Rodar | `Shift` izquierdo (en la dirección en que corrés, o hacia donde mirás si estás quieto) |
 | Apuntar la espada | Mover el mouse: la espada gira hacia el cursor |
-| Estocada (con la espada) / disparar (con la pistola) | Clic izquierdo |
+| Estocada (espada) / disparar (pistola o escopeta) / puñetazo (sin arma) | Clic izquierdo |
 | Tirar el arma hacia el cursor | Clic derecho |
 
-**Armas.** Cada duelista tiene 3 corazones, que se pierden por tercios: la espada (en la mano o
-tirada) saca un corazón entero y una bala, un tercio. Con clic derecho se tira lo que se tiene en la
-mano hacia el cursor: vuela, cae con la gravedad y hiere si toca al rival. Sin arma no se puede atacar
-hasta que, a los 1,5 s, aparece una espada nueva en la mano. Cada 8 s aparece una pistola en un lugar
-al azar del mapa (como mucho 2 a la vez, nunca cerca de los spawns): quien pasa por encima la agarra y
-reemplaza lo que tenía. La pistola trae 6 balas y al quedarse sin ellas se vuelve a la espada, así las
-armas cambian todo el tiempo. Al empezar cada ronda todos vuelven a tener la espada.
+**Armas.** Cada duelista tiene 3 corazones, que se pierden por sextos: la espada (en la mano o tirada)
+saca un corazón entero, una bala de pistola un tercio, y un perdigón de escopeta o un puñetazo un sexto.
+Las balas caen un poco con la gravedad: de lejos hay que apuntar más arriba. Con clic derecho se tira lo
+que se tiene en la mano hacia el cursor. La espada tirada cae en arco, rebota en el piso y las paredes y
+queda en el mapa: cualquiera de los dos la puede agarrar pasando por encima con las manos vacías. Las
+armas de fuego tiradas se rompen al chocar. Sin arma, el clic pega un puñetazo de corto alcance que
+empuja al rival y, una de cada tres veces, le hace soltar el arma (cae a sus pies). Cada 8 s aparece una
+pistola (6 balas) o una escopeta (3 disparos de 5 perdigones, alcance corto) en un lugar al azar del
+mapa, lejos de los spawns; quien pasa por encima la agarra y, si tenía la espada, la deja en el piso. Sin
+balas se queda con las manos vacías. Al empezar cada ronda todos vuelven a tener la espada.
 
 Al rodar (solo desde el piso, 0,35 s y con una recarga de 0,9 s) el cuerpo se achica a la mitad de
 alto y va más rápido que corriendo, pero no es invulnerable: la espada rival lo hiere igual. Si hay un

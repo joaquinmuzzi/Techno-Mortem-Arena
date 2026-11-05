@@ -9,6 +9,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Escopeta (`entidades.TipoArma.ESCOPETA`): 3 disparos de 5 perdigones en abanico, de corto alcance, que
+  sacan un sexto de corazón cada uno. En el mapa aparecen pistolas o escopetas al azar.
+- Puñetazo: sin arma, el clic izquierdo pega con la mano. Saca un sexto de corazón (menos que una bala),
+  empuja al rival y una de cada tres veces le hace soltar el arma, que cae a sus pies para que la agarre
+  cualquiera.
 - Menú principal: los dos duelistas (del color de cada jugador) en guardia a los costados de los botones,
   con las espadas apuntándose y un vaivén suave, parados sobre una franja de piso.
 - Armas. La vida pasa a contarse en tercios de corazón (3 corazones = 9 tercios): la espada saca un
@@ -95,6 +100,15 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- La vida se cuenta en sextos de corazón (antes en tercios) para que el puñetazo y los perdigones hagan
+  menos que una bala.
+- Las balas caen un poco con la gravedad, así es más difícil acertar de lejos.
+- La espada tirada cae más, rebota en el piso y las paredes y queda en el mapa como arma para agarrar: ya
+  no reaparece sola en la mano. Solo la levanta quien tiene las manos vacías; quien agarra un arma de fuego
+  con la espada en la mano la deja en el piso. Un arma de fuego sin balas deja las manos vacías (antes
+  volvía la espada).
+- Protocolo de red versión 7: la vida en sextos, la escopeta, los perdigones y la espada en el suelo. No es
+  compatible con la versión 6.
 - Retardo de la espada: la hoja ya no salta al ángulo del cursor, gira hacia él como mucho 12 radianes por
   segundo (equivale a 0,2 por fotograma a 60 FPS), siempre por el arco más corto y con el mismo retardo a
   cualquier cantidad de fotogramas por segundo. Al chocar dos hojas los duelistas quedan bloqueados 1 s: se

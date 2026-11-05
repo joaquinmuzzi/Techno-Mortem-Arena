@@ -12,7 +12,7 @@ public final class EstadoArmas {
     /** Tope de proyectiles que viajan por la red: los que sobran no se dibujan en el cliente. */
     public static final int MAX_PROYECTILES = 24;
     /** Tope de armas tiradas en el mapa a la vez. */
-    public static final int MAX_EN_EL_SUELO = 4;
+    public static final int MAX_EN_EL_SUELO = 6;
 
     /** Cada uno como {@code {tipo (ordinal de Proyectil.Tipo), x, y, angulo}}. */
     public final List<float[]> proyectiles = new ArrayList<>();

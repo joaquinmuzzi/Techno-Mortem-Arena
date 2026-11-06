@@ -812,14 +812,15 @@ class ArmasTest {
     }
 
     @Test
-    void contraElMedioOLaPuntaDeLaSuyaNoDesarma() {
-        assertFalse(Jugador.esDesarme(miaCruzandoEn(1060f, 100f), suya(), true), "le pegue en el medio");
+    void contraElMedioDeLaSuyaTambienDesarmaPeroContraLaPuntaNo() {
+        assertTrue(Jugador.esDesarme(miaCruzandoEn(1060f, 100f), suya(), true), "le pegue en el medio");
         assertFalse(Jugador.esDesarme(miaCruzandoEn(1100f, 100f), suya(), true), "le pegue en la punta");
     }
 
     @Test
-    void conElMedioDeMiHojaNoDesarma() {
-        assertFalse(Jugador.esDesarme(miaCruzandoEn(1020f, 56f), suya(), true));
+    void conLaMitadDeAfueraDeMiHojaDesarmaYConLaDeAdentroNo() {
+        assertTrue(Jugador.esDesarme(miaCruzandoEn(1020f, 60f), suya(), true), "pegue con el medio de mi hoja");
+        assertFalse(Jugador.esDesarme(miaCruzandoEn(1020f, 45f), suya(), true), "pegue cerca de mi mano");
     }
 
     @Test

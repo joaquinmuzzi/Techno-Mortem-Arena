@@ -93,12 +93,15 @@ public class Jugador {
     /** Uno de cada tantos punetazos que conectan le hace soltar el arma al rival. */
     static final int CHANCE_DESARME = 3;
     /**
-     * Desarme con la hoja: si la punta de mi hoja (su ultimo tercio) pega en la base de la del rival (su
-     * primer tercio) mientras muevo la espada, al rival se le vuela la espada.
+     * Desarme con la hoja: si la mitad de afuera de mi hoja (desde {@link #DESDE_DONDE_DESARMA} de su largo hasta
+     * la punta) pega en la parte de adentro de la del rival (hasta {@link #HASTA_DONDE_SE_DESARMA} de su largo,
+     * desde la mano) mientras muevo la espada, al rival se le vuela la espada. Pegarle cerca de la punta de su
+     * hoja no lo desarma: hay que acercarse a su mano.
      */
-    static final float TERCIO_DE_LA_HOJA = 1f / 3f;
+    static final float DESDE_DONDE_DESARMA = 0.5f;
+    static final float HASTA_DONDE_SE_DESARMA = 0.6f;
     /** Radianes por segundo que tiene que estar girando la espada para que cuente como un golpe que desarma. */
-    static final float GIRO_PARA_DESARMAR = 4f;
+    static final float GIRO_PARA_DESARMAR = 2.5f;
     /** Velocidad con que sale volando la espada desarmada: hacia arriba y un poco para el lado del golpe. */
     private static final float VUELO_DESARME_Y = 900f * ESCALA;
     private static final float VUELO_DESARME_X = 220f * ESCALA;
@@ -871,23 +874,23 @@ public class Jugador {
     }
 
     /**
-     * Verdadero si este choque de hojas desarma al rival: muevo la espada (giro rapido o estocada) y el
-     * tercio de la punta de mi hoja pega en el tercio de la base de la suya.
+     * Verdadero si este choque de hojas desarma al rival: muevo la espada (giro o estocada) y la mitad de
+     * afuera de mi hoja pega en la parte de adentro de la suya.
      */
     private boolean desarmaAlChocar(Hoja hojaOponente) {
         return esDesarme(hoja, hojaOponente, velocidadDeGiro >= GIRO_PARA_DESARMAR || tiempoEstocada > 0f);
     }
 
     /**
-     * La regla del desarme, sola: con la hoja en movimiento, la punta de {@code mia} (su ultimo tercio)
-     * tiene que pegar en la base de {@code suya} (su primer tercio).
+     * La regla del desarme, sola: con la hoja en movimiento, la mitad de afuera de {@code mia} tiene que pegar
+     * en la parte de adentro de {@code suya} (sus primeros {@link #HASTA_DONDE_SE_DESARMA}).
      */
     static boolean esDesarme(Hoja mia, Hoja suya, boolean laMuevo) {
         if (!laMuevo || !mia.solapa(suya)) {
             return false;
         }
         float[] contacto = mia.puntoDeContacto(suya);
-        return contacto[0] >= 1f - TERCIO_DE_LA_HOJA && contacto[1] <= TERCIO_DE_LA_HOJA;
+        return contacto[0] >= DESDE_DONDE_DESARMA && contacto[1] <= HASTA_DONDE_SE_DESARMA;
     }
 
     /** Se le vuela la espada de la mano hacia arriba: cae al mapa sin herir y la agarra cualquiera. */

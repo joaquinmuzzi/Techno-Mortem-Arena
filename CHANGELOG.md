@@ -9,6 +9,10 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- Desarmar con la espada es más fácil: alcanza con pegar con la mitad de afuera de tu hoja (antes, el último
+  tercio) en los primeros 60 % de la del rival desde la mano (antes, el primer tercio), girándola a 2,5 rad/s
+  o más (antes, 4). En choques de hojas al azar, desarman casi el doble que antes (del 19 % al 36 %, sin contar
+  el giro más bajo). Pegarle cerca de la punta de su hoja sigue sin desarmar.
 - La música suena pareja: los tres temas (`menu.mp3`, `combate.mp3` y `editor.mp3`) están normalizados a −14 LUFS
   con `ffmpeg loudnorm`. El de combate venía mucho más fuerte (−7 LUFS) y el del editor tenía una intro casi
   muda, así que además se le emparejaron las partes suaves y fuertes (`dynaudnorm`). El volumen general de la

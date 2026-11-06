@@ -584,6 +584,43 @@ class ArmasTest {
     }
 
     @Test
+    void tirarUnArmaDeFuegoNoSuenaHastaQueTocaElPisoYLaEspadaNoSuena() {
+        Jugador a = tirador(1000f);
+        Jugador d = blanco(3000f);
+        a.equipar(Armas.PISTOLA);
+        apuntarALaDerecha();
+        pasos(a, d, 1);
+        guion.lanzar = true;
+        pasos(a, d, 1);
+        assertEquals(0, armas.getContadorArmasDeFuegoAlCaer(), "todavia no toco el piso");
+
+        pasos(a, d, 120);
+        assertTrue(armas.getContadorArmasDeFuegoAlCaer() >= 1, "suena recien al tocar el piso");
+        int conLaPistola = armas.getContadorArmasDeFuegoAlCaer();
+
+        Jugador b = tirador(1000f);
+        apuntarALaDerecha();
+        pasos(b, d, 1);
+        guion.lanzar = true;
+        pasos(b, d, 120);
+        assertEquals(conLaPistola, armas.getContadorArmasDeFuegoAlCaer(), "la espada no suena con Gun-drop");
+    }
+
+    @Test
+    void elContadorDeArmasDeFuegoAlCaerSumaCadaReboteYNoSeMezclaConLasEspadas() {
+        Proyectil pistola = Proyectil.inofensiva(Armas.PISTOLA, null, 1500f, PISO + 400f, 0f, 0f).conBalas(1);
+        armas.getProyectiles().add(pistola);
+        Jugador a = tirador(1000f);
+        Jugador d = blanco(3000f);
+        for (int i = 0; i < 600 && !armas.getProyectiles().isEmpty(); i++) {
+            armas.actualizar(DT, arena, a, d);
+        }
+        assertTrue(armas.getContadorArmasDeFuegoAlCaer() >= 2,
+            "cuenta el primer golpe y los rebotes: " + armas.getContadorArmasDeFuegoAlCaer());
+        assertEquals(0, armas.getContadorEspadasAlCaer(), "la pistola no suma al contador de las espadas");
+    }
+
+    @Test
     void laEspadaNuncaSeQuedaFlotandoEnElAire() {
         Proyectil espada = Proyectil.inofensiva(Armas.ESPADA, null, 1500f, 1400f, 300f, 900f);
         for (int i = 0; i < 600 && espada.isActivo(); i++) {

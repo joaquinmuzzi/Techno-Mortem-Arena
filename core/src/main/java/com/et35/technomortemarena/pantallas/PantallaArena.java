@@ -50,6 +50,11 @@ public class PantallaArena extends ScreenAdapter {
     private static final float VOLUMEN_EQUIPAR_ESPADA = 0.7f;
     private static final float VOLUMEN_EQUIPAR_ARMA = 0.7f;
     private static final float VOLUMEN_ESPADA_CAE = 0.8f;
+    private static final float VOLUMEN_DISPARO_LASER = 0.7f;
+    private static final float VOLUMEN_DISPARO_BAZUCA = 0.9f;
+    private static final float VOLUMEN_EXPLOSION = 0.9f;
+    private static final float VOLUMEN_ARMA_CAE = 0.7f;
+    private static final float VOLUMEN_POWER_UP = 0.8f;
 
     private static final float DURACION_AYUDA = 7f;
     private static final float DESVANECIDO_AYUDA = 1.5f;
@@ -112,6 +117,11 @@ public class PantallaArena extends ScreenAdapter {
     private int espadasEquipadasSonadas;
     private int armasDeFuegoEquipadasSonadas;
     private int espadasCaidasSonadas;
+    private int disparosLaserSonados;
+    private int disparosBazucaSonados;
+    private int powerUpsSonados;
+    private int armasDeFuegoCaidasSonadas;
+    private int explosionesSonadas;
 
     private final RondasPartida rondas = new RondasPartida();
 
@@ -178,7 +188,12 @@ public class PantallaArena extends ScreenAdapter {
         disparosEscopetaSonados = 0;
         espadasEquipadasSonadas = 0;
         armasDeFuegoEquipadasSonadas = 0;
+        disparosLaserSonados = 0;
+        disparosBazucaSonados = 0;
+        powerUpsSonados = 0;
         espadasCaidasSonadas = armas.getContadorEspadasAlCaer();
+        armasDeFuegoCaidasSonadas = armas.getContadorArmasDeFuegoAlCaer();
+        explosionesSonadas = armas.getContadorExplosiones();
         muerteSubitaActivada = false;
     }
 
@@ -304,6 +319,31 @@ public class PantallaArena extends ScreenAdapter {
             audio.espadaCae.play(VOLUMEN_ESPADA_CAE);
         }
         espadasCaidasSonadas = espadasCaidas;
+        int disparosLaser = jugadorUno.getContadorDisparosLaser() + jugadorDos.getContadorDisparosLaser();
+        if (disparosLaser > disparosLaserSonados) {
+            audio.reproducir(audio.disparoLaser, VOLUMEN_DISPARO_LASER);
+        }
+        disparosLaserSonados = disparosLaser;
+        int disparosBazuca = jugadorUno.getContadorDisparosBazuca() + jugadorDos.getContadorDisparosBazuca();
+        if (disparosBazuca > disparosBazucaSonados) {
+            audio.reproducir(audio.bazucazo, VOLUMEN_DISPARO_BAZUCA);
+        }
+        disparosBazucaSonados = disparosBazuca;
+        int armasDeFuegoCaidas = armas.getContadorArmasDeFuegoAlCaer();
+        if (armasDeFuegoCaidas > armasDeFuegoCaidasSonadas) {
+            audio.reproducir(audio.armaCae, VOLUMEN_ARMA_CAE);
+        }
+        armasDeFuegoCaidasSonadas = armasDeFuegoCaidas;
+        int powerUps = jugadorUno.getContadorPowerUps() + jugadorDos.getContadorPowerUps();
+        if (powerUps > powerUpsSonados) {
+            audio.reproducir(audio.powerUp, VOLUMEN_POWER_UP);
+        }
+        powerUpsSonados = powerUps;
+        int explosiones = armas.getContadorExplosiones();
+        if (explosiones > explosionesSonadas) {
+            audio.reproducir(audio.explosion, VOLUMEN_EXPLOSION);
+        }
+        explosionesSonadas = explosiones;
     }
 
     private void detenerSonidoCorrer() {

@@ -116,6 +116,9 @@ public class Jugador {
     private int contadorDisparosEscopeta;
     private int contadorEspadasEquipadas;
     private int contadorArmasDeFuegoEquipadas;
+    private int contadorDisparosLaser;
+    private int contadorDisparosBazuca;
+    private int contadorPowerUps;
 
     private Bloque bloqueBajoPies;
     private boolean montadoSobreOponente;
@@ -302,6 +305,12 @@ public class Jugador {
                 break;
             case ESCOPETA:
                 contadorDisparosEscopeta++;
+                break;
+            case LASER:
+                contadorDisparosLaser++;
+                break;
+            case BAZUCA:
+                contadorDisparosBazuca++;
                 break;
             default:
                 break;
@@ -715,6 +724,7 @@ public class Jugador {
 
     public void activarPowerUp(PowerUp mejora) {
         tiempoPowerUp[mejora.ordinal()] = PowerUp.DURACION;
+        contadorPowerUps++;
     }
 
     public boolean tienePowerUp(PowerUp mejora) {
@@ -843,6 +853,18 @@ public class Jugador {
 
     public int getContadorArmasDeFuegoEquipadas() {
         return contadorArmasDeFuegoEquipadas;
+    }
+
+    public int getContadorDisparosLaser() {
+        return contadorDisparosLaser;
+    }
+
+    public int getContadorDisparosBazuca() {
+        return contadorDisparosBazuca;
+    }
+
+    public int getContadorPowerUps() {
+        return contadorPowerUps;
     }
 
     public int getVida() {

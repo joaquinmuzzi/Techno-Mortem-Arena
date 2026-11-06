@@ -13,6 +13,11 @@ public class RifleLaser extends ArmaDeFuego {
     }
 
     @Override
+    public SonidoDisparo getSonidoDisparo() {
+        return SonidoDisparo.LASER;
+    }
+
+    @Override
     public Texture getTextura(RecursosGraficos recursos) {
         return recursos.rifleLaser;
     }

@@ -15,6 +15,11 @@ public class Lanzacohetes extends ArmaDeFuego {
     }
 
     @Override
+    public SonidoDisparo getSonidoDisparo() {
+        return SonidoDisparo.BAZUCA;
+    }
+
+    @Override
     public Texture getTextura(RecursosGraficos recursos) {
         return recursos.lanzacohetes;
     }

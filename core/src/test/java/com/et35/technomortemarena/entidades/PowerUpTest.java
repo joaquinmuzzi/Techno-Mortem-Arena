@@ -186,6 +186,28 @@ class PowerUpTest {
     }
 
     @Test
+    void recogerUnaMejoraSumaSuContadorYEquiparUnArmaNo() {
+        ArmasEnJuego armas = new ArmasEnJuego(new Random(2), new ArrayList<>());
+        Guion guion = new Guion();
+        Jugador j = jugador(guion);
+        Jugador otro = blanco();
+        assertEquals(0, j.getContadorPowerUps());
+        j.equipar(Armas.PISTOLA);
+        assertEquals(0, j.getContadorPowerUps(), "un arma no es una mejora");
+
+        armas.aparecerPowerUp(arena);
+        float[] mejora = armas.getPowerUps().get(0);
+        for (int i = 0; i < 300; i++) {
+            armas.actualizar(DT, arena, j, otro);
+        }
+        mejora[1] = j.getPosicion().x;
+        mejora[2] = PISO;
+        armas.actualizar(DT, arena, j, otro);
+        assertTrue(armas.getPowerUps().isEmpty(), "la agarra aunque tenga un arma");
+        assertEquals(1, j.getContadorPowerUps(), "suena el power-up");
+    }
+
+    @Test
     void elBlancoDePruebaNoAgarraMejorasYLimpiarLasSaca() {
         ArmasEnJuego armas = new ArmasEnJuego(new Random(2), new ArrayList<>());
         Jugador j = jugador(new Guion());

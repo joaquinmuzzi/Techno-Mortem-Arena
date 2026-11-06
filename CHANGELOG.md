@@ -41,6 +41,10 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Efectos de sonido del rifle láser (`disparo-laser.mp3`), del lanzacohetes (`bazooka-shot.mp3` al disparar y
+  `explosion.mp3` al explotar), de un arma de fuego tirada al tocar el piso (`Gun-drop.mp3`, en cada rebote) y
+  de recoger una mejora (`power-up.mp3`), como en `main` (PR #42). El sonido de cada disparo lo dice cada arma
+  (`Arma.getSonidoDisparo`): el rifle láser devuelve `LASER` y el lanzacohetes `BAZUCA`.
 - Bloques spawner de rifles láser (`F` en la grilla) y de lanzacohetes (`C`): como los de pistolas y
   escopetas, son de 3x3 y hacen aparecer su arma encima cada 5 s. En el editor son las herramientas
   "Q RIFLES LASER" y "E COHETES"; los números ya no alcanzaban para todas. `SpawnerArma` ahora sabe qué

@@ -23,6 +23,16 @@ public class RecursosAudio implements Disposable {
 
     public final Sound armaEquipada;
 
+    public final Sound bazucazo;
+
+    public final Sound explosion;
+
+    public final Sound disparoLaser;
+
+    public final Sound armaCae;
+
+    public final Sound powerUp;
+
     public final Sound boton;
 
     public final Sound botonSeleccionado;
@@ -46,6 +56,11 @@ public class RecursosAudio implements Disposable {
         espadaEquipada = cargar("sounds/sword-equipped.mp3");
         espadaCae = cargar("sounds/sword-falling.mp3");
         armaEquipada = cargar("sounds/Weapon-Equip.mp3");
+        bazucazo = cargar("sounds/bazooka-shot.mp3");
+        explosion = cargar("sounds/explosion.mp3");
+        disparoLaser = cargar("sounds/disparo-laser.mp3");
+        armaCae = cargar("sounds/Gun-drop.mp3");
+        powerUp = cargar("sounds/power-up.mp3");
         boton = cargar("sounds/Boton.wav");
         botonSeleccionado = cargar("sounds/Boton Seleccionado.mp3");
         musicaMenu = Gdx.audio.newMusic(Gdx.files.internal("music/menu.mp3"));
@@ -130,6 +145,11 @@ public class RecursosAudio implements Disposable {
         espadaEquipada.dispose();
         espadaCae.dispose();
         armaEquipada.dispose();
+        bazucazo.dispose();
+        explosion.dispose();
+        disparoLaser.dispose();
+        armaCae.dispose();
+        powerUp.dispose();
         boton.dispose();
         botonSeleccionado.dispose();
         musicaMenu.dispose();

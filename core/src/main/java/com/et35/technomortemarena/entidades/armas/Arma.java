@@ -61,7 +61,7 @@ public abstract class Arma {
         return SonidoDisparo.NINGUNO;
     }
 
-    public enum SonidoDisparo { NINGUNO, PISTOLA, ESCOPETA }
+    public enum SonidoDisparo { NINGUNO, PISTOLA, ESCOPETA, LASER, BAZUCA }
 
     public DefinicionProyectil getDefinicionLanzada() {
         if (definicionLanzada == null) {

@@ -58,6 +58,8 @@ public final class ArmasEnJuego {
     private float tiempoAnimacion;
     private final List<int[]> celdasRotas = new ArrayList<>();
     private int contadorEspadasAlCaer;
+    private int contadorArmasDeFuegoAlCaer;
+    private int contadorExplosiones;
 
     public static final int MARGEN_SPAWN = 4;
 
@@ -98,6 +100,7 @@ public final class ArmasEnJuego {
                 explotar(proyectil.getX(), proyectil.getY(), proyectil.getDuenio(), arena, uno, dos);
             }
             contadorEspadasAlCaer += proyectil.tomarCaidasAlPiso();
+            contadorArmasDeFuegoAlCaer += proyectil.tomarCaidasDeArmaDeFuego();
             if (!proyectil.isActivo()) {
                 if (proyectil.dejaArmaEnElSuelo()) {
                     Arma tipo = proyectil.getArma();
@@ -171,6 +174,7 @@ public final class ArmasEnJuego {
     }
 
     void explotar(float x, float y, Jugador duenio, Arena arena, Jugador uno, Jugador dos) {
+        contadorExplosiones++;
         explosiones.add(Proyectil.explosion(x, y));
         herirConExplosion(uno, duenio, x, y);
         herirConExplosion(dos, duenio, x, y);
@@ -483,6 +487,14 @@ public final class ArmasEnJuego {
 
     public int getContadorEspadasAlCaer() {
         return contadorEspadasAlCaer;
+    }
+
+    public int getContadorArmasDeFuegoAlCaer() {
+        return contadorArmasDeFuegoAlCaer;
+    }
+
+    public int getContadorExplosiones() {
+        return contadorExplosiones;
     }
 
     public void dibujar(SpriteBatch batch, RecursosGraficos recursos) {

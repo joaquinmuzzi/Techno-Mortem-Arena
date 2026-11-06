@@ -37,6 +37,7 @@ public final class Proyectil {
     private boolean apoyada;
     private boolean tocandoPiso;
     private int caidasAlPiso;
+    private int caidasDeArmaDeFuego;
     private int balas;
     private float esperaReflejo;
     private final Rectangle caja = new Rectangle();
@@ -228,8 +229,12 @@ public final class Proyectil {
         if (chocaConBloque(arena)) {
             y -= dy;
             if (vy < 0f) {
-                if (arma.esEspada() && !tocandoPiso) {
-                    caidasAlPiso++;
+                if (!tocandoPiso) {
+                    if (arma.esEspada()) {
+                        caidasAlPiso++;
+                    } else if (arma.esDeFuego()) {
+                        caidasDeArmaDeFuego++;
+                    }
                 }
                 tocandoPiso = true;
                 if (-vy < VELOCIDAD_PARA_REBOTAR) {
@@ -266,6 +271,12 @@ public final class Proyectil {
     int tomarCaidasAlPiso() {
         int caidas = caidasAlPiso;
         caidasAlPiso = 0;
+        return caidas;
+    }
+
+    int tomarCaidasDeArmaDeFuego() {
+        int caidas = caidasDeArmaDeFuego;
+        caidasDeArmaDeFuego = 0;
         return caidas;
     }
 

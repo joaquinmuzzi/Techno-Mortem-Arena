@@ -7,6 +7,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [No publicado]
 
+### Cambiado
+
+- La música suena pareja: los tres temas (`menu.mp3`, `combate.mp3` y `editor.mp3`) están normalizados a −14 LUFS
+  con `ffmpeg loudnorm`. El de combate venía mucho más fuerte (−7 LUFS) y el del editor tenía una intro casi
+  muda, así que además se le emparejaron las partes suaves y fuertes (`dynaudnorm`). El volumen general de la
+  música baja de 0,5 a 0,36.
+
 ### Añadido
 
 - Bloques spawner de rifles láser (`F` en la grilla) y de lanzacohetes (`C`): como los de pistolas y

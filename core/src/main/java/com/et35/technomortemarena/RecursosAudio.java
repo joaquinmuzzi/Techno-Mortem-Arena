@@ -72,8 +72,12 @@ public class RecursosAudio implements Disposable {
     /** Que musica pide cada pantalla: la del menu en el menu, la de combate en la partida y la del editor en el editor. */
     public enum Musica { NINGUNA, MENU, COMBATE, EDITOR }
 
-    /** Volumen de la musica: queda por debajo de los sonidos de los botones y de los golpes. */
-    private static final float VOLUMEN_MUSICA = 0.5f;
+    /**
+     * Volumen de la musica: queda por debajo de los sonidos de los botones y de los golpes. Es el mismo para los
+     * tres temas porque los archivos ya vienen emparejados: estan normalizados a -14 LUFS (la medida de que tan
+     * fuerte se escucha un tema), asi ninguno suena mas fuerte que otro al pasar de pantalla.
+     */
+    private static final float VOLUMEN_MUSICA = 0.36f;
 
     private final Music musicaMenu;
     private final Music musicaCombate;

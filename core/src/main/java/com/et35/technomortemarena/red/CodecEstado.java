@@ -20,13 +20,15 @@ import java.nio.ByteBuffer;
  */
 final class CodecEstado {
 
-    static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 1 + 1 + PowerUp.values().length + 4 + 4 + 4 + 4;
+    static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 1 + 1 + PowerUp.values().length + 4 + 4 + 4 + 4
+        + 4 + 4 + 4 + 4;
 
     /**
-     * Lo minimo de las armas fuera de las manos: las cuatro cantidades (proyectiles, armas en el suelo, mejoras y
-     * celdas rotas) y el contador de espadas caidas. Cada uno suma lo suyo.
+     * Lo minimo de las armas fuera de las manos: las cuatro cantidades (proyectiles, armas en el suelo,
+     * mejoras y celdas rotas) y los contadores de espadas y armas de fuego caidas y de explosiones. Cada
+     * uno suma lo suyo.
      */
-    static final int BYTES_ARMAS = 4 + 4;
+    static final int BYTES_ARMAS = 4 + 4 + 4 + 4;
     /** Columna y fila de una celda que rompio un cohete. */
     static final int BYTES_POR_CELDA_ROTA = 2;
     static final int BYTES_POR_POWER_UP = 1 + 4 + 4;
@@ -75,6 +77,10 @@ final class CodecEstado {
         buffer.putInt(estado.contadorDisparosEscopeta);
         buffer.putInt(estado.contadorEspadasEquipadas);
         buffer.putInt(estado.contadorArmasDeFuegoEquipadas);
+        buffer.putInt(estado.contadorDisparosLaser);
+        buffer.putInt(estado.contadorDisparosBazuca);
+        buffer.putInt(estado.contadorArmasDeFuegoTiradas);
+        buffer.putInt(estado.contadorPowerUps);
     }
 
     /**
@@ -106,10 +112,15 @@ final class CodecEstado {
         int disparosEscopeta = buffer.getInt();
         int espadasEquipadas = buffer.getInt();
         int armasDeFuegoEquipadas = buffer.getInt();
+        int disparosLaser = buffer.getInt();
+        int disparosBazuca = buffer.getInt();
+        int armasDeFuegoTiradas = buffer.getInt();
+        int powerUps = buffer.getInt();
         if (arma < 0 || arma > TipoArma.values().length || balas < 0 || balas > TipoArma.MAX_BALAS) {
             return false;
         }
-        if (disparosPistola < 0 || disparosEscopeta < 0 || espadasEquipadas < 0 || armasDeFuegoEquipadas < 0) {
+        if (disparosPistola < 0 || disparosEscopeta < 0 || espadasEquipadas < 0 || armasDeFuegoEquipadas < 0
+            || disparosLaser < 0 || disparosBazuca < 0 || armasDeFuegoTiradas < 0 || powerUps < 0) {
             return false;
         }
         if (!finito(x) || !finito(y) || !finito(angulo) || !finito(extension) || !finito(flash)
@@ -135,6 +146,10 @@ final class CodecEstado {
         destino.contadorDisparosEscopeta = disparosEscopeta;
         destino.contadorEspadasEquipadas = espadasEquipadas;
         destino.contadorArmasDeFuegoEquipadas = armasDeFuegoEquipadas;
+        destino.contadorDisparosLaser = disparosLaser;
+        destino.contadorDisparosBazuca = disparosBazuca;
+        destino.contadorArmasDeFuegoTiradas = armasDeFuegoTiradas;
+        destino.contadorPowerUps = powerUps;
         return true;
     }
 
@@ -271,6 +286,8 @@ final class CodecEstado {
             buffer.put((byte) celda[1]);
         }
         buffer.putInt(armas.contadorEspadasAlCaer);
+        buffer.putInt(armas.contadorArmasDeFuegoAlCaer);
+        buffer.putInt(armas.contadorExplosiones);
     }
 
     /**
@@ -340,11 +357,13 @@ final class CodecEstado {
                 return false;
             }
         }
-        if (buffer.remaining() < 4) {
+        if (buffer.remaining() < 12) {
             return false;
         }
         int espadasAlCaer = buffer.getInt();
-        if (espadasAlCaer < 0) {
+        int armasAlCaer = buffer.getInt();
+        int explosiones = buffer.getInt();
+        if (espadasAlCaer < 0 || armasAlCaer < 0 || explosiones < 0) {
             return false;
         }
         destino.celdasRotas.clear();
@@ -364,6 +383,8 @@ final class CodecEstado {
             destino.enElSuelo.add(a);
         }
         destino.contadorEspadasAlCaer = espadasAlCaer;
+        destino.contadorArmasDeFuegoAlCaer = armasAlCaer;
+        destino.contadorExplosiones = explosiones;
         return true;
     }
 

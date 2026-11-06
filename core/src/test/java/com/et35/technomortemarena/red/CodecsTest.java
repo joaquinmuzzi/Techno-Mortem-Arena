@@ -79,6 +79,10 @@ class CodecsTest {
         estado.contadorDisparosEscopeta = 13;
         estado.contadorEspadasEquipadas = 15;
         estado.contadorArmasDeFuegoEquipadas = 17;
+        estado.contadorDisparosLaser = 19;
+        estado.contadorDisparosBazuca = 21;
+        estado.contadorArmasDeFuegoTiradas = 23;
+        estado.contadorPowerUps = 25;
         return estado;
     }
 
@@ -86,7 +90,7 @@ class CodecsTest {
     void elEstadoRodandoSobreviveAlViaje() {
         EstadoJugador estado = estadoDeEjemplo();
         estado.rodando = true;
-        ByteBuffer buffer = ByteBuffer.allocate(64);
+        ByteBuffer buffer = ByteBuffer.allocate(128);
         CodecEstado.escribir(buffer, estado);
         buffer.flip();
 
@@ -99,7 +103,7 @@ class CodecsTest {
 
     @Test
     void unEstadoSobreviveAlViaje() {
-        ByteBuffer buffer = ByteBuffer.allocate(64);
+        ByteBuffer buffer = ByteBuffer.allocate(128);
         CodecEstado.escribir(buffer, estadoDeEjemplo());
         assertEquals(CodecEstado.BYTES, buffer.position());
         buffer.flip();
@@ -122,6 +126,10 @@ class CodecsTest {
         assertEquals(13, leido.contadorDisparosEscopeta);
         assertEquals(15, leido.contadorEspadasEquipadas);
         assertEquals(17, leido.contadorArmasDeFuegoEquipadas);
+        assertEquals(19, leido.contadorDisparosLaser);
+        assertEquals(21, leido.contadorDisparosBazuca);
+        assertEquals(23, leido.contadorArmasDeFuegoTiradas);
+        assertEquals(25, leido.contadorPowerUps);
     }
 
     @Test
@@ -134,7 +142,7 @@ class CodecsTest {
         EstadoJugador conInfinito = estadoDeEjemplo();
         conInfinito.y = Float.POSITIVE_INFINITY;
         for (EstadoJugador malo : new EstadoJugador[] {conNaN, conInfinito}) {
-            ByteBuffer buffer = ByteBuffer.allocate(64);
+            ByteBuffer buffer = ByteBuffer.allocate(128);
             CodecEstado.escribir(buffer, malo);
             buffer.flip();
             assertFalse(CodecEstado.leer(buffer, new EstadoJugador()));
@@ -143,7 +151,7 @@ class CodecsTest {
         // una extension de la estocada fuera de 0 a 1
         EstadoJugador conExtensionAbsurda = estadoDeEjemplo();
         conExtensionAbsurda.extension = 1.5f;
-        ByteBuffer buffer = ByteBuffer.allocate(64);
+        ByteBuffer buffer = ByteBuffer.allocate(128);
         CodecEstado.escribir(buffer, conExtensionAbsurda);
         buffer.flip();
         EstadoJugador intacto = new EstadoJugador();
@@ -277,6 +285,8 @@ class CodecsTest {
         armas.proyectiles.add(new float[] {1, 300f, 400f, -2f});
         armas.enElSuelo.add(new float[] {2, 512f, 128f});
         armas.contadorEspadasAlCaer = 5;
+        armas.contadorArmasDeFuegoAlCaer = 7;
+        armas.contadorExplosiones = 9;
         ByteBuffer buffer = ByteBuffer.allocate(256);
         CodecEstado.escribir(buffer, armas);
         assertEquals(CodecEstado.BYTES_ARMAS + 2 * CodecEstado.BYTES_POR_PROYECTIL + CodecEstado.BYTES_POR_ARMA_EN_EL_SUELO,
@@ -289,6 +299,8 @@ class CodecsTest {
         assertArrayEquals(new float[] {1, 300f, 400f, -2f}, leidas.proyectiles.get(1));
         assertArrayEquals(new float[] {2, 512f, 128f}, leidas.enElSuelo.get(0));
         assertEquals(5, leidas.contadorEspadasAlCaer);
+        assertEquals(7, leidas.contadorArmasDeFuegoAlCaer);
+        assertEquals(9, leidas.contadorExplosiones);
     }
 
     @Test
@@ -313,9 +325,16 @@ class CodecsTest {
         assertFalse(CodecEstado.leer(buffer, new EstadoArmas()));
 
         EstadoArmas conContadorNegativo = new EstadoArmas();
-        conContadorNegativo.contadorEspadasAlCaer = -1;
+        conContadorNegativo.contadorArmasDeFuegoAlCaer = -1;
         buffer = ByteBuffer.allocate(256);
         CodecEstado.escribir(buffer, conContadorNegativo);
+        buffer.flip();
+        assertFalse(CodecEstado.leer(buffer, new EstadoArmas()));
+
+        EstadoArmas conExplosionesNegativas = new EstadoArmas();
+        conExplosionesNegativas.contadorExplosiones = -1;
+        buffer = ByteBuffer.allocate(256);
+        CodecEstado.escribir(buffer, conExplosionesNegativas);
         buffer.flip();
         assertFalse(CodecEstado.leer(buffer, new EstadoArmas()));
     }
@@ -325,7 +344,7 @@ class CodecsTest {
         EstadoJugador estado = estadoDeEjemplo();
         estado.arma = 2;
         estado.balas = 4;
-        ByteBuffer buffer = ByteBuffer.allocate(64);
+        ByteBuffer buffer = ByteBuffer.allocate(128);
         CodecEstado.escribir(buffer, estado);
         buffer.flip();
         EstadoJugador leido = new EstadoJugador();
@@ -334,7 +353,7 @@ class CodecsTest {
         assertEquals(4, leido.balas);
 
         estado.balas = 99;
-        buffer = ByteBuffer.allocate(64);
+        buffer = ByteBuffer.allocate(128);
         CodecEstado.escribir(buffer, estado);
         buffer.flip();
         assertFalse(CodecEstado.leer(buffer, new EstadoJugador()));
@@ -385,7 +404,7 @@ class CodecsTest {
     void elTiempoDeLasMejorasDelJugadorViaja() {
         EstadoJugador estado = estadoDeEjemplo();
         estado.tiempoPowerUp[0] = 7.3f;
-        ByteBuffer buffer = ByteBuffer.allocate(64);
+        ByteBuffer buffer = ByteBuffer.allocate(128);
         CodecEstado.escribir(buffer, estado);
         assertEquals(CodecEstado.BYTES, buffer.position());
         buffer.flip();

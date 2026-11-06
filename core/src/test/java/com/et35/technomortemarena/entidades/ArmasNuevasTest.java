@@ -99,6 +99,17 @@ class ArmasNuevasTest {
     }
 
     @Test
+    void cadaRayoSumaElContadorDeDisparosLaser() {
+        Guion guion = new Guion();
+        Jugador j = jugador(guion, 1000f, true);
+        j.equipar(TipoArma.RIFLE_LASER);
+        assertEquals(0, j.getContadorDisparosLaser());
+        disparar(j, guion, blanco(7000f), arena);
+        assertEquals(1, j.getContadorDisparosLaser());
+        assertEquals(0, j.getContadorDisparosBazuca(), "el rifle no suma al contador de la bazuca");
+    }
+
+    @Test
     void elRayoLaserNoSeReflejaEnLaHoja() {
         Jugador espadachin = jugador(FuenteEntrada.NINGUNA, 2000f, false);
         espadachin.actualizar(DT, arena, LEJOS);
@@ -124,6 +135,17 @@ class ArmasNuevasTest {
     }
 
     @Test
+    void cadaCoheteSumaElContadorDeDisparosBazuca() {
+        Guion guion = new Guion();
+        Jugador j = jugador(guion, 1000f, true);
+        j.equipar(TipoArma.LANZACOHETES);
+        assertEquals(0, j.getContadorDisparosBazuca());
+        disparar(j, guion, blanco(7000f), arena);
+        assertEquals(1, j.getContadorDisparosBazuca());
+        assertEquals(0, j.getContadorDisparosLaser(), "la bazuca no suma al contador del laser");
+    }
+
+    @Test
     void elCoheteExplotaAlChocarConUnBloque() {
         Proyectil cohete = new Proyectil(Proyectil.Tipo.COHETE, null, 1000f, PISO + 60f, -1.2f, Proyectil.VELOCIDAD_COHETE);
         for (int i = 0; i < 120 && cohete.isActivo(); i++) {
@@ -146,6 +168,16 @@ class ArmasNuevasTest {
         Jugador lejos = blanco(4000f);
         armas.explotar(4000f - ArmasEnJuego.RADIO_EXPLOSION - 10f, PISO + 10f, tirador, arena, lejos, null);
         assertEquals(VIDA_LLENA, lejos.getPartes());
+    }
+
+    @Test
+    void cadaExplosionSumaElContadorParaElSonido() {
+        ArmasEnJuego armas = new ArmasEnJuego(new Random(1), new ArrayList<>());
+        assertEquals(0, armas.getContadorExplosiones());
+        armas.explotar(50f * Arena.CELDA, PISO + 40f, null, arena, blanco(5000f), null);
+        assertEquals(1, armas.getContadorExplosiones());
+        armas.explotar(55f * Arena.CELDA, PISO + 40f, null, arena, blanco(5000f), null);
+        assertEquals(2, armas.getContadorExplosiones(), "cada cohete que impacta suena");
     }
 
     @Test

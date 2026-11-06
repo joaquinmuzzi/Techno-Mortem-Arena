@@ -87,6 +87,11 @@ public class PantallaArena extends ScreenAdapter {
     private static final float VOLUMEN_EQUIPAR_ESPADA = 0.7f;
     private static final float VOLUMEN_EQUIPAR_ARMA = 0.7f;
     private static final float VOLUMEN_ESPADA_CAE = 0.8f;
+    private static final float VOLUMEN_DISPARO_LASER = 0.7f;
+    private static final float VOLUMEN_DISPARO_BAZUCA = 0.9f;
+    private static final float VOLUMEN_EXPLOSION = 0.9f;
+    private static final float VOLUMEN_ARMA_CAE = 0.7f;
+    private static final float VOLUMEN_POWER_UP = 0.8f;
 
     // Cartel de controles que aparece al empezar la ronda. Se muestran los del Jugador 1 arriba a
     // la izquierda y los del Jugador 2 arriba a la derecha, para que nadie arranque perdido.
@@ -180,6 +185,14 @@ public class PantallaArena extends ScreenAdapter {
     private int armasDeFuegoEquipadasSonadas;
     /** Veces que ya sono la espada tirada al caer. */
     private int espadasCaidasSonadas;
+    /** Cuentas de disparos de laser y bazuca, armas tiradas y mejoras recogidas ya sonadas. */
+    private int disparosLaserSonados;
+    private int disparosBazucaSonados;
+    private int armasTiradasSonadas;
+    private int powerUpsSonados;
+    /** Veces que ya sono un arma de fuego al caer o un cohete al explotar. */
+    private int armasDeFuegoCaidasSonadas;
+    private int explosionesSonadas;
 
     private final RondasPartida rondas;
     private final EstadoPartida estadoPartida = new EstadoPartida();
@@ -319,9 +332,15 @@ public class PantallaArena extends ScreenAdapter {
         disparosEscopetaSonados = 0;
         espadasEquipadasSonadas = 0;
         armasDeFuegoEquipadasSonadas = 0;
+        disparosLaserSonados = 0;
+        disparosBazucaSonados = 0;
+        armasTiradasSonadas = 0;
+        powerUpsSonados = 0;
         // El contador de espadas caidas es de las armas, que no se recrean: se toma el valor actual
         // para no sonar por caidas de la partida anterior.
         espadasCaidasSonadas = armas.getContadorEspadasAlCaer();
+        armasDeFuegoCaidasSonadas = armas.getContadorArmasDeFuegoAlCaer();
+        explosionesSonadas = armas.getContadorExplosiones();
         muerteSubitaActivada = false;
     }
 
@@ -566,6 +585,38 @@ public class PantallaArena extends ScreenAdapter {
             audio.espadaCae.play(VOLUMEN_ESPADA_CAE);
         }
         espadasCaidasSonadas = espadasCaidas;
+        int disparosLaser = jugadorUno.getContadorDisparosLaser()
+            + (jugadorDos != null ? jugadorDos.getContadorDisparosLaser() : 0);
+        if (disparosLaser > disparosLaserSonados) {
+            audio.disparoLaser.play(VOLUMEN_DISPARO_LASER);
+        }
+        disparosLaserSonados = disparosLaser;
+        int disparosBazuca = jugadorUno.getContadorDisparosBazuca()
+            + (jugadorDos != null ? jugadorDos.getContadorDisparosBazuca() : 0);
+        if (disparosBazuca > disparosBazucaSonados) {
+            audio.bazucazo.play(VOLUMEN_DISPARO_BAZUCA);
+        }
+        disparosBazucaSonados = disparosBazuca;
+        int armasTiradas = jugadorUno.getContadorArmasDeFuegoTiradas()
+            + (jugadorDos != null ? jugadorDos.getContadorArmasDeFuegoTiradas() : 0);
+        int armasDeFuegoCaidas = armas.getContadorArmasDeFuegoAlCaer();
+        // Un mismo lanzamiento puede tocar el piso en el mismo fotograma: suena una sola vez.
+        if (armasTiradas > armasTiradasSonadas || armasDeFuegoCaidas > armasDeFuegoCaidasSonadas) {
+            audio.armaCae.play(VOLUMEN_ARMA_CAE);
+        }
+        armasTiradasSonadas = armasTiradas;
+        armasDeFuegoCaidasSonadas = armasDeFuegoCaidas;
+        int powerUps = jugadorUno.getContadorPowerUps()
+            + (jugadorDos != null ? jugadorDos.getContadorPowerUps() : 0);
+        if (powerUps > powerUpsSonados) {
+            audio.powerUp.play(VOLUMEN_POWER_UP);
+        }
+        powerUpsSonados = powerUps;
+        int explosiones = armas.getContadorExplosiones();
+        if (explosiones > explosionesSonadas) {
+            audio.explosion.play(VOLUMEN_EXPLOSION);
+        }
+        explosionesSonadas = explosiones;
     }
 
     /** Apaga el bucle del sonido de correr si estaba sonando. Se usa al pausar y al salir de la ronda. */

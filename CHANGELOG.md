@@ -5,6 +5,27 @@ Todos los cambios significativos de **Techno Mortem Arena** se documentan en est
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto adhiere a
 [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.6.0] - 2026-11-05
+
+Efectos de sonido para el lanzacohetes, el rifle láser, las armas de fuego tiradas y las mejoras.
+
+### Añadido
+
+- `bazooka-shot.mp3` al disparar el lanzacohetes.
+- `explosion.mp3` cuando un cohete choca contra un bloque o un cuerpo y explota.
+- `disparo-laser.mp3` al disparar el rifle láser, en lugar de `pistol-shot.mp3` o `shotgun-blast.mp3`.
+- `Gun-drop.mp3` al tirar un arma de fuego (pistola, escopeta, rifle láser o lanzacohetes; nunca la
+  espada) y otra vez cada vez que el arma tirada rebota en el piso.
+- `power-up.mp3` al recoger una mejora de velocidad, salto o puntería, aunque el jugador tenga un arma
+  en la mano. Recoger un arma no reproduce este efecto.
+
+### Cambiado
+
+- Protocolo de red versión 12 (no es compatible con la 11): el estado de cada jugador suma los contadores
+  de disparos de rifle láser y de lanzacohetes, de armas de fuego tiradas y de mejoras recogidas; el de
+  las armas fuera de las manos suma los rebotes de las armas de fuego y las explosiones. Así el cliente
+  reproduce los mismos sonidos que el anfitrión.
+
 ## [0.5.0] - 2026-11-05
 
 Armas de fuego y espada láser, mejoras que caen del cielo, mapa el doble de grande, fuentes pixeladas
@@ -442,7 +463,8 @@ Primera pre-entrega: configuración inicial del proyecto y del repositorio.
 - Título de la ventana del juego: de `TechnoMortemArena` (nombre técnico del módulo) a
   `Techno Mortem Arena`.
 
-[No publicado]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.5.0...HEAD
+[No publicado]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.3.0...v0.4.0

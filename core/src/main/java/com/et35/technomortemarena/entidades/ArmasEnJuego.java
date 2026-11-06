@@ -98,6 +98,10 @@ public final class ArmasEnJuego {
     private final List<int[]> celdasRotas = new ArrayList<>();
     /** Veces que una espada tirada toco el piso desde que empezo la partida, para el sonido. */
     private int contadorEspadasAlCaer;
+    /** Veces que un arma de fuego tirada toco el piso desde que empezo la partida, para el sonido. */
+    private int contadorArmasDeFuegoAlCaer;
+    /** Cohetes que explotaron desde que empezo la partida, para el sonido. */
+    private int contadorExplosiones;
 
     /** @param zonasProhibidas zonas {@code {x0, y0, x1, y1}} en celdas donde no aparecen armas */
     public ArmasEnJuego(Random azar, List<float[]> zonasProhibidas) {
@@ -136,6 +140,7 @@ public final class ArmasEnJuego {
                 explotar(proyectil.getX(), proyectil.getY(), proyectil.getDuenio(), arena, uno, dos);
             }
             contadorEspadasAlCaer += proyectil.tomarCaidasAlPiso();
+            contadorArmasDeFuegoAlCaer += proyectil.tomarCaidasDeArmaDeFuego();
             if (!proyectil.isActivo()) {
                 if (proyectil.dejaArmaEnElSuelo()) {
                     // el arma termino de rebotar: queda apoyada donde freno, con las balas que tenia
@@ -219,6 +224,7 @@ public final class ArmasEnJuego {
      * de alrededor. Las paredes de los costados y la fila de abajo de todo no se rompen.
      */
     void explotar(float x, float y, Jugador duenio, Arena arena, Jugador uno, Jugador dos) {
+        contadorExplosiones++;
         explosiones.add(Proyectil.explosion(x, y));
         herirConExplosion(uno, duenio, x, y);
         herirConExplosion(dos, duenio, x, y);
@@ -590,6 +596,16 @@ public final class ArmasEnJuego {
         return contadorEspadasAlCaer;
     }
 
+    /** Veces que un arma de fuego tirada toco el piso; el contador solo sube, para disparar el sonido. */
+    public int getContadorArmasDeFuegoAlCaer() {
+        return contadorArmasDeFuegoAlCaer;
+    }
+
+    /** Cohetes que explotaron; el contador solo sube, para disparar el sonido. */
+    public int getContadorExplosiones() {
+        return contadorExplosiones;
+    }
+
     /** Copia en {@code destino} lo que hay que dibujar en el cliente. */
     public void exportar(EstadoArmas destino) {
         destino.proyectiles.clear();
@@ -609,6 +625,8 @@ public final class ArmasEnJuego {
             destino.celdasRotas.add(celda.clone());
         }
         destino.contadorEspadasAlCaer = contadorEspadasAlCaer;
+        destino.contadorArmasDeFuegoAlCaer = contadorArmasDeFuegoAlCaer;
+        destino.contadorExplosiones = contadorExplosiones;
     }
 
     /** Pisa lo que hay con lo que mando el anfitrion. Lo usa el cliente, que no simula las armas. */
@@ -631,6 +649,8 @@ public final class ArmasEnJuego {
             celdasRotas.add(celda.clone());
         }
         contadorEspadasAlCaer = origen.contadorEspadasAlCaer;
+        contadorArmasDeFuegoAlCaer = origen.contadorArmasDeFuegoAlCaer;
+        contadorExplosiones = origen.contadorExplosiones;
     }
 
     /** Dibuja las armas en el suelo y los proyectiles. Entre {@code batch.begin()} y {@code end()}. */

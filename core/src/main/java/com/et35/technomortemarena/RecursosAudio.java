@@ -42,6 +42,21 @@ public class RecursosAudio implements Disposable {
     /** Pistola o escopeta que se recoge del suelo. */
     public final Sound armaEquipada;
 
+    /** Disparo del lanzacohetes. */
+    public final Sound bazucazo;
+
+    /** Explosion de un cohete al chocar. */
+    public final Sound explosion;
+
+    /** Disparo del rifle laser. */
+    public final Sound disparoLaser;
+
+    /** Arma de fuego tirada que toca el piso. */
+    public final Sound armaCae;
+
+    /** Mejora que recoge un jugador (velocidad, salto o punteria). */
+    public final Sound powerUp;
+
     /** Sonido de interfaz al pasar el cursor por encima de un boton. */
     public final Sound boton;
 
@@ -57,6 +72,11 @@ public class RecursosAudio implements Disposable {
         espadaEquipada = cargar("sounds/sword-equipped.mp3");
         espadaCae = cargar("sounds/sword-falling.mp3");
         armaEquipada = cargar("sounds/Weapon-Equip.mp3");
+        bazucazo = cargar("sounds/bazooka-shot.mp3");
+        explosion = cargar("sounds/explosion.mp3");
+        disparoLaser = cargar("sounds/disparo-laser.mp3");
+        armaCae = cargar("sounds/Gun-drop.mp3");
+        powerUp = cargar("sounds/power-up.mp3");
         boton = cargar("sounds/Boton.wav");
         botonSeleccionado = cargar("sounds/Boton Seleccionado.mp3");
     }
@@ -82,6 +102,11 @@ public class RecursosAudio implements Disposable {
         espadaEquipada.dispose();
         espadaCae.dispose();
         armaEquipada.dispose();
+        bazucazo.dispose();
+        explosion.dispose();
+        disparoLaser.dispose();
+        armaCae.dispose();
+        powerUp.dispose();
         boton.dispose();
         botonSeleccionado.dispose();
     }

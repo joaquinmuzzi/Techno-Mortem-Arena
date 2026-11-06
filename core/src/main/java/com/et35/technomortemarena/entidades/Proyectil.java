@@ -88,10 +88,12 @@ public final class Proyectil {
     private boolean exploto;
     /** Si en este fotograma quedo apoyada sobre un bloque. */
     private boolean apoyada;
-    /** Verdadero mientras la espada tirada esta tocando el piso; evita contar el mismo apoyo en cada fotograma. */
+    /** Verdadero mientras un arma tirada esta tocando el piso; evita contar el mismo apoyo en cada fotograma. */
     private boolean tocandoPiso;
     /** Veces que esta espada tirada toco el piso: las junta {@link ArmasEnJuego}. */
     private int caidasAlPiso;
+    /** Veces que esta arma de fuego tirada toco el piso: las junta {@link ArmasEnJuego}. */
+    private int caidasDeArmaDeFuego;
     /** Las balas que le quedan a un arma de fuego tirada: con balas queda en el mapa, sin balas se rompe. */
     private int balas;
     private float esperaReflejo;
@@ -380,8 +382,12 @@ public final class Proyectil {
         if (chocaConBloque(arena)) {
             y -= dy;
             if (vy < 0f) {
-                if ((tipo == Tipo.ESPADA_LANZADA || tipo == Tipo.ESPADA_LASER_LANZADA) && !tocandoPiso) {
-                    caidasAlPiso++;
+                if (!tocandoPiso) {
+                    if (tipo == Tipo.ESPADA_LANZADA || tipo == Tipo.ESPADA_LASER_LANZADA) {
+                        caidasAlPiso++;
+                    } else if (esArmaDeFuegoTirada()) {
+                        caidasDeArmaDeFuego++;
+                    }
                 }
                 tocandoPiso = true;
                 if (-vy < VELOCIDAD_PARA_REBOTAR) {
@@ -429,6 +435,22 @@ public final class Proyectil {
         int caidas = caidasAlPiso;
         caidasAlPiso = 0;
         return caidas;
+    }
+
+    /**
+     * Cuantas veces esta arma de fuego tirada toco el piso desde la ultima vez, y lo reinicia. Suma
+     * cada rebote, igual que las espadas; las balas y los cohetes no cuentan.
+     */
+    int tomarCaidasDeArmaDeFuego() {
+        int caidas = caidasDeArmaDeFuego;
+        caidasDeArmaDeFuego = 0;
+        return caidas;
+    }
+
+    /** Verdadero si es un arma de fuego que alguien tiro: pistola, escopeta, rifle laser o lanzacohetes. */
+    private boolean esArmaDeFuegoTirada() {
+        TipoArma arma = getArma();
+        return arma != null && arma.esDeFuego();
     }
 
     /** Las balas que le quedan al arma de fuego tirada. */

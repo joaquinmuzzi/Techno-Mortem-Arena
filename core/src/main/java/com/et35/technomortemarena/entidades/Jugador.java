@@ -198,6 +198,11 @@ public class Jugador {
     /** Armas recogidas del suelo, separadas por tipo de sonido. */
     private int contadorEspadasEquipadas;
     private int contadorArmasDeFuegoEquipadas;
+    /** Disparos de laser y de bazuca, para el sonido de cada arma. */
+    private int contadorDisparosLaser;
+    private int contadorDisparosBazuca;
+    /** Mejoras recogidas del mapa. */
+    private int contadorPowerUps;
 
     /** Bloque sobre el que esta parado, si lo hay. Sirve para avisar solo al aterrizar. */
     private Bloque bloqueBajoPies;
@@ -465,9 +470,11 @@ public class Jugador {
         } else if (arma == TipoArma.RIFLE_LASER) {
             lanzados.add(new Proyectil(Proyectil.Tipo.LASER, this, x, y, angulo, Proyectil.VELOCIDAD_LASER));
             recargaDisparo = RECARGA_RIFLE * factorRecarga();
+            contadorDisparosLaser++;
         } else if (arma == TipoArma.LANZACOHETES) {
             lanzados.add(new Proyectil(Proyectil.Tipo.COHETE, this, x, y, angulo, Proyectil.VELOCIDAD_COHETE));
             recargaDisparo = RECARGA_LANZACOHETES * factorRecarga();
+            contadorDisparosBazuca++;
         } else {
             lanzados.add(new Proyectil(Proyectil.Tipo.BALA, this, x, y, angulo, Proyectil.VELOCIDAD_BALA));
             recargaDisparo = RECARGA_PISTOLA * factorRecarga();
@@ -990,6 +997,7 @@ public class Jugador {
     /** Agarra una mejora: le dura {@link PowerUp#DURACION} segundos (si ya la tenia, vuelve a empezar). */
     public void activarPowerUp(PowerUp mejora) {
         tiempoPowerUp[mejora.ordinal()] = PowerUp.DURACION;
+        contadorPowerUps++;
     }
 
     public boolean tienePowerUp(PowerUp mejora) {
@@ -1141,6 +1149,9 @@ public class Jugador {
         destino.contadorDisparosEscopeta = contadorDisparosEscopeta;
         destino.contadorEspadasEquipadas = contadorEspadasEquipadas;
         destino.contadorArmasDeFuegoEquipadas = contadorArmasDeFuegoEquipadas;
+        destino.contadorDisparosLaser = contadorDisparosLaser;
+        destino.contadorDisparosBazuca = contadorDisparosBazuca;
+        destino.contadorPowerUps = contadorPowerUps;
     }
 
     /**
@@ -1167,6 +1178,9 @@ public class Jugador {
         contadorDisparosEscopeta = origen.contadorDisparosEscopeta;
         contadorEspadasEquipadas = origen.contadorEspadasEquipadas;
         contadorArmasDeFuegoEquipadas = origen.contadorArmasDeFuegoEquipadas;
+        contadorDisparosLaser = origen.contadorDisparosLaser;
+        contadorDisparosBazuca = origen.contadorDisparosBazuca;
+        contadorPowerUps = origen.contadorPowerUps;
         actualizarHoja();
     }
 
@@ -1198,6 +1212,21 @@ public class Jugador {
     /** Pistolas o escopetas recogidas del suelo desde que empezo la partida. */
     public int getContadorArmasDeFuegoEquipadas() {
         return contadorArmasDeFuegoEquipadas;
+    }
+
+    /** Disparos de rifle laser desde que empezo la partida. */
+    public int getContadorDisparosLaser() {
+        return contadorDisparosLaser;
+    }
+
+    /** Disparos de lanzacohetes desde que empezo la partida. */
+    public int getContadorDisparosBazuca() {
+        return contadorDisparosBazuca;
+    }
+
+    /** Mejoras recogidas del mapa desde que empezo la partida. */
+    public int getContadorPowerUps() {
+        return contadorPowerUps;
     }
 
     /** Corazones que le quedan, contando como entero uno que esta por la mitad. */

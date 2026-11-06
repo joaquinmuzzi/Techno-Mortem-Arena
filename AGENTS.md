@@ -39,3 +39,4 @@ Shared by Codex and Claude Code. Every line here should change what you do.
 
 ## Lessons
 <!-- Newest on top. Delete what no longer applies. -->
+- When a sound belongs to a collision, trigger it from the collision event, not from the input that causes the movement.

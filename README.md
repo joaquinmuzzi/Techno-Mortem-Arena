@@ -156,9 +156,9 @@ espada láser roja: pega un corazón y un tercio, no se puede desarmar ni soltar
 la espada común sin chocar y, tirada, cae menos y llega más lejos. Las balas, los perdigones y los cohetes
 que pegan en una hoja rebotan espejados según el ángulo de la hoja y pasan a ser de quien los reflejó: con
 la espada común pierden algo de velocidad y se desvían un poco; con la láser rebotan perfecto. Los rayos
-láser no se reflejan. Además, los bloques spawner de pistolas
-y de escopetas (de 3x3, se ponen en el editor y también se pueden elegir entre rondas) hacen aparecer su
-arma encima cada 5 s, una sola a la vez. Cada 12 s cae también una mejora que dura 10 s: velocidad (+40 %), salto (+35 %) o puntería (dispara más
+láser no se reflejan. Además, los bloques spawner de pistolas, de escopetas, de rifles láser y de
+lanzacohetes (de 3x3, se ponen en el editor con las teclas `8`, `9`, `Q` y `E` y también se pueden elegir entre rondas) hacen
+aparecer su arma encima cada 5 s, una sola a la vez. Cada 12 s cae también una mejora que dura 10 s: velocidad (+40 %), salto (+35 %) o puntería (dispara más
 seguido y la escopeta abre menos); la agarra quien pase por encima. En la esquina de arriba de cada jugador se ve el arma que tiene
 en la mano y, debajo, sus balas. Al empezar cada ronda todos vuelven a tener la espada.
 
@@ -217,7 +217,7 @@ hay edición.
 | Esquina | L de 10 de alto y 4 de largo abajo, brazos de 2 |
 | Cinta izquierda / derecha | 6 x 2 |
 | Pinchos con cintas | 16 x 2: cinta de 6 hacia la derecha, 4 de pinchos, cinta de 6 hacia la izquierda |
-| Spawner de pistolas / escopetas | 3 x 3: hace aparecer su arma encima cada 5 s |
+| Spawner de pistolas / escopetas / rifles láser / lanzacohetes | 3 x 3: hace aparecer su arma encima cada 5 s |
 
 El anfitrión simula todo el juego y le manda el estado al cliente, que solo manda sus teclas y
 dibuja lo que recibe. `R` reinicia la ronda solo en el anfitrión, y en red `ESC` abre el menú

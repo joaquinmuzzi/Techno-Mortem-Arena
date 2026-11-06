@@ -16,7 +16,7 @@ import java.io.ByteArrayOutputStream;
 public final class CodecMapa {
 
     /** Caracteres que puede tener una fila (ver {@link Arena#desdeGrilla}). */
-    static final String CELDAS_VALIDAS = "#TLRXPE.12";
+    static final String CELDAS_VALIDAS = "#TLRXPEFC.12";
 
     private CodecMapa() {
     }

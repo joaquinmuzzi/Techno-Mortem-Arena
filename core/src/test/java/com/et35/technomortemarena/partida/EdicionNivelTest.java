@@ -75,7 +75,11 @@ class EdicionNivelTest {
         assertEquals('P', PiezaNivel.SPAWNER_PISTOLA.celda(1, 1));
         assertEquals(3, PiezaNivel.SPAWNER_ESCOPETA.getAncho());
         assertEquals('E', PiezaNivel.SPAWNER_ESCOPETA.celda(2, 2));
-        assertEquals(10, PiezaNivel.values().length);
+        assertEquals(3, PiezaNivel.SPAWNER_RIFLE_LASER.getAncho());
+        assertEquals('F', PiezaNivel.SPAWNER_RIFLE_LASER.celda(1, 1));
+        assertEquals(3, PiezaNivel.SPAWNER_LANZACOHETES.getAlto());
+        assertEquals('C', PiezaNivel.SPAWNER_LANZACOHETES.celda(0, 0));
+        assertEquals(12, PiezaNivel.values().length);
     }
 
     @Test

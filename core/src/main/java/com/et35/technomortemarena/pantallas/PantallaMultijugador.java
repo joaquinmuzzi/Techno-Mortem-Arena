@@ -66,7 +66,7 @@ public class PantallaMultijugador extends ScreenAdapter {
     public PantallaMultijugador(RecursosGraficos recursos, RecursosAudio audio, String aviso) {
         this.recursos = recursos;
         this.audio = audio;
-        audio.pedirMusicaMenu(true);
+        audio.pedirMusica(RecursosAudio.Musica.MENU);
         this.aviso = aviso;
         ui.setAudio(audio);
     }

@@ -16,7 +16,7 @@ import com.badlogic.gdx.utils.Disposable;
  *
  * <p>Se guardan como {@link Sound} y no como {@code Music} porque son efectos cortos que conviene
  * tener decodificados en memoria: asi se pueden superponer y repetir en bucle (el de correr) sin
- * cortes ni pausas al leer del disco. La musica del menu, en cambio, es larga: va como {@link Music}, que
+ * cortes ni pausas al leer del disco. La musica (la del menu y la de combate), en cambio, es larga: va como {@link Music}, que
  * la lee del disco de a poco.
  *
  * <p>Las {@link OpcionesAudio} deciden si suenan la musica y los efectos: los efectos se reproducen con
@@ -54,13 +54,17 @@ public class RecursosAudio implements Disposable {
     /** Sonido de interfaz al hacer clic en un boton. */
     public final Sound botonSeleccionado;
 
-    /** Volumen de la musica del menu: queda por debajo de los sonidos de los botones. */
+    /** Que musica pide cada pantalla: la del menu en el menu, la de combate en la partida, ninguna en el editor. */
+    public enum Musica { NINGUNA, MENU, COMBATE }
+
+    /** Volumen de la musica: queda por debajo de los sonidos de los botones y de los golpes. */
     private static final float VOLUMEN_MUSICA = 0.5f;
 
     private final Music musicaMenu;
+    private final Music musicaCombate;
     private final OpcionesAudio opciones;
-    /** Si la pantalla actual quiere la musica del menu (las del menu si, la partida y el editor no). */
-    private boolean pideMusicaMenu;
+    /** La musica que pide la pantalla actual. */
+    private Musica pedida = Musica.NINGUNA;
 
     public RecursosAudio() {
         correr = cargar("sounds/Running.mp3");
@@ -76,6 +80,9 @@ public class RecursosAudio implements Disposable {
         musicaMenu = Gdx.audio.newMusic(Gdx.files.internal("music/menu.mp3"));
         musicaMenu.setLooping(true);
         musicaMenu.setVolume(VOLUMEN_MUSICA);
+        musicaCombate = Gdx.audio.newMusic(Gdx.files.internal("music/combate.mp3"));
+        musicaCombate.setLooping(true);
+        musicaCombate.setVolume(VOLUMEN_MUSICA);
         Preferences preferencias = Gdx.app.getPreferences("techno-mortem-arena");
         opciones = new OpcionesAudio(new OpcionesAudio.Almacen() {
             @Override
@@ -110,11 +117,12 @@ public class RecursosAudio implements Disposable {
     }
 
     /**
-     * Cada pantalla dice si quiere la musica del menu: las del menu la piden y la partida y el editor no. Si
-     * ya estaba sonando sigue sin cortarse, asi no vuelve a empezar al pasar de una pantalla del menu a otra.
+     * Cada pantalla dice que musica quiere: las del menu la del menu, la partida la de combate y el editor
+     * ninguna. Si ya estaba sonando sigue sin cortarse, asi no vuelve a empezar al pasar de una pantalla del
+     * menu a otra, ni al reiniciar la partida.
      */
-    public void pedirMusicaMenu(boolean pide) {
-        pideMusicaMenu = pide;
+    public void pedirMusica(Musica musica) {
+        pedida = musica;
         actualizarMusica();
     }
 
@@ -129,11 +137,15 @@ public class RecursosAudio implements Disposable {
     }
 
     private void actualizarMusica() {
-        boolean debeSonar = pideMusicaMenu && opciones.isMusica();
-        if (debeSonar && !musicaMenu.isPlaying()) {
-            musicaMenu.play();
-        } else if (!debeSonar && musicaMenu.isPlaying()) {
-            musicaMenu.stop();
+        sonarSolo(musicaMenu, pedida == Musica.MENU && opciones.isMusica());
+        sonarSolo(musicaCombate, pedida == Musica.COMBATE && opciones.isMusica());
+    }
+
+    private static void sonarSolo(Music musica, boolean debeSonar) {
+        if (debeSonar && !musica.isPlaying()) {
+            musica.play();
+        } else if (!debeSonar && musica.isPlaying()) {
+            musica.stop();
         }
     }
 
@@ -161,5 +173,6 @@ public class RecursosAudio implements Disposable {
         boton.dispose();
         botonSeleccionado.dispose();
         musicaMenu.dispose();
+        musicaCombate.dispose();
     }
 }

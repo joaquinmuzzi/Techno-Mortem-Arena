@@ -250,7 +250,7 @@ public class PantallaArena extends ScreenAdapter {
                           Supplier<Screen> alReiniciar, ServidorSala servidor, ClienteSala cliente) {
         this.recursos = recursos;
         this.audio = audio;
-        audio.pedirMusicaMenu(false);
+        audio.pedirMusica(RecursosAudio.Musica.COMBATE);
         this.arena = arena;
         this.filasOriginales = arena.getFilas();
         this.rondas = new RondasPartida(servidor != null && filasOriginales.length > 0);

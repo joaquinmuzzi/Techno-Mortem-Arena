@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 final class CodecEstado {
 
     static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 1 + 1 + PowerUp.values().length + 4 + 4 + 4 + 4
-        + 4 + 4 + 4 + 4;
+        + 4 + 4 + 4;
 
     /**
      * Lo minimo de las armas fuera de las manos: las cuatro cantidades (proyectiles, armas en el suelo,
@@ -79,7 +79,6 @@ final class CodecEstado {
         buffer.putInt(estado.contadorArmasDeFuegoEquipadas);
         buffer.putInt(estado.contadorDisparosLaser);
         buffer.putInt(estado.contadorDisparosBazuca);
-        buffer.putInt(estado.contadorArmasDeFuegoTiradas);
         buffer.putInt(estado.contadorPowerUps);
     }
 
@@ -114,13 +113,12 @@ final class CodecEstado {
         int armasDeFuegoEquipadas = buffer.getInt();
         int disparosLaser = buffer.getInt();
         int disparosBazuca = buffer.getInt();
-        int armasDeFuegoTiradas = buffer.getInt();
         int powerUps = buffer.getInt();
         if (arma < 0 || arma > TipoArma.values().length || balas < 0 || balas > TipoArma.MAX_BALAS) {
             return false;
         }
         if (disparosPistola < 0 || disparosEscopeta < 0 || espadasEquipadas < 0 || armasDeFuegoEquipadas < 0
-            || disparosLaser < 0 || disparosBazuca < 0 || armasDeFuegoTiradas < 0 || powerUps < 0) {
+            || disparosLaser < 0 || disparosBazuca < 0 || powerUps < 0) {
             return false;
         }
         if (!finito(x) || !finito(y) || !finito(angulo) || !finito(extension) || !finito(flash)
@@ -148,7 +146,6 @@ final class CodecEstado {
         destino.contadorArmasDeFuegoEquipadas = armasDeFuegoEquipadas;
         destino.contadorDisparosLaser = disparosLaser;
         destino.contadorDisparosBazuca = disparosBazuca;
-        destino.contadorArmasDeFuegoTiradas = armasDeFuegoTiradas;
         destino.contadorPowerUps = powerUps;
         return true;
     }

@@ -40,8 +40,6 @@ public final class EstadoJugador {
     /** Disparos de laser y de bazuca, para el sonido de cada arma. */
     public int contadorDisparosLaser;
     public int contadorDisparosBazuca;
-    /** Armas de fuego tiradas con el clic derecho. */
-    public int contadorArmasDeFuegoTiradas;
     /** Mejoras recogidas del mapa. */
     public int contadorPowerUps;
 }

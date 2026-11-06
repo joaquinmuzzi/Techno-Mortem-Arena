@@ -81,7 +81,6 @@ class CodecsTest {
         estado.contadorArmasDeFuegoEquipadas = 17;
         estado.contadorDisparosLaser = 19;
         estado.contadorDisparosBazuca = 21;
-        estado.contadorArmasDeFuegoTiradas = 23;
         estado.contadorPowerUps = 25;
         return estado;
     }
@@ -128,7 +127,6 @@ class CodecsTest {
         assertEquals(17, leido.contadorArmasDeFuegoEquipadas);
         assertEquals(19, leido.contadorDisparosLaser);
         assertEquals(21, leido.contadorDisparosBazuca);
-        assertEquals(23, leido.contadorArmasDeFuegoTiradas);
         assertEquals(25, leido.contadorPowerUps);
     }
 

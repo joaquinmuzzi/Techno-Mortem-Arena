@@ -351,8 +351,8 @@ escopeta), `disparo-laser.mp3` (el disparo del rifle láser), `bazooka-shot.mp3`
 lanzacohetes), `explosion.mp3` (cuando un cohete impacta), `sword-equipped.mp3` (al recoger la espada),
 `Weapon-Equip.mp3` (al recoger una pistola, una escopeta, un rifle láser o un lanzacohetes),
 `sword-falling.mp3` (cada vez que la espada tirada toca el piso, también en los rebotes), `Gun-drop.mp3`
-(al tirar un arma de fuego y cada vez que el arma tirada rebota) y `power-up.mp3` (al recoger una mejora
-de velocidad, salto o puntería; no al recoger un arma).
+(cada vez que un arma de fuego tirada toca el piso, también en cada rebote; no suena al tirarla) y
+`power-up.mp3` (al recoger una mejora de velocidad, salto o puntería; no al recoger un arma).
 `RecursosAudio` los carga una sola vez como `Sound` (se reproducen desde memoria, sin cortes) y
 `PantallaArena` los dispara según lo que informan cada `Jugador` y `ArmasEnJuego`. Esos eventos también
 viajan por la red, así el cliente escucha lo que hace el otro jugador.

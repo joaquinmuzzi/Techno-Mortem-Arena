@@ -201,8 +201,6 @@ public class Jugador {
     /** Disparos de laser y de bazuca, para el sonido de cada arma. */
     private int contadorDisparosLaser;
     private int contadorDisparosBazuca;
-    /** Armas de fuego tiradas con el clic derecho (no las espadas). */
-    private int contadorArmasDeFuegoTiradas;
     /** Mejoras recogidas del mapa. */
     private int contadorPowerUps;
 
@@ -499,10 +497,6 @@ public class Jugador {
         }
         lanzados.add(new Proyectil(Proyectil.lanzadaDe(arma), this, pivoteX(), pivoteY(), angulo, Proyectil.VELOCIDAD_LANZADA)
             .conBalas(balas));
-        if (arma.esDeFuego()) {
-            // la espada tiene su propio sonido de caida; la de fuego usa Gun-drop
-            contadorArmasDeFuegoTiradas++;
-        }
         arma = null;
         balas = 0;
         tiempoEstocada = 0f;
@@ -1157,7 +1151,6 @@ public class Jugador {
         destino.contadorArmasDeFuegoEquipadas = contadorArmasDeFuegoEquipadas;
         destino.contadorDisparosLaser = contadorDisparosLaser;
         destino.contadorDisparosBazuca = contadorDisparosBazuca;
-        destino.contadorArmasDeFuegoTiradas = contadorArmasDeFuegoTiradas;
         destino.contadorPowerUps = contadorPowerUps;
     }
 
@@ -1187,7 +1180,6 @@ public class Jugador {
         contadorArmasDeFuegoEquipadas = origen.contadorArmasDeFuegoEquipadas;
         contadorDisparosLaser = origen.contadorDisparosLaser;
         contadorDisparosBazuca = origen.contadorDisparosBazuca;
-        contadorArmasDeFuegoTiradas = origen.contadorArmasDeFuegoTiradas;
         contadorPowerUps = origen.contadorPowerUps;
         actualizarHoja();
     }
@@ -1230,11 +1222,6 @@ public class Jugador {
     /** Disparos de lanzacohetes desde que empezo la partida. */
     public int getContadorDisparosBazuca() {
         return contadorDisparosBazuca;
-    }
-
-    /** Armas de fuego tiradas con el clic derecho desde que empezo la partida. */
-    public int getContadorArmasDeFuegoTiradas() {
-        return contadorArmasDeFuegoTiradas;
     }
 
     /** Mejoras recogidas del mapa desde que empezo la partida. */

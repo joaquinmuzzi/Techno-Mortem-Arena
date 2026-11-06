@@ -14,17 +14,18 @@ Efectos de sonido para el lanzacohetes, el rifle láser, las armas de fuego tira
 - `bazooka-shot.mp3` al disparar el lanzacohetes.
 - `explosion.mp3` cuando un cohete choca contra un bloque o un cuerpo y explota.
 - `disparo-laser.mp3` al disparar el rifle láser, en lugar de `pistol-shot.mp3` o `shotgun-blast.mp3`.
-- `Gun-drop.mp3` al tirar un arma de fuego (pistola, escopeta, rifle láser o lanzacohetes; nunca la
-  espada) y otra vez cada vez que el arma tirada rebota en el piso.
+- `Gun-drop.mp3` cada vez que un arma de fuego tirada (pistola, escopeta, rifle láser o lanzacohetes;
+  nunca la espada) toca el piso, también en cada rebote. No suena en el momento de tirarla, sino recién
+  cuando cae.
 - `power-up.mp3` al recoger una mejora de velocidad, salto o puntería, aunque el jugador tenga un arma
   en la mano. Recoger un arma no reproduce este efecto.
 
 ### Cambiado
 
 - Protocolo de red versión 12 (no es compatible con la 11): el estado de cada jugador suma los contadores
-  de disparos de rifle láser y de lanzacohetes, de armas de fuego tiradas y de mejoras recogidas; el de
-  las armas fuera de las manos suma los rebotes de las armas de fuego y las explosiones. Así el cliente
-  reproduce los mismos sonidos que el anfitrión.
+  de disparos de rifle láser y de lanzacohetes y de mejoras recogidas; el de las armas fuera de las manos
+  suma los rebotes de las armas de fuego y las explosiones. Así el cliente reproduce los mismos sonidos
+  que el anfitrión.
 
 ## [0.5.0] - 2026-11-05
 

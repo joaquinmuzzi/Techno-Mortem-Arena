@@ -185,10 +185,9 @@ public class PantallaArena extends ScreenAdapter {
     private int armasDeFuegoEquipadasSonadas;
     /** Veces que ya sono la espada tirada al caer. */
     private int espadasCaidasSonadas;
-    /** Cuentas de disparos de laser y bazuca, armas tiradas y mejoras recogidas ya sonadas. */
+    /** Cuentas de disparos de laser y bazuca y mejoras recogidas ya sonadas. */
     private int disparosLaserSonados;
     private int disparosBazucaSonados;
-    private int armasTiradasSonadas;
     private int powerUpsSonados;
     /** Veces que ya sono un arma de fuego al caer o un cohete al explotar. */
     private int armasDeFuegoCaidasSonadas;
@@ -334,7 +333,6 @@ public class PantallaArena extends ScreenAdapter {
         armasDeFuegoEquipadasSonadas = 0;
         disparosLaserSonados = 0;
         disparosBazucaSonados = 0;
-        armasTiradasSonadas = 0;
         powerUpsSonados = 0;
         // El contador de espadas caidas es de las armas, que no se recrean: se toma el valor actual
         // para no sonar por caidas de la partida anterior.
@@ -597,14 +595,12 @@ public class PantallaArena extends ScreenAdapter {
             audio.bazucazo.play(VOLUMEN_DISPARO_BAZUCA);
         }
         disparosBazucaSonados = disparosBazuca;
-        int armasTiradas = jugadorUno.getContadorArmasDeFuegoTiradas()
-            + (jugadorDos != null ? jugadorDos.getContadorArmasDeFuegoTiradas() : 0);
         int armasDeFuegoCaidas = armas.getContadorArmasDeFuegoAlCaer();
-        // Un mismo lanzamiento puede tocar el piso en el mismo fotograma: suena una sola vez.
-        if (armasTiradas > armasTiradasSonadas || armasDeFuegoCaidas > armasDeFuegoCaidasSonadas) {
+        // Gun-drop suena recien cuando el arma toca el piso, no al tirarla. Cada rebote suma uno; si
+        // varios toques caen en el mismo fotograma, suena una sola vez.
+        if (armasDeFuegoCaidas > armasDeFuegoCaidasSonadas) {
             audio.armaCae.play(VOLUMEN_ARMA_CAE);
         }
-        armasTiradasSonadas = armasTiradas;
         armasDeFuegoCaidasSonadas = armasDeFuegoCaidas;
         int powerUps = jugadorUno.getContadorPowerUps()
             + (jugadorDos != null ? jugadorDos.getContadorPowerUps() : 0);

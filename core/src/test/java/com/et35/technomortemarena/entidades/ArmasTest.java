@@ -606,7 +606,7 @@ class ArmasTest {
     }
 
     @Test
-    void tirarUnArmaDeFuegoSumaElContadorPeroLaEspadaNo() {
+    void tirarUnArmaDeFuegoNoSuenaHastaQueTocaElPisoYLaEspadaNoSuena() {
         Jugador a = tirador(1000f);
         Jugador d = blanco(3000f);
         a.equipar(TipoArma.PISTOLA);
@@ -614,14 +614,18 @@ class ArmasTest {
         pasos(a, d, 1);
         guion.lanzar = true;
         pasos(a, d, 1);
-        assertEquals(1, a.getContadorArmasDeFuegoTiradas(), "la pistola tirada suena con Gun-drop");
+        assertEquals(0, armas.getContadorArmasDeFuegoAlCaer(), "todavia no toco el piso");
+
+        pasos(a, d, 120);
+        assertTrue(armas.getContadorArmasDeFuegoAlCaer() >= 1, "suena recien al tocar el piso");
+        int conLaPistola = armas.getContadorArmasDeFuegoAlCaer();
 
         Jugador b = tirador(1000f);
         apuntarALaDerecha();
         pasos(b, d, 1);
         guion.lanzar = true;
-        pasos(b, d, 1);
-        assertEquals(0, b.getContadorArmasDeFuegoTiradas(), "la espada tiene su propio sonido");
+        pasos(b, d, 120);
+        assertEquals(conLaPistola, armas.getContadorArmasDeFuegoAlCaer(), "la espada no suena con Gun-drop");
     }
 
     @Test

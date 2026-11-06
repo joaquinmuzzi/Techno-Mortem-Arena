@@ -5,6 +5,14 @@ Todos los cambios significativos de **Techno Mortem Arena** se documentan en est
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto adhiere a
 [Versionado Semántico](https://semver.org/lang/es/).
 
+## [No publicado]
+
+### Añadido
+
+- Música del editor de niveles (`assets/music/editor.mp3`): suena en bucle mientras se edita un mapa. Al
+  probar el mapa pasa a la de combate y al volver al menú, a la del menú. La opción MÚSICA de Opciones también
+  la apaga. `RecursosAudio.Musica` suma `EDITOR`.
+
 ## [0.6.0] - 2026-11-05
 
 Música de combate y efectos de sonido para el lanzacohetes, el rifle láser, las armas de fuego tiradas y

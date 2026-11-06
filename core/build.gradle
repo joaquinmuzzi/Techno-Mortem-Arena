@@ -13,8 +13,6 @@ dependencies {
   testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
-// JUnit 6 exige Java 17, pero el juego se sigue compilando para Java 8: solo los tests suben de
-// target. El CI ya compila con JDK 17, asi que esto no cambia lo que se distribuye.
 compileTestJava.options.release = 17
 
 test {

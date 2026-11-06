@@ -7,9 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/** Prueba las opciones de sonido sin abrir el juego, con un almacen en memoria. */
 class OpcionesAudioTest {
-
     private static final class EnMemoria implements OpcionesAudio.Almacen {
         final Map<String, Boolean> valores = new HashMap<>();
 

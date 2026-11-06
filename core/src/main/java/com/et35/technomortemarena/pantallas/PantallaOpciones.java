@@ -18,12 +18,7 @@ import com.et35.technomortemarena.OpcionesAudio;
 import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
 
-/**
- * Las opciones, desde el menu principal: prender y apagar la musica y los efectos de sonido. Cada clic
- * cambia la opcion al momento y queda guardada para la proxima vez que se abra el juego.
- */
 public class PantallaOpciones extends ScreenAdapter {
-
     private static final float ANCHO_MUNDO = 960f;
     private static final float ALTO_MUNDO = 540f;
     private static final Color FONDO = new Color(0.09f, 0.10f, 0.14f, 1f);
@@ -58,7 +53,6 @@ public class PantallaOpciones extends ScreenAdapter {
             ui.clic();
             audio.setMusica(!opciones.isMusica());
         } else if (toque && sobreEfectos) {
-            // primero se cambia: al prenderlos, el clic ya suena; al apagarlos, ya no
             audio.setEfectos(!opciones.isEfectos());
             ui.clic();
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || (toque && sobreVolver)) {
@@ -79,7 +73,6 @@ public class PantallaOpciones extends ScreenAdapter {
         batch.end();
     }
 
-    /** Igual que en las demas pantallas: {@code setScreen} no libera la anterior, hay que disponerla a mano. */
     private void cambiarA(Screen siguiente) {
         Game juego = (Game) Gdx.app.getApplicationListener();
         juego.setScreen(siguiente);

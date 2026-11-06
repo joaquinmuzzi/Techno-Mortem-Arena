@@ -8,14 +8,12 @@ import com.et35.technomortemarena.mundo.Arena;
 import org.junit.jupiter.api.Test;
 
 class CamaraDueloTest {
-
     private static final float PISO = Arena.FILAS_PISO * Arena.CELDA;
 
     private static Rectangle cuerpoEn(float x) {
         return new Rectangle(x, PISO, 96f, 192f);
     }
 
-    /** Lo que ve la camara, como {x0, y0, x1, y1}. */
     private static float[] vista(CamaraDuelo camara) {
         float medioAncho = Arena.ANCHO_VISTA * camara.getZoom() / 2f;
         float medioAlto = Arena.ALTO_VISTA * camara.getZoom() / 2f;

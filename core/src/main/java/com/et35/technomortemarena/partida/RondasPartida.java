@@ -1,28 +1,11 @@
 package com.et35.technomortemarena.partida;
 
-/**
- * El desarrollo de una partida al mejor de 5: ronda en juego, espera entre rondas y victoria.
- *
- * <p>Es logica pura, sin libGDX, para poder probarla sin abrir una ventana. Quien la usa le avisa en
- * cada fotograma si los duelistas siguen vivos y ella decide que sigue. La ronda la gana quien siga en
- * pie; un empate (los dos caen en el mismo fotograma) no suma nada y la misma ronda se vuelve a jugar.
- * El primero en ganar {@link MarcadorPartida#RONDAS_PARA_GANAR} rondas se lleva la partida.
- *
- * <p>En una partida en red la lleva el anfitrion y los clientes solo copian su estado con
- * {@link #importar}.
- */
 public final class RondasPartida {
-
-    /** Etapa de la partida: duelo activo, espera entre rondas o cartel de victoria. */
     public enum Fase { RONDA, MUERTE_SUBITA, ENTRE_RONDAS, GANADOR, EDICION }
 
-    /** Segundos entre que termina una ronda y arranca la siguiente, para alcanzar a leer el resultado. */
     public static final float DURACION_ENTRE_RONDAS = 2.5f;
-    /** Duracion de una ronda en segundos. Al agotarse el tiempo entra en muerte subita. */
     public static final float DURACION_RONDA = 60f;
-    /** Tiempo extra en muerte subita antes de forzar una decision. */
     public static final float DURACION_MUERTE_SUBITA = 5f;
-    /** Segundos que tiene el perdedor de una ronda para colocar su objeto en el nivel. */
     public static final float DURACION_EDICION = 20f;
 
     private final MarcadorPartida marcador = new MarcadorPartida();
@@ -37,27 +20,14 @@ public final class RondasPartida {
     private int editor = -1;
     private boolean edicionTerminada;
 
-    /** Una partida sin edicion del nivel: entre rondas solo se espera el resultado. */
     public RondasPartida() {
         this(false);
     }
 
-    /**
-     * @param conEdicion si es {@code true}, despues del resultado de cada ronda con ganador el perdedor
-     *                   edita el nivel durante {@link #DURACION_EDICION} segundos
-     */
     public RondasPartida(boolean conEdicion) {
         this.conEdicion = conEdicion;
     }
 
-    /**
-     * Avanza la partida un fotograma.
-     *
-     * @param unoVivo si el Jugador 1 sigue en pie
-     * @param dosVivo si el Jugador 2 sigue en pie
-     * @return {@code true} cuando arranca una ronda nueva: quien llama tiene que devolver a los dos
-     *         duelistas a sus spawns
-     */
     public boolean actualizar(float delta, boolean unoVivo, boolean dosVivo) {
         switch (fase) {
             case RONDA:
@@ -80,7 +50,6 @@ public final class RondasPartida {
                     return false;
                 }
                 if (tiempoMuerteSubita <= 0f) {
-                    // Si siguen los dos vivos al agotarse la muerte subita, se declara empate y se repite la ronda
                     cerrarRonda(unoVivo, dosVivo);
                 }
                 return false;
@@ -118,7 +87,6 @@ public final class RondasPartida {
         tiempoMuerteSubita = DURACION_MUERTE_SUBITA;
     }
 
-    /** Anota el resultado: la ronda de quien siga vivo, o ninguna si cayeron los dos o siguen ambos. */
     private void cerrarRonda(boolean unoVivo, boolean dosVivo) {
         if (unoVivo && !dosVivo) {
             ganadorDeLaRonda = 0;
@@ -137,7 +105,6 @@ public final class RondasPartida {
         }
     }
 
-    /** Empieza una partida nueva: marcador en cero, ronda 1. Sirve para la revancha. */
     public void reiniciar() {
         marcador.reiniciar();
         fase = Fase.RONDA;
@@ -151,7 +118,6 @@ public final class RondasPartida {
         edicionTerminada = false;
     }
 
-    /** Copia en {@code destino} lo que hay que mostrar: es lo que el anfitrion le manda a los clientes. */
     public void exportar(EstadoPartida destino) {
         destino.fase = fase.ordinal();
         destino.numeroRonda = numeroRonda;
@@ -164,7 +130,6 @@ public final class RondasPartida {
         destino.tiempoEdicion = tiempoEdicion;
     }
 
-    /** Pisa esta partida con el estado que mando el anfitrion. Lo usa el cliente, que no lleva la cuenta. */
     public void importar(EstadoPartida origen) {
         if (origen.fase >= 0 && origen.fase < Fase.values().length) {
             fase = Fase.values()[origen.fase];
@@ -208,7 +173,6 @@ public final class RondasPartida {
         return tiempoMuerteSubita;
     }
 
-    /** Quien edita el nivel: 0 el Jugador 1, 1 el Jugador 2. Solo tiene sentido en la fase {@link Fase#EDICION}. */
     public int getEditor() {
         return editor;
     }
@@ -217,12 +181,10 @@ public final class RondasPartida {
         return tiempoEdicion;
     }
 
-    /** Verdadero si se esta editando el nivel y el tiempo del editor se acabo: hay que autocolocar y terminar. */
     public boolean edicionAgotada() {
         return fase == Fase.EDICION && tiempoEdicion <= 0f;
     }
 
-    /** El editor ya coloco su objeto (o no habia donde): la proxima {@link #actualizar} arranca la ronda. */
     public void terminarEdicion() {
         edicionTerminada = true;
     }
@@ -231,12 +193,10 @@ public final class RondasPartida {
         return fase == Fase.MUERTE_SUBITA;
     }
 
-    /** Verdadero si el Jugador 1 se llevo la partida. Solo tiene sentido en la fase {@link Fase#GANADOR}. */
     public boolean ganoJugadorUno() {
         return marcador.ganoJugadorUno();
     }
 
-    /** Quien gano la ultima ronda: 0 el Jugador 1, 1 el Jugador 2, -1 si fue empate o todavia no hubo. */
     public int getGanadorDeLaRonda() {
         return ganadorDeLaRonda;
     }

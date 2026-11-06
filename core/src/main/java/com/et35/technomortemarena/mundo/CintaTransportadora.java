@@ -3,14 +3,11 @@ package com.et35.technomortemarena.mundo;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Rectangle;
 
-/** Bloque que arrastra a quien esta parado sobre el, en una direccion fija. */
 public class CintaTransportadora extends Bloque {
-
     private static final float VELOCIDAD = 300f * Arena.ESCALA;
 
     private final float sentido;
 
-    /** @param sentido -1 para empujar hacia la izquierda, 1 para empujar hacia la derecha */
     public CintaTransportadora(Rectangle area, float sentido) {
         super(area);
         this.sentido = sentido;

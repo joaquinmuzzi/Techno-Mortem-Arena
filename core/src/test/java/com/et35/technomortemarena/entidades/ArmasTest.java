@@ -15,12 +15,7 @@ import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
-/**
- * Prueba las armas sin abrir una ventana: tirar el arma, la espada que rebota y queda en el mapa, la
- * pistola, la escopeta, el punetazo y las armas que aparecen en el mapa.
- */
 class ArmasTest {
-
     private static final float DT = 1f / 60f;
     private static final float PISO = Arena.FILAS_PISO * Arena.CELDA;
     private static final int CORAZON = Jugador.PARTES_POR_CORAZON;
@@ -63,10 +58,6 @@ class ArmasTest {
         return blanco;
     }
 
-    /**
-     * Un rival quieto con la espada en la mano, para probar el desarme. La apunta hacia arriba: hacia el
-     * tirador, su hoja lo empujaria lejos y el puno no llegaria.
-     */
     private Jugador rivalArmado(float x) {
         Jugador rival = new Jugador(new FuenteEntrada() {
             @Override
@@ -76,7 +67,7 @@ class ArmasTest {
                 destino.apuntaX = x + 60f;
                 destino.apuntaY = 3000f;
             }
-        }, x, PISO, true, Color.WHITE, 3); // arranca mirando para el otro lado: la hoja nunca pasa por el tirador
+        }, x, PISO, true, Color.WHITE, 3);
         return rival;
     }
 
@@ -88,13 +79,10 @@ class ArmasTest {
         }
     }
 
-    /** Apunta horizontal hacia la derecha, a la altura del pecho del rival. */
     private void apuntarALaDerecha() {
         guion.apuntaX = 3500f;
         guion.apuntaY = PISO + 112f;
     }
-
-    // ---- vida
 
     @Test
     void laVidaSeCuentaEnSextos() {
@@ -129,14 +117,12 @@ class ArmasTest {
         for (int i = 0; i < VIDA_LLENA; i++) {
             j.recibirDanio(1, 1f, true);
             for (int k = 0; k < 20; k++) {
-                j.actualizar(DT, arena, lejos); // pasa la invulnerabilidad
+                j.actualizar(DT, arena, lejos);
             }
         }
         assertEquals(0, j.getPartes());
         assertFalse(j.isVivo());
     }
-
-    // ---- balas
 
     @Test
     void lasBalasCaenUnPoco() {
@@ -202,8 +188,6 @@ class ArmasTest {
         assertEquals(0, a.getBalas());
     }
 
-    // ---- escopeta
-
     @Test
     void laEscopetaDisparaTresVecesCincoPerdigonesEnAbanico() {
         Jugador a = tirador(1000f);
@@ -249,12 +233,9 @@ class ArmasTest {
         guion.clic = true;
         pasos(a, d, 30);
 
-        // los perdigones de un mismo disparo no se frenan con la invulnerabilidad del primero
         assertEquals(VIDA_LLENA - TipoArma.PERDIGONES * TipoArma.DANIO_PERDIGON, d.getPartes(),
             "de cerca pegan los cinco");
     }
-
-    // ---- tirar la espada
 
     @Test
     void laEspadaTiradaNoReapareceEnLaMano() {
@@ -268,7 +249,7 @@ class ArmasTest {
         assertNull(a.getArma());
         assertEquals(Proyectil.Tipo.ESPADA_LANZADA, armas.getProyectiles().get(0).getTipo());
 
-        pasos(a, d, 180); // tres segundos
+        pasos(a, d, 180);
         assertNull(a.getArma(), "ya no vuelve sola");
     }
 
@@ -277,7 +258,7 @@ class ArmasTest {
         Jugador a = tirador(1000f);
         Jugador d = blanco(3500f);
         guion.apuntaX = 3500f;
-        guion.apuntaY = PISO + 400f; // en arco
+        guion.apuntaY = PISO + 400f;
         pasos(a, d, 20);
         guion.lanzar = true;
         pasos(a, d, 1);
@@ -345,7 +326,7 @@ class ArmasTest {
         Jugador a = tirador(1000f);
         Jugador lejos = blanco(3000f);
         guion.apuntaX = 0f;
-        guion.apuntaY = PISO + 112f; // gira la hoja hacia la izquierda y la tira para ese lado
+        guion.apuntaY = PISO + 112f;
         pasos(a, lejos, 30);
         guion.lanzar = true;
         pasos(a, lejos, 1);
@@ -358,9 +339,6 @@ class ArmasTest {
         assertEquals(VIDA_LLENA, d.getPartes(), "barrer con el brazo vacio no hiere");
     }
 
-    // ---- punetazo
-
-    /** Deja al tirador con las manos vacias tirando la espada hacia la izquierda, lejos del rival. */
     private Jugador desarmado(float x) {
         Jugador a = tirador(x);
         Jugador lejos = blanco(3500f);
@@ -405,7 +383,7 @@ class ArmasTest {
         d.setAzar(new Random() {
             @Override
             public int nextInt(int limite) {
-                return 0; // siempre sale el desarme
+                return 0;
             }
         });
         apuntarALaDerecha();
@@ -448,8 +426,6 @@ class ArmasTest {
         assertEquals(TipoArma.ESPADA, a.getArma());
     }
 
-    // ---- armas en el mapa
-
     @Test
     void cadaTantoApareceUnArmaDeFuegoSobreElPisoYSeAgarraPasandoPorEncima() {
         Jugador a = tirador(1000f);
@@ -461,7 +437,7 @@ class ArmasTest {
         TipoArma tipo = TipoArma.porCodigo((int) arma[0]);
         assertTrue(tipo == TipoArma.PISTOLA || tipo == TipoArma.ESCOPETA);
         assertTrue(arma[2] > Arena.ALTO_MUNDO / 2f, "aparece arriba, en el cielo");
-        pasos(a, d, 240); // cuatro segundos: le alcanza para caer
+        pasos(a, d, 240);
         assertEquals(PISO, arma[2], 0.01f, "y cae hasta apoyarse en el piso");
 
         arma[1] = a.getPosicion().x;
@@ -592,7 +568,6 @@ class ArmasTest {
 
     @Test
     void elContadorDeEspadasAlCaerSumaCadaToqueDelPiso() {
-        // cae desde alto y rebota varias veces antes de quedarse apoyada
         Proyectil espada = Proyectil.inofensiva(Proyectil.Tipo.ESPADA_LANZADA, null, 1500f, PISO + 400f, 0f, 0f);
         armas.getProyectiles().add(espada);
         Jugador a = tirador(1000f);
@@ -656,8 +631,6 @@ class ArmasTest {
         assertEquals(VIDA_LLENA, copia.getPartes());
     }
 
-    // ---- correcciones: rebote, armas con balas, aparicion alternada, desarme con la hoja
-
     @Test
     void laEspadaNuncaSeQuedaFlotandoEnElAire() {
         Proyectil espada = Proyectil.inofensiva(Proyectil.Tipo.ESPADA_LANZADA, null, 1500f, 1400f, 300f, 900f);
@@ -678,7 +651,7 @@ class ArmasTest {
         for (int i = 0; i < 600 && espada.isActivo(); i++) {
             espada.actualizar(DT, arena, null, null);
             if (espada.getY() > anterior) {
-                pico = true; // ya reboto y esta subiendo
+                pico = true;
             }
             if (pico) {
                 maxima = Math.max(maxima, espada.getY() - PISO);
@@ -695,7 +668,7 @@ class ArmasTest {
         Jugador d = blanco(3500f);
         a.equipar(TipoArma.PISTOLA);
         guion.apuntaX = 0f;
-        guion.apuntaY = PISO + 112f; // dispara y tira hacia la izquierda, lejos del blanco
+        guion.apuntaY = PISO + 112f;
         pasos(a, d, 30);
         guion.clic = true;
         pasos(a, d, 20);
@@ -730,7 +703,6 @@ class ArmasTest {
 
     @Test
     void apareceElTipoQueFaltaEnElSuelo() {
-        // con una de cada una menos la escopeta, la que aparece es la escopeta (salvo la espada laser, que es rara)
         for (int semilla = 0; semilla < 20; semilla++) {
             ArmasEnJuego otras = new ArmasEnJuego(new Random(semilla), new ArrayList<>());
             otras.dejarEnElSuelo(TipoArma.PISTOLA, 500f, PISO, 0f);
@@ -787,14 +759,12 @@ class ArmasTest {
         assertEquals(2, (int) arma[4]);
     }
 
-    /** Una hoja horizontal hacia la derecha con la base en (1000, 500): la "suya". */
     private static Hoja suya() {
         Hoja hoja = new Hoja();
         hoja.colocar(1000f, 500f, 0f, 0f);
         return hoja;
     }
 
-    /** Una hoja vertical hacia abajo que cruza y = 500 en x, a {@code largo} de su base. */
     private static Hoja miaCruzandoEn(float x, float largo) {
         Hoja hoja = new Hoja();
         hoja.colocar(x, 500f + largo, (float) -Math.PI / 2f, 0f);
@@ -825,7 +795,6 @@ class ArmasTest {
 
     @Test
     void laEspadaDesarmadaVuelaHaciaArribaSinHerirYQuedaEnElMapa() {
-        // lejos de la hoja en la mano, pero en el camino de la espada que cae
         Jugador a = blanco(1300f);
         Jugador d = rivalArmado(1000f);
         pasos(d, a, 3);
@@ -862,16 +831,12 @@ class ArmasTest {
         a.equipar(TipoArma.ESCOPETA);
         apuntarALaDerecha();
         pasos(a, d, 3);
-        // una bala justo antes: lo deja invulnerable sin moverlo
         d.recibirDanio(TipoArma.DANIO_BALA, 0f, true);
         guion.clic = true;
         pasos(a, d, 30);
         assertEquals(VIDA_LLENA - TipoArma.DANIO_BALA - TipoArma.PERDIGONES * TipoArma.DANIO_PERDIGON, d.getPartes());
     }
 
-    // ---- bloques spawner
-
-    /** Piso con un spawner de pistolas de 3x3 en las columnas 40 a 42, apoyado sobre el piso. */
     private static Arena conSpawner(String celdas) {
         String aire = repetir('.', Arena.COLUMNAS);
         String spawner = repetir('.', 40) + celdas + repetir('.', Arena.COLUMNAS - 40 - celdas.length());
@@ -910,14 +875,13 @@ class ArmasTest {
         }
         assertEquals(1, deSpawner(), "con una arriba no apila otra");
 
-        armas.getEnElSuelo().clear(); // alguien la agarro
+        armas.getEnElSuelo().clear();
         for (int i = 0; i < cinco; i++) {
             armas.actualizar(DT, mapa, a, d);
         }
         assertEquals(1, deSpawner(), "cuando se la llevan, aparece otra");
     }
 
-    /** Cuantas armas del suelo puso un spawner (las sueltas que aparecen cada 8 s no cuentan). */
     private int deSpawner() {
         int cantidad = 0;
         for (float[] arma : armas.getEnElSuelo()) {
@@ -967,7 +931,6 @@ class ArmasTest {
         for (int i = 0; i < ocho; i++) {
             armas.actualizar(DT, mapa, a, d);
         }
-        // las dos de los spawners y la suelta
         assertEquals(3, armas.getEnElSuelo().size());
     }
 
@@ -988,13 +951,10 @@ class ArmasTest {
         assertTrue(distintos, "dos disparos no salen exactamente igual");
     }
 
-    // ---- armas que caen del cielo
-
     @Test
     void unArmaQueCaeNoSeAgarraEnElAire() {
         Jugador vacio = desarmado(1000f);
         Jugador d = blanco(3500f);
-        // cae justo sobre el jugador: pasa por su cuerpo pero no la agarra hasta que toca el piso
         armas.dejarCayendo(TipoArma.PISTOLA, vacio.getPosicion().x, PISO + 400f, 6);
         boolean laTuvoEnElAire = false;
         for (int i = 0; i < 120 && vacio.getArma() == null; i++) {
@@ -1048,7 +1008,7 @@ class ArmasTest {
         });
         apuntarALaDerecha();
         pasos(a, d, 20);
-        d.impulsar(Jugador.IMPULSO_SALTO); // en el aire
+        d.impulsar(Jugador.IMPULSO_SALTO);
         pasos(a, d, 3);
         guion.clic = true;
         for (int i = 0; i < 10 && d.getArma() != null; i++) {

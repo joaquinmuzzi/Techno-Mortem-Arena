@@ -4,9 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Rectangle;
 import com.et35.technomortemarena.entidades.Jugador;
 
-/** Bloque que rebota: quien aterriza sobre el sale disparado hacia arriba con mas fuerza que un salto. */
 public class Trampolin extends Bloque {
-
     private static final float IMPULSO = 1.6f * Jugador.IMPULSO_SALTO;
 
     public Trampolin(Rectangle area) {

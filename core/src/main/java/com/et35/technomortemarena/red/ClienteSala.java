@@ -12,16 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.function.LongSupplier;
 
-/**
- * El lado del cliente: se une a la sala de un anfitrion, baja el mapa, le manda sus teclas y recibe
- * el estado de la partida para dibujarlo.
- *
- * <p>Pasa por tres fases: {@link Fase#CONECTANDO} (repite el saludo hasta tener el mapa completo),
- * {@link Fase#JUGANDO} y {@link Fase#DESCONECTADO}, de la que no vuelve. Igual que el servidor, no
- * usa hilos: {@link #sondear()} se llama una vez por fotograma.
- */
 public final class ClienteSala implements AutoCloseable {
-
     public enum Fase { CONECTANDO, JUGANDO, DESCONECTADO }
 
     private final DatagramChannel canal;
@@ -60,12 +51,6 @@ public final class ClienteSala implements AutoCloseable {
         this.inicio = reloj.getAsLong();
     }
 
-    /**
-     * Empieza a conectarse a una sala. No espera: hay que llamar a {@link #sondear()} cada fotograma y
-     * mirar {@link #getFase()}.
-     *
-     * @throws IOException si la direccion no se puede resolver o no se puede abrir el socket
-     */
     public static ClienteSala conectar(InetSocketAddress servidor, LongSupplier reloj) throws IOException {
         if (servidor.isUnresolved()) {
             throw new IOException("No se encontro la direccion " + servidor.getHostString());
@@ -80,7 +65,6 @@ public final class ClienteSala implements AutoCloseable {
         return new ClienteSala(canal, servidor, reloj);
     }
 
-    /** Lee lo que llego, avanza la conexion y detecta cortes. Hay que llamarlo una vez por fotograma. */
     public void sondear() {
         if (fase == Fase.DESCONECTADO) {
             return;
@@ -103,7 +87,6 @@ public final class ClienteSala implements AutoCloseable {
             try {
                 procesar(entrante);
             } catch (RuntimeException e) {
-                // Paquete mal formado: se ignora.
             }
         }
         avanzar();
@@ -180,7 +163,6 @@ public final class ClienteSala implements AutoCloseable {
         if (hayEstado && !Protocolo.esMasNueva(secuencia, ultimaSecuenciaEstado)) {
             return;
         }
-        // Se lee primero a objetos de paso: si el segundo estado estuviera mal, no se pisa tampoco el primero.
         EstadoJugador uno = new EstadoJugador();
         EstadoJugador dos = new EstadoJugador();
         EstadoPartida partida = new EstadoPartida();
@@ -244,9 +226,7 @@ public final class ClienteSala implements AutoCloseable {
         return true;
     }
 
-    /** El saludo lleva una mascara con las filas que faltan: el anfitrion reenvia solo esas. */
     private void enviarHello() {
-        // dos mascaras de 64 bits: las filas 0 a 63 y las 64 a 127
         long faltantesBajas = -1L;
         long faltantesAltas = -1L;
         if (bienvenida) {
@@ -273,10 +253,6 @@ public final class ClienteSala implements AutoCloseable {
         motivo = razon;
     }
 
-    /**
-     * Manda la entrada de este fotograma: teclas, punto apuntado y contadores. Las acciones de una sola
-     * vez (saltar, estocar, rodar) suben un contador, asi si este paquete se pierde el siguiente las lleva igual.
-     */
     public void enviarEntrada(EntradaJugador entrada) {
         if (fase != Fase.JUGANDO) {
             return;
@@ -306,7 +282,6 @@ public final class ClienteSala implements AutoCloseable {
         paquete.put(contadorLanzar);
         paquete.put((byte) entrada.eleccionPieza);
         paquete.put(contadorColocar);
-        // El punto apuntado va en pixeles del mundo, como entero de 16 bits: la arena mide menos de 4000.
         paquete.putShort(aCorto(entrada.apuntaX));
         paquete.putShort(aCorto(entrada.apuntaY));
         Protocolo.enviar(canal, paquete, servidor);
@@ -320,28 +295,22 @@ public final class ClienteSala implements AutoCloseable {
         return fase;
     }
 
-    /** Por que se corto la conexion, para mostrarselo al jugador. Vacio mientras no se corto. */
     public String getMotivo() {
         return motivo;
     }
 
-    /** Indice de este jugador en la sala (0 es el anfitrion). */
     public int getIdJugador() {
         return idJugador;
     }
 
-    /** Las filas del mapa. Solo es valido cuando la fase es {@link Fase#JUGANDO}. */
     public String[] getFilas() {
         return filas.clone();
     }
 
-    /** Verdadero cuando llego al menos un estado de la partida. */
     public boolean hayEstado() {
         return hayEstado;
     }
 
-    /** Como va la partida: etapa, ronda, marcador y quien gano la ultima ronda. */
-    /** Los proyectiles y las armas en el suelo que mando el anfitrion por ultima vez. */
     public EstadoArmas getEstadoArmas() {
         return estadoArmas;
     }
@@ -350,7 +319,6 @@ public final class ClienteSala implements AutoCloseable {
         return estadoPartida;
     }
 
-    /** El ultimo estado recibido del jugador {@code indice} (0 anfitrion, 1 cliente). */
     public EstadoJugador getEstado(int indice) {
         return estados[indice];
     }
@@ -367,7 +335,6 @@ public final class ClienteSala implements AutoCloseable {
         try {
             canal.close();
         } catch (IOException e) {
-            // Ya se esta cerrando: no hay nada mas que hacer.
         }
     }
 }

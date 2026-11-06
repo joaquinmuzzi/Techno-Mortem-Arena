@@ -14,35 +14,17 @@ import com.et35.technomortemarena.partida.MarcadorPartida;
 import com.et35.technomortemarena.partida.RondasPartida;
 import java.nio.ByteBuffer;
 
-/**
- * Pasa un {@link EstadoJugador} a bytes y de vuelta ({@link #BYTES} bytes), y lo mismo con el
- * {@link EstadoPartida} ({@link #BYTES_PARTIDA} bytes).
- */
 final class CodecEstado {
-
     static final int BYTES = 4 + 4 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 1 + 1 + PowerUp.values().length + 4 + 4 + 4 + 4
         + 4 + 4 + 4;
 
-    /**
-     * Lo minimo de las armas fuera de las manos: las cuatro cantidades (proyectiles, armas en el suelo,
-     * mejoras y celdas rotas) y los contadores de espadas y armas de fuego caidas y de explosiones. Cada
-     * uno suma lo suyo.
-     */
     static final int BYTES_ARMAS = 4 + 4 + 4 + 4;
-    /** Columna y fila de una celda que rompio un cohete. */
     static final int BYTES_POR_CELDA_ROTA = 2;
     static final int BYTES_POR_POWER_UP = 1 + 4 + 4;
     static final int BYTES_POR_PROYECTIL = 1 + 4 + 4 + 4;
     static final int BYTES_POR_ARMA_EN_EL_SUELO = 1 + 4 + 4;
 
-    /**
-     * Lo fijo del estado de la partida: etapa, numero de ronda, rondas ganadas de cada uno y ganador de la
-     * ultima ronda (un byte cada uno), los dos tiempos, y la edicion del nivel (editor, tres opciones,
-     * eleccion, celda del cursor, tiempo y cantidad de piezas). Cada pieza colocada suma
-     * {@link #BYTES_POR_PIEZA}.
-     */
     static final int BYTES_PARTIDA = 5 + 4 + 4 + (1 + 3 + 1 + 1 + 1 + 4 + 1);
-    /** Tipo, columna y fila de una pieza colocada. */
     static final int BYTES_POR_PIEZA = 3;
 
     private static final int BIT_MIRANDO = 1;
@@ -69,7 +51,6 @@ final class CodecEstado {
         buffer.putInt(estado.contadorAterrizajes);
         buffer.put((byte) estado.arma);
         buffer.put((byte) estado.balas);
-        // el tiempo de cada mejora en decimas de segundo, en un byte sin signo
         for (float tiempo : estado.tiempoPowerUp) {
             buffer.put((byte) Math.max(0, Math.min(255, Math.round(tiempo * 10f))));
         }
@@ -82,12 +63,6 @@ final class CodecEstado {
         buffer.putInt(estado.contadorPowerUps);
     }
 
-    /**
-     * Lee un estado del buffer.
-     *
-     * @return {@code false} si no hay bytes suficientes o algun valor no tiene sentido (un numero no
-     *         finito, una extension fuera de 0 a 1): en ese caso {@code destino} no se toca
-     */
     static boolean leer(ByteBuffer buffer, EstadoJugador destino) {
         if (buffer.remaining() < BYTES) {
             return false;
@@ -163,7 +138,7 @@ final class CodecEstado {
             buffer.put((byte) opcion);
         }
         buffer.put((byte) partida.eleccion);
-        buffer.put((byte) partida.cursorColumna); // sin signo: hay mas de 127 columnas
+        buffer.put((byte) partida.cursorColumna);
         buffer.put((byte) partida.cursorFila);
         buffer.putFloat(partida.tiempoEdicion);
         int cantidad = Math.min(partida.piezas.size(), EdicionNivel.MAX_PIEZAS);
@@ -176,13 +151,6 @@ final class CodecEstado {
         }
     }
 
-    /**
-     * Lee el estado de la partida.
-     *
-     * @return {@code false} si faltan bytes o algun valor no tiene sentido (una etapa que no existe, mas
-     *         rondas ganadas de las que alcanzan para ganar, un ganador que no es 0, 1 ni -1): en ese
-     *         caso {@code destino} no se toca
-     */
     static boolean leer(ByteBuffer buffer, EstadoPartida destino) {
         if (buffer.remaining() < BYTES_PARTIDA) {
             return false;
@@ -287,12 +255,6 @@ final class CodecEstado {
         buffer.putInt(armas.contadorExplosiones);
     }
 
-    /**
-     * Lee los proyectiles y las armas en el suelo.
-     *
-     * @return {@code false} si faltan bytes, hay mas de los que entran o algun valor no tiene sentido (un
-     *         tipo que no existe, un numero no finito): en ese caso {@code destino} no se toca
-     */
     static boolean leer(ByteBuffer buffer, EstadoArmas destino) {
         if (buffer.remaining() < 1) {
             return false;

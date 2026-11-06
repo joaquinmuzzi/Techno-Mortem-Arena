@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 class MapaGuardadoTest {
-
     @Test
     void guardaElNombreYLasFilas() {
         MapaGuardado mapa = new MapaGuardado("arena", new String[] {"..", "##"});

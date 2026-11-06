@@ -17,116 +17,59 @@ import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
 
-/**
- * Duelista: se mueve, salta y apunta su espada hacia un punto del mundo (el mouse).
- *
- * <p>Concentra estado (posicion, velocidad, angulo de la espada) y comportamiento (moverse, saltar,
- * estocar, dibujarse). Lo que el jugador quiere hacer llega desde afuera en una {@link FuenteEntrada}
- * (teclado y mouse locales, o paquetes de red), asi la misma clase sirve para un duelista local, uno
- * remoto y un blanco de prueba.
- *
- * <p>La espada es una {@link Hoja}: una caja rotada que apunta al punto del mouse desde el hombro. Lo
- * que se dibuja es lo que choca. Cualquier contacto de la hoja con el cuerpo del rival lo hiere; el
- * clic lanza una estocada, que adelanta la hoja y le da mas alcance un instante.
- *
- * <p>Todas las medidas y velocidades se escriben en la escala base y se multiplican por
- * {@link Arena#ESCALA}: para agrandar o achicar el juego se cambia un solo numero.
- */
 public class Jugador {
-
     private static final float ESCALA = Arena.ESCALA;
 
     public static final Color TINTE_UNO = new Color(0.42f, 0.78f, 1f, 1f);
     public static final Color TINTE_DOS = new Color(1f, 0.48f, 0.42f, 1f);
 
-    /** Ancho de la caja de colision, en pixeles. Coincide con el ancho del sprite. */
     public static final float ANCHO = 48f * ESCALA;
 
-    /** Alto de la caja de colision, en pixeles. */
     public static final float ALTO = 96f * ESCALA;
 
     private static final float VELOCIDAD = 450f * ESCALA;
     public static final float IMPULSO_SALTO = 780f * ESCALA;
     private static final float GRAVEDAD = -2200f * ESCALA;
 
-    /** Por segundo: cuanto del empuje se pierde en cada segundo. Fija la distancia total del empuje. */
     private static final float RITMO_EMPUJE = 4f;
-    /** Medio segundo caminando: sale del alcance de la espada dentro de la invulnerabilidad. */
     private static final float EMPUJE_GOLPE = 0.5f * VELOCIDAD;
-    /** Choque entre espadas: un empujon corto que no saca al jugador del todo. */
     private static final float EMPUJE_CHOQUE = 0.2f * VELOCIDAD;
 
-    /** Segundos que dura una estocada, de que sale la hoja hasta que vuelve. */
     private static final float DURACION_ESTOCADA = 0.14f;
-    /** Segundos desde que arranca una estocada hasta que se puede lanzar otra. */
     private static final float RECARGA_ESTOCADA = 0.08f;
-    /**
-     * Radianes por segundo que gira la espada hacia el cursor: es el retardo de la espada, no llega al
-     * cursor al instante. 12 equivale a 0,2 por fotograma a 60 FPS. Se mide en segundos para que el
-     * retardo sea el mismo con cualquier cantidad de fotogramas por segundo.
-     */
     private static final float VELOCIDAD_GIRO = 12f;
-    /** Igual que {@link #VELOCIDAD_GIRO}, pero mientras un choque de hojas tiene bloqueado al jugador. */
     private static final float VELOCIDAD_GIRO_BLOQUEADO = 3f;
-    /**
-     * Un corazon se divide en sextos: la espada saca uno entero, una bala un tercio y un perdigon o un
-     * punetazo un sexto.
-     */
     public static final int PARTES_POR_CORAZON = 6;
-    /** Segundos entre un disparo y el siguiente: la escopeta tarda mas en recargar. */
     private static final float RECARGA_PISTOLA = 0.22f;
     private static final float RECARGA_ESCOPETA = 0.6f;
     private static final float RECARGA_RIFLE = 0.12f;
     private static final float RECARGA_LANZACOHETES = 1f;
-    /** Abertura total del abanico de perdigones de la escopeta, en radianes (unos 17 grados). */
     static final float ABANICO_ESCOPETA = 0.3f;
-    /** Cuanto se corre al azar cada perdigon de su lugar en el abanico, en radianes, para arriba o abajo. */
     static final float DISPERSION_PERDIGON = 0.05f;
-    /** Cuanto varia al azar la velocidad de cada perdigon, en proporcion (0,1 = un 10 % mas o menos). */
     private static final float VARIACION_VELOCIDAD_PERDIGON = 0.1f;
-    /** El punetazo sin arma: corto, con recarga, empuja y a veces desarma. */
     private static final float DURACION_PUNIO = 0.16f;
     private static final float RECARGA_PUNIO = 0.35f;
     private static final float EMPUJE_PUNIO = 0.35f * VELOCIDAD;
-    /** Lado de la caja con que pega el puno, adelante de la mano. */
     private static final float LADO_PUNIO = 36f * ESCALA;
-    /** Uno de cada tantos punetazos que conectan le hace soltar el arma al rival. */
     static final int CHANCE_DESARME = 3;
-    /**
-     * Desarme con la hoja: si la mitad de afuera de mi hoja (desde {@link #DESDE_DONDE_DESARMA} de su largo hasta
-     * la punta) pega en la parte de adentro de la del rival (hasta {@link #HASTA_DONDE_SE_DESARMA} de su largo,
-     * desde la mano) mientras muevo la espada, al rival se le vuela la espada. Pegarle cerca de la punta de su
-     * hoja no lo desarma: hay que acercarse a su mano.
-     */
     static final float DESDE_DONDE_DESARMA = 0.5f;
     static final float HASTA_DONDE_SE_DESARMA = 0.6f;
-    /** Radianes por segundo que tiene que estar girando la espada para que cuente como un golpe que desarma. */
     static final float GIRO_PARA_DESARMAR = 2.5f;
-    /** Velocidad con que sale volando la espada desarmada: hacia arriba y un poco para el lado del golpe. */
     private static final float VUELO_DESARME_Y = 900f * ESCALA;
     private static final float VUELO_DESARME_X = 220f * ESCALA;
-    /** Invulnerabilidad despues de una bala: corta, para que una rafaga lastime pero no mate de golpe. */
     private static final float FLASH_BALA = 0.25f;
     private static final float EMPUJE_BALA = 0.08f * VELOCIDAD;
-    /** Distancia desde el hombro hasta la boca de la pistola, de donde sale la bala. */
     private static final float LARGO_PISTOLA = 36f * ESCALA;
-    /** Segundos que dura una rodada. */
     private static final float DURACION_RODADA = 0.35f;
-    /** Segundos desde que arranca una rodada hasta que se puede hacer otra. */
     private static final float RECARGA_RODADA = 0.9f;
-    /** Mientras rueda va mas rapido que corriendo. */
     private static final float VELOCIDAD_RODADA = 1.8f * VELOCIDAD;
-    /** Alto de la caja de colision rodando: la mitad, sin invulnerabilidad. */
     public static final float ALTO_RODANDO = ALTO / 2f;
-    /** Altura del hombro (el pivote de la espada) sobre los pies. */
     private static final float ALTURA_HOMBRO = 56f * ESCALA;
-    /** Cuanto se corre el hombro hacia el lado al que mira el jugador, desde el centro del cuerpo. */
     private static final float DESPLAZAMIENTO_HOMBRO = 10f * ESCALA;
 
     private final FuenteEntrada fuente;
     private final EntradaJugador entrada = new EntradaJugador();
     private final Color tinte;
-    /** Vidas con las que arranca cada ronda: ver {@link #reiniciar}. */
     private final int vidaInicial;
     private final Vector2 posicion = new Vector2();
     private final Vector2 velocidad = new Vector2();
@@ -135,86 +78,57 @@ public class Jugador {
     private boolean mirandoDerecha;
     private boolean enElPiso;
     private boolean vivo = true;
-    /** Un blanco de prueba no tiene espada: ni hiere, ni choca con otras hojas, ni se dibuja. */
     private boolean desarmado;
 
-    /** Hacia donde apunta la espada, en radianes (0 es hacia la derecha, positivo hacia arriba). */
     private float angulo;
-    /** Hacia donde quiere apuntar el jugador (el cursor); {@link #angulo} gira hacia ahi con retardo. */
     private float anguloObjetivo;
-    /** El angulo al empezar el fotograma, para barrer el tajo de un fotograma al siguiente. */
     private float anguloPrevio;
-    /** Segundos que le quedan a la estocada en curso; 0 si no hay ninguna. */
     private float tiempoEstocada;
-    /** Segundos que le quedan de bloqueo tras un choque de hojas: se mueve, gira y estoca mas lento. */
     private float bloqueadoTimer;
-    /** Duracion de la estocada en curso: dura mas si se lanzo estando bloqueado. */
     private float duracionEstocadaActual = DURACION_ESTOCADA;
     private float recargaEstocada;
-    /** Cuanto esta adelantada la hoja, de 0 (quieta) a 1 (en lo mas fuerte de la estocada). */
     private float extension;
-    /** Verdadero mientras rueda: dura {@link #DURACION_RODADA} y sigue hasta tener lugar para pararse. */
     private boolean rodando;
     private float tiempoRodada;
     private float recargaRodada;
     private float direccionRodada;
-    /** Lo que tiene en la mano; {@code null} con las manos vacias (pega punetazos). */
     private TipoArma arma = TipoArma.ESPADA;
     private int balas;
     private float recargaDisparo;
-    /** Que tan rapido giro la espada en este fotograma, en radianes por segundo. */
     private float velocidadDeGiro;
-    /** Balas que tenia el arma que se le cayo por un punetazo. */
     private int balasSoltadas;
-    /** Si el punetazo en curso ya pego: cada punetazo hiere una sola vez. */
     private boolean punioConecto;
-    /** El arma que se le cayo de la mano por un punetazo, hasta que la junta {@link ArmasEnJuego}. */
     private TipoArma armaSoltada;
     private Random azar = new Random();
-    /** Segundos que le quedan a cada mejora, en el orden de {@link PowerUp}; 0 si no la tiene. */
     private final float[] tiempoPowerUp = new float[PowerUp.values().length];
-    /** Balas y armas tiradas en este fotograma: las junta {@link ArmasEnJuego}. */
     private final List<Proyectil> lanzados = new ArrayList<>();
     private final Hoja hoja = new Hoja();
     private final Hoja hojaDeBarrido = new Hoja();
     private final Rectangle limitesPropios = new Rectangle();
     private final Rectangle limitesAjenos = new Rectangle();
 
-    /** Entrada horizontal del fotograma: se guarda para saber si corre sin volver a leer el teclado. */
     private boolean entradaIzquierda;
     private boolean entradaDerecha;
 
-    /** Verdadero mientras el jugador corre por el piso (hay entrada horizontal y esta apoyado). */
     private boolean corriendo;
-    /** Verdadero mientras el jugador esta en el aire despues de haber dejado el piso. */
     private boolean enVuelo;
-    /** Verdadero solo en el fotograma en que toca el piso tras haber estado en el aire. */
     private boolean acabaDeAterrizar;
-    /** Verdadero solo en el fotograma en que su espada toca el cuerpo del rival. */
     private boolean acabaDeGolpear;
-    /** Cuantas veces ocurrieron: viajan por la red para que los clientes disparen los sonidos. */
     private int contadorGolpes;
     private int contadorAterrizajes;
-    /** Disparos de cada arma de fuego, para que el cliente de red reproduzca el efecto. */
     private int contadorDisparosPistola;
     private int contadorDisparosEscopeta;
-    /** Armas recogidas del suelo, separadas por tipo de sonido. */
     private int contadorEspadasEquipadas;
     private int contadorArmasDeFuegoEquipadas;
-    /** Disparos de laser y de bazuca, para el sonido de cada arma. */
     private int contadorDisparosLaser;
     private int contadorDisparosBazuca;
-    /** Mejoras recogidas del mapa. */
     private int contadorPowerUps;
 
-    /** Bloque sobre el que esta parado, si lo hay. Sirve para avisar solo al aterrizar. */
     private Bloque bloqueBajoPies;
-    /** Verdadero mientras esta parado sobre la cabeza del oponente. */
     private boolean montadoSobreOponente;
 
     private float tiempoRestanteFlash;
 
-    /** Velocidad horizontal del empuje por golpe o choque. Se frena sola en el tiempo. */
     private float empujeX;
 
     public static final float ANCHO_ESPADA = Hoja.LARGO;
@@ -226,18 +140,11 @@ public class Jugador {
     private static final float ANCHO_RIFLE = 50f * ESCALA;
     private static final float ANCHO_LANZACOHETES = 52f * ESCALA;
     private static final float ALTO_LANZACOHETES = 16f * ESCALA;
-    /** La espada laser es la misma hoja, tenida de rojo. */
     public static final Color COLOR_ESPADA_LASER = new Color(1f, 0.25f, 0.25f, 1f);
 
     private static final float ANCHO_BRAZO = 22f * ESCALA;
     private static final float ALTO_BRAZO = 8f * ESCALA;
 
-    /**
-     * @param x posicion horizontal inicial, en pixeles desde el borde izquierdo de la arena
-     * @param y posicion vertical inicial, en pixeles desde el borde inferior de la arena
-     * @param mirandoDerecha hacia donde apunta la espada al empezar la ronda
-     * @param tinte color con el que se pinta el sprite blanco, para distinguir a los duelistas
-     */
     public Jugador(FuenteEntrada fuente, float x, float y, boolean mirandoDerecha, Color tinte, int vida) {
         this.fuente = fuente;
         this.tinte = tinte;
@@ -251,19 +158,6 @@ public class Jugador {
         actualizarHoja();
     }
 
-    /**
-     * Vuelve al estado inicial para empezar una ronda nueva en el mismo mapa: posicion de spawn,
-     * vida completa, la espada mirando hacia adelante y sin efectos pendientes (flash, empuje,
-     * estocada). Los contadores de golpes y aterrizajes no se tocan: solo suben, y los clientes de
-     * una partida en red los comparan para disparar los sonidos.
-     *
-     * <p>La partida al mejor de 5 resetea a los duelistas en vez de reconstruir la pantalla, asi
-     * el marcador y el numero de ronda sobreviven de un duelo al siguiente.
-     *
-     * @param x posicion horizontal del spawn, en pixeles desde el borde izquierdo de la arena
-     * @param y posicion vertical del spawn, en pixeles desde el borde inferior de la arena
-     * @param mirandoDerecha hacia donde apunta la espada al empezar la ronda
-     */
     public void reiniciar(float x, float y, boolean mirandoDerecha) {
         posicion.set(x, y);
         velocidad.setZero();
@@ -302,14 +196,6 @@ public class Jugador {
         actualizarHoja();
     }
 
-    /**
-     * Avanza la simulacion del jugador un fotograma.
-     *
-     * <p>El orden importa: primero se lee la entrada, despues se integra la fisica (con los bloques del
-     * escenario) y al final se resuelven las colisiones con el oponente.
-     *
-     * @param delta segundos transcurridos desde el fotograma anterior
-     */
     public void actualizar(float delta, Arena arena, Jugador oponente) {
         acabaDeAterrizar = false;
         acabaDeGolpear = false;
@@ -320,7 +206,6 @@ public class Jugador {
         }
         actualizarEstocada(delta);
         integrarFisica(delta, arena, oponente);
-        // La hoja se coloca despues de mover al jugador, asi sigue al hombro y al cursor del fotograma.
         apuntar(delta);
         velocidadDeGiro = delta > 0f ? Math.abs(Hoja.diferenciaAngular(anguloPrevio, angulo)) / delta : 0f;
         actualizarArma();
@@ -338,21 +223,10 @@ public class Jugador {
         }
     }
 
-    /** Mata al jugador al instante. Lo usan los bloques mortales, como los pinchos. */
     public void morir() {
         vivo = false;
     }
 
-    /**
-     * Actualiza las banderas de correr y aterrizar comparando el apoyo en el piso de este fotograma
-     * con el anterior.
-     *
-     * <p>El salto y el trampolin dejan al jugador en el aire ({@code enElPiso} en falso); cuando
-     * vuelve a tocar el piso se avisa una sola vez para que suene el aterrizaje. Al empezar la ronda
-     * el jugador nunca estuvo apoyado, asi que la primera caida al piso no suena.
-     *
-     * @param estabaEnPiso si el jugador estaba apoyado antes de la fisica de este fotograma
-     */
     private void actualizarPiso(boolean estabaEnPiso) {
         if (estabaEnPiso && !enElPiso) {
             enVuelo = true;
@@ -365,10 +239,6 @@ public class Jugador {
         corriendo = vivo && enElPiso && (entradaIzquierda != entradaDerecha);
     }
 
-    /**
-     * Impulsa al jugador hacia arriba con la velocidad vertical dada. Lo usan los bloques que rebotan, como
-     * el trampolin: lo sacan del piso sin que cuente como un salto propio.
-     */
     public void impulsar(float velocidadVertical) {
         velocidad.y = velocidadVertical;
         enElPiso = false;
@@ -376,7 +246,6 @@ public class Jugador {
         bloqueBajoPies = null;
     }
 
-    /** Posicion del hombro, el pivote alrededor del que gira la espada. */
     private float pivoteX() {
         return posicion.x + ANCHO / 2f + (mirandoDerecha ? DESPLAZAMIENTO_HOMBRO : -DESPLAZAMIENTO_HOMBRO);
     }
@@ -389,13 +258,6 @@ public class Jugador {
         hoja.colocar(pivoteX(), pivoteY(), angulo, extension * Hoja.ALCANCE_ESTOCADA);
     }
 
-    /**
-     * Fija hacia donde quiere apuntar el jugador (el cursor), lo hace mirar hacia ese lado y gira la
-     * espada hacia ahi con retardo: como mucho {@link #VELOCIDAD_GIRO} radianes por segundo, siempre por
-     * el arco mas corto. El giro se hace antes de colocar la hoja, asi el barrido del tajo
-     * ({@link #golpea}) cubre todo el recorrido entre el angulo de antes y el de ahora. Si la entrada no
-     * trae un punto (un blanco de prueba, o un jugador ya muerto), la espada se queda como estaba.
-     */
     private void apuntar(float delta) {
         if (!vivo || !entrada.hayPuntero) {
             return;
@@ -411,16 +273,10 @@ public class Jugador {
         angulo = normalizarAngulo(angulo + MathUtils.clamp(diferencia, -giroMaximo, giroMaximo));
     }
 
-    /** Lleva un angulo al rango (-PI, PI], el mismo que devuelve {@code atan2}. */
     private static float normalizarAngulo(float radianes) {
         return Hoja.diferenciaAngular(0f, radianes);
     }
 
-    /**
-     * Lanza una estocada si se pidio una y la anterior ya termino y recargo. La hoja sale y vuelve
-     * siguiendo una curva suave: {@code extension} sube de 0 a 1 y baja a 0 en {@link #duracionEstocadaActual}
-     * (siempre entre 0 y 1: es lo que viaja por la red).
-     */
     private void actualizarEstocada(float delta) {
         if (recargaEstocada > 0f) {
             recargaEstocada -= delta;
@@ -435,7 +291,6 @@ public class Jugador {
             disparar();
         }
         if (vivo && arma == null && !desarmado && entrada.estocada && tiempoEstocada <= 0f && recargaEstocada <= 0f) {
-            // sin arma, el clic tira un punetazo: el brazo sale como una estocada corta
             duracionEstocadaActual = DURACION_PUNIO;
             tiempoEstocada = DURACION_PUNIO;
             recargaEstocada = RECARGA_PUNIO;
@@ -451,16 +306,11 @@ public class Jugador {
             : 0f;
     }
 
-    /**
-     * Con un arma de fuego, el clic dispara hacia donde apunta: la pistola una bala y la escopeta un
-     * abanico de {@link TipoArma#PERDIGONES} perdigones. Sin balas se queda con las manos vacias.
-     */
     private void disparar() {
         float x = pivoteX() + (float) Math.cos(angulo) * LARGO_PISTOLA;
         float y = pivoteY() + (float) Math.sin(angulo) * LARGO_PISTOLA;
         if (arma == TipoArma.ESCOPETA) {
             for (int i = 0; i < TipoArma.PERDIGONES; i++) {
-                // un abanico parejo, con cada perdigon corrido un poco al azar
                 float abanico = tienePowerUp(PowerUp.PUNTERIA) ? PowerUp.FACTOR_ABANICO : 1f;
                 float desvio = abanico * (ABANICO_ESCOPETA * ((float) i / (TipoArma.PERDIGONES - 1) - 0.5f)
                     + (azar.nextFloat() * 2f - 1f) * DISPERSION_PERDIGON);
@@ -489,11 +339,6 @@ public class Jugador {
         }
     }
 
-    /**
-     * El clic derecho tira lo que tiene en la mano hacia donde apunta: vuela, cae y hiere si toca al
-     * rival. La espada rebota y queda en el mapa para que la agarre cualquiera; las armas de fuego se
-     * rompen al chocar. Despues de tirarla queda con las manos vacias hasta agarrar otra.
-     */
     private void actualizarArma() {
         if (arma == null || !vivo || desarmado || !entrada.lanzar) {
             return;
@@ -506,12 +351,10 @@ public class Jugador {
         extension = 0f;
     }
 
-    /** Verdadero si tiene la espada en la mano: solo ahi la hoja hiere, choca y empuja. */
     private boolean tieneEspada() {
         return !desarmado && arma != null && arma.esEspada();
     }
 
-    /** Verdadero si tiene una espada (comun o laser) en la mano: su hoja hiere, choca y refleja balas. */
     public boolean tieneHoja() {
         return tieneEspada();
     }
@@ -535,11 +378,6 @@ public class Jugador {
         }
     }
 
-    /**
-     * Empieza una rodada si se pidio una, esta apoyado y la anterior ya recargo; la direccion es la del
-     * movimiento y, si esta quieto, hacia donde mira. Rodando la caja es mas baja y va mas rapido, pero
-     * los golpes lo hieren igual. Al terminar el tiempo sigue agachado mientras no haya lugar para pararse.
-     */
     private void actualizarRodada(Arena arena, float delta) {
         if (recargaRodada > 0f) {
             recargaRodada -= delta;
@@ -571,15 +409,11 @@ public class Jugador {
         return true;
     }
 
-    /** Alto de la caja de colision ahora: {@link #ALTO}, o la mitad rodando. */
     private float altoActual() {
         return rodando ? ALTO_RODANDO : ALTO;
     }
 
     private void integrarFisica(float delta, Arena arena, Jugador oponente) {
-        // Multiplicar por delta hace que el movimiento sea independiente de los fotogramas por
-        // segundo: la misma velocidad recorre la misma distancia en una maquina lenta y en una
-        // rapida. Sin delta, el juego correria mas rapido en mejores placas de video.
         boolean montadoAhora = montadoSobreOponente && solapaEnX(oponente.cuerpo());
         montadoSobreOponente = montadoAhora;
         Bloque bloqueAnterior = bloqueBajoPies;
@@ -591,15 +425,12 @@ public class Jugador {
             posicion.x += bloqueAnterior.getVelocidadHorizontal() * delta;
         }
 
-        // Se resuelve eje por eje: primero X y despues Y, asi cada choque se corrige por separado.
         posicion.x += (velocidad.x + empujeX) * delta;
         empujeX *= (float) Math.exp(-RITMO_EMPUJE * delta);
         resolverBloquesEnX(arena);
 
         float yAnterior = posicion.y;
         if (montadoAhora) {
-            // Parado sobre el oponente: sigue su cabeza y hereda su velocidad vertical, asi el salto
-            // del de abajo se lleva tambien al de arriba.
             Rectangle cabeza = oponente.cuerpo();
             posicion.y = cabeza.y + cabeza.height;
             velocidad.y = oponente.velocidad.y;
@@ -622,10 +453,6 @@ public class Jugador {
         return posicion.x < caja.x + caja.width && posicion.x + ANCHO > caja.x;
     }
 
-    /**
-     * Saca al jugador de los bloques en horizontal, empujandolo hacia el lado mas cercano.
-     * La velocidad horizontal se anula al chocar, para que un golpe no siga empujando contra la pared.
-     */
     private void resolverBloquesEnX(Arena arena) {
         for (Bloque bloque : arena.getBloques()) {
             Rectangle caja = bloque.getArea();
@@ -645,11 +472,6 @@ public class Jugador {
         }
     }
 
-    /**
-     * Resuelve el choque vertical con los bloques segun de donde venia el jugador: si estaba por encima
-     * del bloque aterriza sobre el, si estaba por debajo choca la cabeza contra su cara inferior.
-     * Al aterrizar avisa al bloque, pero solo si es la primera vez que lo pisa.
-     */
     private void resolverBloquesEnY(Arena arena, float yAnterior, Bloque bloqueAnterior) {
         for (Bloque bloque : arena.getBloques()) {
             Rectangle caja = bloque.getArea();
@@ -674,10 +496,6 @@ public class Jugador {
         }
     }
 
-    /**
-     * Si el oponente esta debajo y el jugador cae sobre su cabeza, el jugador queda parado encima. Solo
-     * funciona como piso: subiendo por debajo del oponente no hay choque, asi no lo bloquea.
-     */
     private void resolverAterrizajeEn(Jugador oponente, float yAnterior) {
         Rectangle cabezaOponente = oponente.cuerpo();
         if (!cuerpo().overlaps(cabezaOponente)) {
@@ -691,12 +509,6 @@ public class Jugador {
         }
     }
 
-    /**
-     * Empuja al jugador una distancia fija en la direccion dada. La velocidad inicial sale de
-     * {@code distancia * RITMO_EMPUJE}: integrada en el tiempo con el decaimiento de
-     * {@link #integrarFisica} suma exactamente {@code distancia}, sin importar cuanto se superpusieron
-     * las cajas.
-     */
     private void empujar(float direccion, float distancia) {
         empujeX = direccion * distancia * RITMO_EMPUJE;
     }
@@ -719,14 +531,11 @@ public class Jugador {
             float suX0 = oponente.posicion.x, suX1 = oponente.posicion.x + ANCHO;
             float penetracionX = Math.min(miX1, suX1) - Math.max(miX0, suX0);
             float penetracionY = Math.min(miY1, suY1) - Math.max(miY0, suY0);
-            // Solo se empuja de costado si la superposicion mas chica es horizontal. Si es vertical
-            // (uno parado sobre la cabeza del otro), el apilado lo resuelve el aterrizaje.
             if (seCruzanEnY && penetracionX > 0f && penetracionX <= penetracionY) {
                 separarDe(oponente, penetracionX, arena);
             }
         }
 
-        // La hoja del rival empuja a mi cuerpo: no se puede atravesar una espada parado.
         if (oponente.tieneEspada() && hojaOponente.solapa(miCaja)) {
             float penetracionX = penetracionEnX(hojaOponente.limites(limitesAjenos), miCaja);
             if (penetracionX > 0f) {
@@ -734,11 +543,8 @@ public class Jugador {
             }
         }
 
-        // Choque de hojas: los dos se empujan para separarse.
-        // la espada laser atraviesa a la comun: entre ellas no hay choque ni empuje (dos laser si chocan)
         boolean seAtraviesan = (arma == TipoArma.ESPADA_LASER) != (oponente.arma == TipoArma.ESPADA_LASER);
         if (tieneEspada() && oponente.tieneEspada() && !seAtraviesan && hoja.solapa(hojaOponente)) {
-            // la espada laser no se suelta
             if (oponente.arma != TipoArma.ESPADA_LASER && desarmaAlChocar(hojaOponente)) {
                 float lado = oponente.posicion.x >= posicion.x ? 1f : -1f;
                 oponente.soltarEspadaAlAire(lado);
@@ -753,14 +559,11 @@ public class Jugador {
             }
         }
 
-        // Cualquier contacto de mi hoja con el cuerpo del rival lo hiere, y si gire rapido tambien cuenta
-        // lo que la hoja barrio entre este fotograma y el anterior.
         if (tieneEspada() && !(oponente.tiempoRestanteFlash > 0f) && vivo && golpea(cajaOponente)) {
             oponente.activarFlash(1f, this);
             registrarGolpe();
         }
 
-        // Sin arma, el punetazo pega con la mano, una vez por punetazo.
         if (arma == null && !desarmado && vivo && tiempoEstocada > 0f && !punioConecto && punioToca(cajaOponente)) {
             punioConecto = true;
             float direccion = oponente.posicion.x + ANCHO / 2f >= posicion.x + ANCHO / 2f ? 1f : -1f;
@@ -773,17 +576,12 @@ public class Jugador {
         }
     }
 
-    /**
-     * Corre a este jugador la mitad de la penetracion, lejos del oponente, sin sacarlo de la arena.
-     *
-     * @return la direccion en que se corrio (-1 izquierda, 1 derecha)
-     */
     private float separarDe(Jugador oponente, float penetracionX, Arena arena) {
         float miCentro = posicion.x + ANCHO / 2f;
         float suCentro = oponente.posicion.x + ANCHO / 2f;
         float direccion = (miCentro < suCentro) ? -1f : 1f;
         posicion.x += direccion * (penetracionX / 2f);
-        posicion.x = arena.limitarX(posicion.x, ANCHO); // por si el empujon te saca por la pared
+        posicion.x = arena.limitarX(posicion.x, ANCHO);
         return direccion;
     }
 
@@ -791,7 +589,6 @@ public class Jugador {
         return Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
     }
 
-    /** Verdadero si la hoja toca el cuerpo, ahora o en algun punto del giro desde el fotograma anterior. */
     private boolean golpea(Rectangle cuerpoAjeno) {
         if (hoja.solapa(cuerpoAjeno)) {
             return true;
@@ -807,15 +604,6 @@ public class Jugador {
         return false;
     }
 
-    /**
-     * Dibuja al duelista y su espada.
-     *
-     * <p>Debe llamarse entre {@code batch.begin()} y {@code batch.end()}.
-     *
-     * <p>El sprite se dibuja en blanco y se colorea con {@code batch.setColor()}: un unico archivo
-     * de arte sirve para los dos jugadores. Al terminar hay que restaurar el color a blanco, porque
-     * el tinte queda activo y afectaria a todo lo que se dibuje despues.
-     */
     public void dibujar(SpriteBatch batch, RecursosGraficos recursos) {
     	Color colorActual;
     	if (!vivo) {
@@ -830,7 +618,6 @@ public class Jugador {
         if (!desarmado) {
             dibujarBrazo(batch, recursos);
             if (arma == TipoArma.ESPADA) {
-                // la espada no se tine con el color del jugador: va en blanco, como las armas de fuego
                 batch.setColor(Color.WHITE);
                 dibujarEspada(batch, recursos);
             } else if (arma == TipoArma.PISTOLA) {
@@ -854,11 +641,10 @@ public class Jugador {
     }
 
     private void activarFlash(float duracion, Jugador atacante) {
-        tiempoRestanteFlash = duracion; // duración del flash, ajustable
+        tiempoRestanteFlash = duracion;
         recibirImpacto(atacante);
     }
 
-    /** Verdadero mientras el duelista siga en pie: al morir empieza la cuenta de la ronda. */
     public boolean isVivo() {
         return vivo;
     }
@@ -869,22 +655,13 @@ public class Jugador {
 	    float direccion = (miCentro < suCentro) ? -1f : 1f;
 	    empujar(direccion, EMPUJE_GOLPE);
 	    velocidad.y += 400f * ESCALA;
-	    // la espada laser pega mas fuerte que la comun
 	    quitarVida(atacante.arma != null && atacante.arma.esEspada() ? atacante.arma.getDanioHoja() : PARTES_POR_CORAZON);
     }
 
-    /**
-     * Verdadero si este choque de hojas desarma al rival: muevo la espada (giro o estocada) y la mitad de
-     * afuera de mi hoja pega en la parte de adentro de la suya.
-     */
     private boolean desarmaAlChocar(Hoja hojaOponente) {
         return esDesarme(hoja, hojaOponente, velocidadDeGiro >= GIRO_PARA_DESARMAR || tiempoEstocada > 0f);
     }
 
-    /**
-     * La regla del desarme, sola: con la hoja en movimiento, la mitad de afuera de {@code mia} tiene que pegar
-     * en la parte de adentro de {@code suya} (sus primeros {@link #HASTA_DONDE_SE_DESARMA}).
-     */
     static boolean esDesarme(Hoja mia, Hoja suya, boolean laMuevo) {
         if (!laMuevo || !mia.solapa(suya)) {
             return false;
@@ -893,7 +670,6 @@ public class Jugador {
         return contacto[0] >= DESDE_DONDE_DESARMA && contacto[1] <= HASTA_DONDE_SE_DESARMA;
     }
 
-    /** Se le vuela la espada de la mano hacia arriba: cae al mapa sin herir y la agarra cualquiera. */
     void soltarEspadaAlAire(float lado) {
         lanzados.add(Proyectil.inofensiva(Proyectil.lanzadaDe(arma), this, hoja.getBaseX(), hoja.getBaseY(),
             lado * VUELO_DESARME_X, VUELO_DESARME_Y));
@@ -904,19 +680,12 @@ public class Jugador {
         bloqueadoTimer = 0f;
     }
 
-    /** Verdadero si la mano (adelante del brazo, en la base de la hoja) toca el cuerpo. */
     private boolean punioToca(Rectangle cuerpoAjeno) {
         float x = hoja.getBaseX() + (float) Math.cos(angulo) * LADO_PUNIO / 2f;
         float y = hoja.getBaseY() + (float) Math.sin(angulo) * LADO_PUNIO / 2f;
         return cuerpoAjeno.overlaps(new Rectangle(x - LADO_PUNIO / 2f, y - LADO_PUNIO / 2f, LADO_PUNIO, LADO_PUNIO));
     }
 
-    /**
-     * Lo golpea un punetazo: saca muy poco, lo empuja bastante y a veces le hace soltar el arma, que cae a
-     * sus pies para que la agarre cualquiera.
-     *
-     * @return {@code false} si no le hizo nada (muerto o todavia invulnerable)
-     */
     boolean recibirPunetazo(float direccion) {
         if (!vivo || tiempoRestanteFlash > 0f) {
             return false;
@@ -924,7 +693,6 @@ public class Jugador {
         tiempoRestanteFlash = FLASH_BALA;
         empujar(direccion, EMPUJE_PUNIO);
         quitarVida(TipoArma.DANIO_PUNIO);
-        // la espada laser no se suelta
         if (!desarmado && arma != null && arma != TipoArma.ESPADA_LASER && azar.nextInt(CHANCE_DESARME) == 0) {
             armaSoltada = arma;
             balasSoltadas = balas;
@@ -936,19 +704,16 @@ public class Jugador {
         return true;
     }
 
-    /** El arma que se le cayo por un punetazo desde la ultima vez, o {@code null}. La deja de tener. */
     public TipoArma tomarArmaSoltada() {
         TipoArma soltada = armaSoltada;
         armaSoltada = null;
         return soltada;
     }
 
-    /** Las balas que tenia el arma que devolvio el ultimo {@link #tomarArmaSoltada}. */
     public int getBalasSoltadas() {
         return balasSoltadas;
     }
 
-    /** Para los tests: hace que el desarme sea predecible. */
     void setAzar(Random azar) {
         this.azar = azar;
     }
@@ -960,14 +725,6 @@ public class Jugador {
         }
     }
 
-    /**
-     * Lo hiere algo que no es la hoja: una bala o un arma tirada.
-     *
-     * @param partes cuanto saca, en sextos de corazon
-     * @param direccion hacia donde lo empuja (-1 izquierda, 1 derecha)
-     * @param esBala una bala empuja poco y deja una invulnerabilidad corta
-     * @return {@code false} si no le hizo nada (muerto o todavia invulnerable por el golpe anterior)
-     */
     public boolean recibirDanio(int partes, float direccion, boolean esBala) {
         if (!vivo || tiempoRestanteFlash > 0f) {
             return false;
@@ -981,13 +738,6 @@ public class Jugador {
         return true;
     }
 
-    /**
-     * Lo toca un perdigon de escopeta. Los perdigones no respetan ni dejan invulnerabilidad: cada uno que
-     * toca saca su parte, asi un escopetazo de cerca pega con todos aunque el rival venga de recibir otro
-     * golpe (si no, la invulnerabilidad de ese golpe se comeria varios perdigones).
-     *
-     * @return {@code false} si ya estaba muerto
-     */
     boolean recibirPerdigon(int partes, float direccion) {
         if (!vivo) {
             return false;
@@ -997,7 +747,6 @@ public class Jugador {
         return true;
     }
 
-    /** Agarra una mejora: le dura {@link PowerUp#DURACION} segundos (si ya la tenia, vuelve a empezar). */
     public void activarPowerUp(PowerUp mejora) {
         tiempoPowerUp[mejora.ordinal()] = PowerUp.DURACION;
         contadorPowerUps++;
@@ -1007,7 +756,6 @@ public class Jugador {
         return tiempoPowerUp[mejora.ordinal()] > 0f;
     }
 
-    /** Segundos que le quedan a una mejora; 0 si no la tiene. */
     public float getTiempoPowerUp(PowerUp mejora) {
         return tiempoPowerUp[mejora.ordinal()];
     }
@@ -1020,18 +768,15 @@ public class Jugador {
         return tienePowerUp(PowerUp.PUNTERIA) ? PowerUp.FACTOR_RECARGA : 1f;
     }
 
-    /** Anota que este jugador acaba de herir al rival: suena el golpe, aca y en el cliente. */
     void registrarGolpe() {
         acabaDeGolpear = true;
         contadorGolpes++;
     }
 
-    /** Agarra un arma recien aparecida en el mapa: reemplaza lo que tenia en la mano y viene cargada. */
     public void equipar(TipoArma nueva) {
         equipar(nueva, nueva.getBalasIniciales());
     }
 
-    /** Agarra un arma con las balas que le quedan (una que alguien tiro o se le cayo). */
     public void equipar(TipoArma nueva, int balasQueTrae) {
         arma = nueva;
         balas = nueva.esDeFuego() ? balasQueTrae : 0;
@@ -1044,13 +789,11 @@ public class Jugador {
         }
     }
 
-    /** Pasa a {@code destino} las balas y armas que tiro desde la ultima vez. */
     public void tomarLanzados(List<Proyectil> destino) {
         destino.addAll(lanzados);
         lanzados.clear();
     }
 
-    /** Lo que tiene en la mano, o {@code null} con las manos vacias. */
     public TipoArma getArma() {
         return arma;
     }
@@ -1059,7 +802,6 @@ public class Jugador {
         return balas;
     }
 
-    /** La caja de colision del cuerpo, en coordenadas del mundo. Es una copia. */
     public Rectangle getCaja() {
         return cuerpo();
     }
@@ -1068,12 +810,10 @@ public class Jugador {
         return desarmado;
     }
 
-    /** Vida en sextos de corazon. */
     public int getPartes() {
         return vida;
     }
 
-    /** Dibuja el antebrazo y la espada: salen de la base de la hoja y giran con ella hacia el cursor. */
     private void dibujarBrazo(SpriteBatch batch, RecursosGraficos recursos) {
         dibujarGirado(batch, recursos.brazo, ANCHO_BRAZO, ALTO_BRAZO);
     }
@@ -1082,11 +822,6 @@ public class Jugador {
         dibujarGirado(batch, recursos.espada, ANCHO_ESPADA, ALTO_ESPADA);
     }
 
-    /**
-     * Dibuja un sprite que mira hacia la derecha, girado {@code angulo} alrededor de su extremo izquierdo,
-     * que se apoya en la base de la hoja. Al apuntar hacia la izquierda se espeja en vertical para que
-     * no quede cabeza abajo.
-     */
     private void dibujarGirado(SpriteBatch batch, Texture textura, float ancho, float alto) {
         boolean haciaLaIzquierda = Math.cos(angulo) < 0.0;
         batch.draw(textura, hoja.getBaseX(), hoja.getBaseY() - alto / 2f,
@@ -1094,12 +829,6 @@ public class Jugador {
             0, 0, textura.getWidth(), textura.getHeight(), false, haciaLaIzquierda);
     }
 
-    /**
-     * Dibuja una textura espejada en horizontal cuando el jugador mira a la izquierda.
-     *
-     * <p>Esta sobrecarga de {@code draw} recibe la region de origen y dos banderas de espejado. Es
-     * la forma de reutilizar un sprite que solo esta dibujado hacia un lado.
-     */
     private void dibujarSprite(SpriteBatch batch, Texture textura,
                                float x, float y, float ancho, float alto) {
         batch.draw(textura, x, y, ancho, alto,
@@ -1111,27 +840,22 @@ public class Jugador {
         return mirandoDerecha;
     }
 
-    /** Verdadero mientras el jugador corre por el piso: hay entrada horizontal y esta apoyado. */
     public boolean estaCorriendo() {
         return corriendo;
     }
 
-    /** Verdadero mientras el jugador rueda: su caja de colision es mas baja. */
     public boolean estaRodando() {
         return rodando;
     }
 
-    /** Verdadero solo en el fotograma en que la espada toca el cuerpo del rival y le hace dano. */
     public boolean acabaDeGolpear() {
         return acabaDeGolpear;
     }
 
-    /** Verdadero solo en el fotograma en que toca el piso tras haber estado en el aire. */
     public boolean acabaDeAterrizar() {
         return acabaDeAterrizar;
     }
 
-    /** Copia en {@code destino} todo lo necesario para dibujar a este jugador. */
     public void exportar(EstadoJugador destino) {
         destino.x = posicion.x;
         destino.y = posicion.y;
@@ -1157,10 +881,6 @@ public class Jugador {
         destino.contadorPowerUps = contadorPowerUps;
     }
 
-    /**
-     * Pisa el estado de este jugador con el que mando el anfitrion. Lo usa el cliente: su copia no
-     * simula nada, solo se dibuja.
-     */
     public void importar(EstadoJugador origen) {
         posicion.set(origen.x, origen.y);
         vida = origen.vida;
@@ -1187,77 +907,62 @@ public class Jugador {
         actualizarHoja();
     }
 
-    /** Cantidad de golpes que dio desde que empezo; sube de a uno en cada golpe. */
     public int getContadorGolpes() {
         return contadorGolpes;
     }
 
-    /** Cantidad de aterrizajes desde que empezo; sube de a uno en cada aterrizaje. */
     public int getContadorAterrizajes() {
         return contadorAterrizajes;
     }
 
-    /** Disparos de pistola desde que empezo la partida. */
     public int getContadorDisparosPistola() {
         return contadorDisparosPistola;
     }
 
-    /** Disparos de escopeta desde que empezo la partida. */
     public int getContadorDisparosEscopeta() {
         return contadorDisparosEscopeta;
     }
 
-    /** Espadas recogidas del suelo desde que empezo la partida. */
     public int getContadorEspadasEquipadas() {
         return contadorEspadasEquipadas;
     }
 
-    /** Pistolas o escopetas recogidas del suelo desde que empezo la partida. */
     public int getContadorArmasDeFuegoEquipadas() {
         return contadorArmasDeFuegoEquipadas;
     }
 
-    /** Disparos de rifle laser desde que empezo la partida. */
     public int getContadorDisparosLaser() {
         return contadorDisparosLaser;
     }
 
-    /** Disparos de lanzacohetes desde que empezo la partida. */
     public int getContadorDisparosBazuca() {
         return contadorDisparosBazuca;
     }
 
-    /** Mejoras recogidas del mapa desde que empezo la partida. */
     public int getContadorPowerUps() {
         return contadorPowerUps;
     }
 
-    /** Corazones que le quedan, contando como entero uno que esta por la mitad. */
     public int getVida() {
         return (vida + PARTES_POR_CORAZON - 1) / PARTES_POR_CORAZON;
     }
 
-    /** Quita o devuelve la espada. El blanco del modo de prueba esta desarmado. */
     public void setDesarmado(boolean desarmado) {
         this.desarmado = desarmado;
     }
 
-    /** Hacia donde apunta la espada, en radianes. */
     public float getAngulo() {
         return angulo;
     }
 
-    /** Cuanto esta adelantada la hoja por la estocada: 0 quieta, 1 en lo mas fuerte. */
     public float getExtension() {
         return extension;
     }
 
-    /** La hoja de la espada tal como esta ahora; es la misma forma que se dibuja y que choca. */
     public Hoja getHoja() {
         return hoja;
     }
 
-    /** Copia defensiva: devolver el {@code Vector2} interno permitiria moverlo desde afuera. */
     public Vector2 getPosicion() {
         return new Vector2(posicion);
     }

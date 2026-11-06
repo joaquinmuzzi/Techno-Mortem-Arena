@@ -12,7 +12,6 @@ import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
 
 class JugadorTest {
-
     private static final float PISO = Arena.FILAS_PISO * Arena.CELDA;
 
     @Test
@@ -43,7 +42,6 @@ class JugadorTest {
 
     @Test
     void reiniciarUsaLasVidasConLasQueSeCreoElJugador() {
-        // El HUD asume que cada ronda arranca con las mismas vidas con las que se creo el duelista.
         Jugador jugador = new Jugador(FuenteEntrada.NINGUNA, 50f, 64f, false, Color.WHITE, 5);
         jugador.reiniciar(50f, 64f, false);
         assertEquals(5, jugador.getVida());
@@ -62,7 +60,6 @@ class JugadorTest {
         Jugador rival = new Jugador(FuenteEntrada.NINGUNA, 1150f, PISO, false, Color.WHITE, 1);
         rival.setDesarmado(true);
 
-        // la espada tarda unos fotogramas en girar hasta el rival
         for (int i = 0; i < 60 && rival.isVivo(); i++) {
             atacante.actualizar(1f / 60f, arena, rival);
         }

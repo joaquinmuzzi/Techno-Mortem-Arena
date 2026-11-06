@@ -26,37 +26,23 @@ import com.et35.technomortemarena.mundo.SpawnerArma;
 import com.et35.technomortemarena.niveles.MapaGuardado;
 import com.et35.technomortemarena.niveles.RepositorioMapas;
 
-/**
- * Editor de niveles: la grilla de la arena con una barra de herramientas arriba.
- *
- * <p>Se pinta con el boton izquierdo del mouse y se borra con el derecho. Cada cambio se refleja al
- * instante con el mismo dibujo que tiene la ronda. Los mapas se guardan con nombre en un unico archivo
- * (ver {@link RepositorioMapas}); CARGAR muestra la lista de los guardados.
- *
- * <p>La grilla solo se dibuja aca: la ronda y la pausa no la usan.
- */
 public class PantallaEditor extends ScreenAdapter {
-
     private static final float ANCHO_UI = 960f;
     private static final float ALTO_UI = 540f;
-    /** Una sola fila arriba: el boton de las herramientas y las acciones. */
     private static final float ALTO_BARRA = 54f;
     private static final float Y_BARRA = ALTO_UI - ALTO_BARRA;
     private static final float Y_FILA_ACCIONES = Y_BARRA + 9f;
     private static final float ANCHO_BOTON = 110f;
     private static final float PASO_BOTON = 118f;
     private static final float MARGEN = 10f;
-    /** El boton "hamburguesa" que abre y cierra el panel de herramientas, y donde empiezan las acciones. */
     private static final float ANCHO_HAMBURGUESA = 44f;
     private static final float X_ACCIONES = MARGEN + ANCHO_HAMBURGUESA + 10f;
 
-    /** El panel de herramientas de la izquierda: una lista vertical con barra de desplazamiento. */
     private static final float ANCHO_PANEL = 222f;
     private static final float ANCHO_HERRAMIENTA = 182f;
     private static final float ALTO_HERRAMIENTA = 44f;
     private static final float PASO_HERRAMIENTA = 52f;
     private static final float ANCHO_BARRA_PANEL = 12f;
-    /** Cuantas herramientas entran a la vez en el panel: las demas se ven desplazandolo. */
     private static final int HERRAMIENTAS_VISIBLES = (int) ((Y_BARRA - 2f * MARGEN) / PASO_HERRAMIENTA);
     private static final float LADO_MUESTRA = 22f;
 
@@ -71,16 +57,13 @@ public class PantallaEditor extends ScreenAdapter {
     private static final Color COLOR_BARRA = new Color(0f, 0f, 0f, 0.75f);
     private static final Color COLOR_VELO = new Color(0f, 0f, 0f, 0.6f);
 
-    /** Caracteres de la grilla que se pueden poner con la herramienta; '1' y '2' son los spawns. */
     private static final char[] HERRAMIENTAS = {'#', 'T', 'L', 'R', 'X', '1', '2', 'P', 'E', 'F', 'C', '.'};
     private static final String[] ETIQUETAS = {
         "1 BLOQUE", "2 TRAMPOLIN", "3 CINTA <", "4 CINTA >", "5 PINCHO", "6 SPAWN J1", "7 SPAWN J2",
         "8 PISTOLAS", "9 ESCOPETAS", "Q RIFLES LASER", "E COHETES", "0 BORRAR"};
-    /** La tecla de cada herramienta, en el mismo orden: los numeros ya no alcanzan para todas. */
     private static final int[] TECLAS_HERRAMIENTAS = {
         Input.Keys.NUM_1, Input.Keys.NUM_2, Input.Keys.NUM_3, Input.Keys.NUM_4, Input.Keys.NUM_5, Input.Keys.NUM_6,
         Input.Keys.NUM_7, Input.Keys.NUM_8, Input.Keys.NUM_9, Input.Keys.Q, Input.Keys.E, Input.Keys.NUM_0};
-    /** Los spawners de armas se ponen siempre de 3x3, sin importar el pincel. */
     private static final int LADO_SPAWNER_ARMA = 3;
     private static final int TAMANO_PINCEL_MAXIMO = 4;
 
@@ -88,22 +71,12 @@ public class PantallaEditor extends ScreenAdapter {
     private final RecursosAudio audio;
     private final SpriteBatch batch = new SpriteBatch();
     private final Ui ui = new Ui();
-    /**
-     * La grilla tiene su propia camara: con el mapa grande no entra entera a un tamano comodo. La rueda
-     * acerca y aleja (hacia el cursor), las flechas o WASD y el boton del medio la mueven, y F muestra el
-     * mapa entero. Las celdas siempre se ven cuadradas: el ancho del mundo visible es fijo y el alto sale de
-     * la proporcion de la zona de la grilla en la ventana.
-     */
     private final OrthographicCamera camaraGrilla = new OrthographicCamera();
     private final Viewport viewportMundo = new FitViewport(Arena.ANCHO_VISTA, Arena.ALTO_VISTA, camaraGrilla);
     private static final float ZOOM_MINIMO = 0.35f;
-    /** Alcanza para ver el mapa entero aun con la zona de la grilla mas ancha que alta (la del editor lo es). */
     private static final float ZOOM_MAXIMO = 3f;
-    /** Cuanto acerca o aleja cada paso de la rueda. */
     private static final float PASO_ZOOM = 1.15f;
-    /** Mundo por segundo que se mueve la camara con las teclas, con zoom 1. */
     private static final float VELOCIDAD_CAMARA = 2400f;
-    /** Donde estaba el mouse al arrastrar con el boton del medio, en pixeles de pantalla; -1 si no se arrastra. */
     private float arrastreX = -1f;
     private float arrastreY;
     private static final Color COLOR_FUERA = new Color(0.06f, 0.07f, 0.10f, 1f);
@@ -112,11 +85,9 @@ public class PantallaEditor extends ScreenAdapter {
     private static final Color COLOR_LINEA_GUIA = new Color(1f, 1f, 1f, 0.22f);
     private static final Color COLOR_CENTRO = new Color(0.45f, 0.70f, 1f, 0.30f);
     private static final Color COLOR_BORDE = new Color(0.55f, 0.65f, 0.85f, 0.70f);
-    /** Una linea mas marcada cada tantas celdas, para orientarse en el mapa grande. */
     private static final int CELDAS_POR_GUIA = 10;
     private final Viewport viewportUi = new FitViewport(ANCHO_UI, ALTO_UI, new OrthographicCamera());
 
-    /** celdas[fila][columna], con la fila 0 en el piso. */
     private final char[][] celdas = new char[Arena.FILAS][Arena.COLUMNAS];
     private char herramienta = '#';
     private String nombreMapa;
@@ -138,14 +109,11 @@ public class PantallaEditor extends ScreenAdapter {
     private final Rectangle botonProbar = new Rectangle(X_ACCIONES + 2 * PASO_BOTON, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
     private final Rectangle botonVolver = new Rectangle(X_ACCIONES + 3 * PASO_BOTON, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
     private final Rectangle botonPincel = new Rectangle(X_ACCIONES + 4 * PASO_BOTON, Y_FILA_ACCIONES, ANCHO_BOTON, 36f);
-    /** El panel de herramientas: se abre y se cierra con el boton hamburguesa (o la tecla TAB). */
     private boolean panelAbierto = true;
     private final Rectangle panel = new Rectangle(0f, 0f, ANCHO_PANEL, Y_BARRA);
     private final BarraDeDesplazamiento barraPanel = new BarraDeDesplazamiento(
         MARGEN + ANCHO_HERRAMIENTA + 8f, MARGEN, ANCHO_BARRA_PANEL, Y_BARRA - 2f * MARGEN);
-    /** Rectangulo de trabajo para cada herramienta del panel, que se arma de cero en cada fotograma. */
     private final Rectangle filaHerramienta = new Rectangle();
-    /** Filas que movio la rueda del mouse sobre el panel desde el ultimo fotograma. */
     private int ruedaPanel;
     private final Rectangle botonCerrarLista = new Rectangle(380f, 70f, 200f, 36f);
     private int tamanoPincel = 1;
@@ -190,7 +158,6 @@ public class PantallaEditor extends ScreenAdapter {
         }
     };
 
-    /** Vuelve a edicion con un mapa ya armado, por ejemplo al salir de probarlo. */
     public PantallaEditor(RecursosGraficos recursos, RecursosAudio audio, String[] filas, String nombre) {
         this(recursos, audio);
         cargarFilas(filas);
@@ -203,7 +170,6 @@ public class PantallaEditor extends ScreenAdapter {
         audio.pedirMusica(RecursosAudio.Musica.EDITOR);
         Gdx.input.setInputProcessor(entrada);
         barraPanel.setContenido(HERRAMIENTAS.length, HERRAMIENTAS_VISIBLES);
-        // arranca al centro y pegada abajo (limitarCamara la sube lo justo), asi se ve el piso
         camaraGrilla.position.set(Arena.ANCHO_MUNDO / 2f, 0f, 0f);
         for (int fila = 0; fila < Arena.FILAS; fila++) {
             for (int columna = 0; columna < Arena.COLUMNAS; columna++) {
@@ -233,7 +199,6 @@ public class PantallaEditor extends ScreenAdapter {
                 return;
             }
             for (int i = 0; i < HERRAMIENTAS.length; i++) {
-                // las teclas 1 a 9, Q, E y el 0, como en el panel
                 if (Gdx.input.isKeyJustPressed(TECLAS_HERRAMIENTAS[i])) {
                     herramienta = HERRAMIENTAS[i];
                 }
@@ -298,7 +263,6 @@ public class PantallaEditor extends ScreenAdapter {
         }
     }
 
-    /** Un jugador tiene un unico spawn: ponerlo en otra celda mueve el anterior. */
     private void ponerSpawn(int columna, int fila, char spawn) {
         for (int f = 0; f < Arena.FILAS; f++) {
             for (int c = 0; c < Arena.COLUMNAS; c++) {
@@ -319,7 +283,6 @@ public class PantallaEditor extends ScreenAdapter {
         return caracter == '1' || caracter == '2';
     }
 
-    /** Columna y fila de la celda bajo el mouse, o {@code null} si el mouse esta fuera de la grilla. */
     private int[] celdaBajoElMouse() {
         Vector2 mundo = viewportMundo.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
         int columna = (int) Math.floor(mundo.x / Arena.CELDA);
@@ -330,7 +293,6 @@ public class PantallaEditor extends ScreenAdapter {
         return new int[] {columna, fila};
     }
 
-    /** Acerca ({@code factor > 1} aleja) dejando quieto el punto del mapa que esta bajo el cursor. */
     private void acercar(float factor) {
         Vector2 antes = viewportMundo.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
         camaraGrilla.zoom = Math.max(ZOOM_MINIMO, Math.min(ZOOM_MAXIMO, camaraGrilla.zoom * factor));
@@ -340,7 +302,6 @@ public class PantallaEditor extends ScreenAdapter {
         limitarCamara();
     }
 
-    /** Las flechas o WASD mueven la camara, y tambien arrastrar con el boton del medio. */
     private void moverCamara(float delta) {
         float paso = VELOCIDAD_CAMARA * camaraGrilla.zoom * delta;
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A)) {
@@ -369,7 +330,6 @@ public class PantallaEditor extends ScreenAdapter {
         limitarCamara();
     }
 
-    /** Aleja la camara hasta ver el mapa entero, centrado. */
     private void verMapaEntero() {
         float zoomAncho = Arena.ANCHO_MUNDO / viewportMundo.getWorldWidth();
         float zoomAlto = Arena.ALTO_MUNDO / viewportMundo.getWorldHeight();
@@ -378,7 +338,6 @@ public class PantallaEditor extends ScreenAdapter {
         limitarCamara();
     }
 
-    /** Que la camara no se vaya lejos del mapa: a lo sumo deja ver un par de celdas de afuera. */
     private void limitarCamara() {
         float margen = 2f * Arena.CELDA;
         float medioAncho = viewportMundo.getWorldWidth() * camaraGrilla.zoom / 2f;
@@ -390,19 +349,16 @@ public class PantallaEditor extends ScreenAdapter {
 
     private static float limitarEje(float centro, float medio, float largo, float margen) {
         if (2f * medio >= largo + 2f * margen) {
-            return largo / 2f; // se ve todo ese eje: centrado
+            return largo / 2f;
         }
         return Math.max(medio - margen, Math.min(largo - medio + margen, centro));
     }
 
-    /** Devuelve verdadero si el clic cambio de pantalla y el fotograma tiene que cortarse. */
-    /** El rectangulo de la herramienta visible numero {@code numero} del panel (0 es la de arriba). */
     private Rectangle herramientaVisible(int numero) {
         float y = Y_BARRA - MARGEN - ALTO_HERRAMIENTA - numero * PASO_HERRAMIENTA;
         return filaHerramienta.set(MARGEN, y, ANCHO_HERRAMIENTA, ALTO_HERRAMIENTA);
     }
 
-    /** El panel de herramientas: la rueda y la barra lo desplazan, y un clic en una herramienta la elige. */
     private void atenderPanel(Vector2 mouseUi) {
         if (ruedaPanel != 0) {
             barraPanel.desplazar(ruedaPanel);
@@ -589,11 +545,6 @@ public class PantallaEditor extends ScreenAdapter {
         batch.end();
     }
 
-    /**
-     * La grilla: el mapa con un fondo un poco mas claro que lo de afuera, lineas finas por celda (solo si
-     * las celdas se ven lo bastante grandes como para que no sea ruido), una linea mas marcada cada
-     * {@link #CELDAS_POR_GUIA} celdas, la del centro resaltada para armar mapas parejos, y el borde del mapa.
-     */
     private void dibujarGrilla() {
         float ancho = Arena.COLUMNAS * Arena.CELDA;
         float alto = Arena.FILAS * Arena.CELDA;
@@ -626,7 +577,6 @@ public class PantallaEditor extends ScreenAdapter {
         ui.rectangulo(batch, new Rectangle(ancho, 0f, borde, alto), COLOR_BORDE);
     }
 
-    /** Vista previa del objeto que se colocaria en la celda bajo el mouse, del tamaño exacto de la celda. */
     private void resaltarCeldaBajoElMouse() {
         int[] celda = celdaBajoElMouse();
         if (celda == null) {
@@ -653,7 +603,6 @@ public class PantallaEditor extends ScreenAdapter {
         batch.setColor(Color.WHITE);
     }
 
-    /** Dibuja la silueta del jugador con los pies en la celda dada, del tamaño real que tiene en la ronda. */
     private void dibujarJugador(int columna, int fila, Color tinte) {
         batch.setColor(tinte);
         batch.draw(recursos.jugador, columna * Arena.CELDA, fila * Arena.CELDA, Jugador.ANCHO, Jugador.ALTO);
@@ -677,7 +626,6 @@ public class PantallaEditor extends ScreenAdapter {
 
     private void dibujarBarra(Vector2 mouseUi) {
         ui.rectangulo(batch, new Rectangle(0f, Y_BARRA, ANCHO_UI, ALTO_BARRA), COLOR_BARRA);
-        // el boton hamburguesa: tres rayas
         ui.boton(batch, botonHerramientas, panelAbierto || botonHerramientas.contains(mouseUi), "", 1f);
         for (int i = 0; i < 3; i++) {
             ui.rectangulo(batch, new Rectangle(botonHerramientas.x + 11f, botonHerramientas.y + 9f + i * 8f, 22f, 3f),
@@ -701,10 +649,6 @@ public class PantallaEditor extends ScreenAdapter {
         return 0;
     }
 
-    /**
-     * El panel de herramientas a la izquierda: cada una con una muestra de su color y su tecla, la elegida
-     * resaltada, y la barra para ver las que no entran.
-     */
     private void dibujarPanel(Vector2 mouseUi) {
         ui.rectangulo(batch, panel, COLOR_BARRA);
         for (int numero = 0; numero < HERRAMIENTAS_VISIBLES; numero++) {
@@ -714,7 +658,6 @@ public class PantallaEditor extends ScreenAdapter {
             }
             Rectangle fila = herramientaVisible(numero);
             boolean resaltada = HERRAMIENTAS[indice] == herramienta || fila.contains(mouseUi);
-            // la identidad del sonido es la herramienta: las filas comparten el mismo Rectangle
             ui.boton(batch, fila, resaltada, "", 1f, HERRAMIENTAS[indice]);
             Rectangle muestra = new Rectangle(fila.x + 10f, fila.y + (fila.height - LADO_MUESTRA) / 2f, LADO_MUESTRA, LADO_MUESTRA);
             ui.rectangulo(batch, muestra, colorDeHerramienta(HERRAMIENTAS[indice]));
@@ -723,7 +666,6 @@ public class PantallaEditor extends ScreenAdapter {
         barraPanel.dibujar(batch, ui, mouseUi);
     }
 
-    /** El color con que se ve cada herramienta en el panel: el del bloque que pone, o el del spawn. */
     private Color colorDeHerramienta(char caracter) {
         if (esSpawn(caracter)) {
             return colorDeSpawn(caracter);
@@ -758,7 +700,6 @@ public class PantallaEditor extends ScreenAdapter {
         ui.texto(batch, "ENTER guarda   ESC cancela", caja.x + 20f, caja.y + 28f, 1.0f, Color.WHITE);
     }
 
-    /** Cambio de pantalla: {@code setScreen} no libera esta pantalla, hay que disponerla a mano. */
     private void cambiarA(Screen siguiente) {
         Game juego = (Game) Gdx.app.getApplicationListener();
         juego.setScreen(siguiente);
@@ -768,8 +709,6 @@ public class PantallaEditor extends ScreenAdapter {
     @Override
     public void resize(int width, int height) {
         viewportUi.update(width, height, true);
-        // La grilla ocupa lo que queda debajo de la barra de herramientas. El ancho del mundo visible es
-        // fijo y el alto sale de la proporcion de esa zona, asi las celdas se ven cuadradas.
         int alturaGrilla = Math.max(1, (int) (height * (Y_BARRA / ALTO_UI)));
         viewportMundo.setWorldSize(Arena.ANCHO_VISTA, Arena.ANCHO_VISTA * alturaGrilla / Math.max(1, width));
         viewportMundo.setScreenBounds(0, 0, width, alturaGrilla);

@@ -8,10 +8,8 @@ import com.et35.technomortemarena.partida.RondasPartida.Fase;
 import org.junit.jupiter.api.Test;
 
 class RondasPartidaTest {
-
     private final RondasPartida rondas = new RondasPartida();
 
-    /** Hace pasar la espera entre rondas y devuelve si arranco una ronda nueva. */
     private boolean esperarLaProximaRonda() {
         return rondas.actualizar(RondasPartida.DURACION_ENTRE_RONDAS + 0.01f, true, true);
     }

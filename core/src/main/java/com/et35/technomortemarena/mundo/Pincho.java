@@ -4,9 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Rectangle;
 import com.et35.technomortemarena.entidades.Jugador;
 
-/** Bloque mortal: cualquier jugador que lo toca muere al instante. */
 public class Pincho extends Bloque {
-
     public Pincho(Rectangle area) {
         super(area);
     }

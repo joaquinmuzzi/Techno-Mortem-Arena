@@ -15,12 +15,7 @@ import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
-/**
- * Prueba las armas nuevas sin abrir una ventana: el rifle laser, el lanzacohetes y su explosion, el reflejo
- * de las balas en la hoja y la espada laser.
- */
 class ArmasNuevasTest {
-
     private static final float DT = 1f / 60f;
     private static final float PISO = Arena.FILAS_PISO * Arena.CELDA;
     private static final float HOMBRO_Y = PISO + 112f;
@@ -44,7 +39,6 @@ class ArmasNuevasTest {
     }
 
     private final Arena arena = Arena.porDefecto();
-    /** Un rival lejos de todo, para actualizar a uno solo. */
     private static final Jugador LEJOS = blanco(7000f);
 
     private static Jugador jugador(FuenteEntrada fuente, float x, boolean derecha) {
@@ -64,8 +58,6 @@ class ArmasNuevasTest {
         j.tomarLanzados(salidas);
         return salidas;
     }
-
-    // ---- rifle laser
 
     @Test
     void elRifleLaserTraeVeinteRayosRapidosQueNoCaen() {
@@ -119,8 +111,6 @@ class ArmasNuevasTest {
         rayo.actualizar(DT, arena, espadachin, null);
         assertTrue(rayo.getVx() > 0f);
     }
-
-    // ---- lanzacohetes
 
     @Test
     void elLanzacohetesTraeUnCoheteMedioLento() {
@@ -183,7 +173,6 @@ class ArmasNuevasTest {
     @Test
     void laExplosionSeVeYRompeLosBloquesDeAlrededorMenosLaFilaDeAbajo() {
         ArmasEnJuego armas = new ArmasEnJuego(new Random(1), new ArrayList<>());
-        // el impacto en la fila de arriba del piso (fila 2): rompe las filas 1 a 3, y la 3 es aire
         int columna = 50;
         float x = (columna + 0.5f) * Arena.CELDA;
         float y = PISO - 0.5f * Arena.CELDA;
@@ -193,7 +182,6 @@ class ArmasNuevasTest {
             assertTrue(celda[1] >= 1 && celda[1] <= 2, "fila " + celda[1]);
             assertTrue(Math.abs(celda[0] - columna) <= 1);
         }
-        // la misma explosion otra vez no repite celdas
         armas.explotar(x, y, null, arena, blanco(5000f), null);
         assertEquals(6, armas.getCeldasRotas().size());
 
@@ -204,7 +192,6 @@ class ArmasNuevasTest {
         assertEquals('#', rota.getFilas()[2].charAt(columna), "la de abajo de todo no se rompe");
         assertTrue(rota.getBloques().size() < arena.getBloques().size());
 
-        // y la explosion se dibuja un rato
         armas.actualizar(DT, arena, blanco(5000f), null);
         assertTrue(armas.getProyectiles().stream().anyMatch(p -> p.getTipo() == Proyectil.Tipo.EXPLOSION));
         armas.limpiar();
@@ -238,9 +225,6 @@ class ArmasNuevasTest {
         assertEquals(VIDA_LLENA - CORAZON, otro.getPartes());
     }
 
-    // ---- reflejo
-
-    /** Un espadachin quieto mirando a la izquierda: su hoja queda horizontal, a la altura del hombro. */
     private Jugador espadachinQuieto(float x) {
         Jugador espadachin = jugador(new FuenteEntrada() {
             @Override
@@ -264,7 +248,6 @@ class ArmasNuevasTest {
         Hoja hoja = espadachin.getHoja();
         float medioX = (hoja.getBaseX() + hoja.getPuntaX()) / 2f;
         float medioY = (hoja.getBaseY() + hoja.getPuntaY()) / 2f;
-        // cae en diagonal sobre una hoja casi horizontal: sale para arriba, siguiendo para el mismo lado
         Proyectil bala = new Proyectil(Proyectil.Tipo.BALA, tirador, medioX - 40f, medioY + 40f, -0.785f, Proyectil.VELOCIDAD_BALA);
         float vx = bala.getVx();
         for (int i = 0; i < 3 && bala.getVy() < 0f; i++) {
@@ -292,15 +275,11 @@ class ArmasNuevasTest {
             bala.actualizar(DT / 4f, arena, null, espadachin);
         }
         assertTrue(bala.getVy() > 0f);
-        // la gravedad de un cuarto de fotograma cambia un poco la rapidez, no la mitad
         assertEquals(rapidez, (float) Math.hypot(bala.getVx(), bala.getVy()), rapidez * 0.02f);
-        // espejo exacto: el componente a lo largo de la hoja se conserva
         float tangente = (float) (bala.getVx() * Math.cos(a) + bala.getVy() * Math.sin(a));
         float tangenteAntes = (float) (Math.cos(-0.785f) * Math.cos(a) + Math.sin(-0.785f) * Math.sin(a)) * rapidez;
         assertEquals(tangenteAntes, tangente, rapidez * 0.03f);
     }
-
-    // ---- espada laser
 
     @Test
     void laEspadaLaserPegaUnCorazonYUnTercio() {
@@ -336,7 +315,6 @@ class ArmasNuevasTest {
         guionD.apuntaX = 700f;
         a.actualizar(DT, arena, d);
         d.actualizar(DT, arena, a);
-        // con dos espadas comunes los dos retroceden (JugadorCombateTest); aca no hay choque
         assertFalse(a.getPosicion().x < xA - 1f && d.getPosicion().x > xD + 1f, "no se empujan");
     }
 
@@ -347,7 +325,7 @@ class ArmasNuevasTest {
         j.setAzar(new Random(0) {
             @Override
             public int nextInt(int limite) {
-                return 0; // el punetazo siempre desarmaria
+                return 0;
             }
         });
         for (int i = 0; i < 5; i++) {

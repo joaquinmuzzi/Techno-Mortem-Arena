@@ -8,7 +8,6 @@ import com.badlogic.gdx.math.Rectangle;
 import org.junit.jupiter.api.Test;
 
 class HojaTest {
-
     private static final float EPS = 0.01f;
 
     private static Hoja hoja(float x, float y, float angulo, float avance) {
@@ -88,7 +87,6 @@ class HojaTest {
         float cx = (float) Math.cos(angulo) * Hoja.LARGO * 0.9f;
         float cy = (float) Math.sin(angulo) * Hoja.LARGO * 0.9f;
         Rectangle enLaLinea = new Rectangle(cx - 5f, cy - 5f, 10f, 10f);
-        // Dentro de la caja que contiene a la hoja, pero lejos de la hoja misma (la esquina de abajo a la derecha).
         Rectangle enLaEsquina = new Rectangle(60f, 10f, 10f, 10f);
 
         assertTrue(h.solapa(enLaLinea));
@@ -116,7 +114,7 @@ class HojaTest {
     @Test
     void elBarridoDeUnTajoGrandeProbaPosicionesIntermedias() {
         float desde = 0f;
-        float hasta = 3f; // casi media vuelta
+        float hasta = 3f;
 
         int pasos = Hoja.pasosDeBarrido(desde, hasta);
 

@@ -29,7 +29,7 @@ public class RecursosAudio implements Disposable {
 
     public enum Musica { NINGUNA, MENU, COMBATE, EDITOR }
 
-    private static final float VOLUMEN_MUSICA = 0.5f;
+    private static final float VOLUMEN_MUSICA = 0.36f;
 
     private final Music musicaMenu;
     private final Music musicaCombate;

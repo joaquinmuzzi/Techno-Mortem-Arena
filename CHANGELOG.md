@@ -9,6 +9,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- La música suena pareja: los tres temas (`menu.mp3`, `combate.mp3` y `editor.mp3`) están normalizados a −14 LUFS
+  con `ffmpeg loudnorm`. El de combate venía mucho más fuerte (−7 LUFS) y el del editor tenía una intro casi
+  muda, así que además se le emparejaron las partes suaves y fuertes (`dynaudnorm`). El volumen general de la
+  música baja de 0,5 a 0,36.
+
+### Cambiado
+
 - Las armas pasan de un `enum` (`TipoArma`) a una jerarquía de clases en `entidades.armas`: `Arma` (abstracta)
   con `Espada` (y `EspadaLaser`, que la extiende) y `ArmaDeFuego` (abstracta) con `Pistola`, `Escopeta`,
   `RifleLaser` y `Lanzacohetes`. Cada arma responde a su manera (polimorfismo) en lugar de que el juego

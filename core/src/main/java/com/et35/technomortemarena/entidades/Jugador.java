@@ -49,8 +49,9 @@ public class Jugador {
     private static final float EMPUJE_PUNIO = 0.35f * VELOCIDAD;
     private static final float LADO_PUNIO = 36f * ESCALA;
     static final int CHANCE_DESARME = 3;
-    static final float TERCIO_DE_LA_HOJA = 1f / 3f;
-    static final float GIRO_PARA_DESARMAR = 4f;
+    static final float DESDE_DONDE_DESARMA = 0.5f;
+    static final float HASTA_DONDE_SE_DESARMA = 0.6f;
+    static final float GIRO_PARA_DESARMAR = 2.5f;
     private static final float VUELO_DESARME_Y = 900f * ESCALA;
     private static final float VUELO_DESARME_X = 220f * ESCALA;
     private static final float FLASH_BALA = 0.25f;
@@ -642,7 +643,7 @@ public class Jugador {
             return false;
         }
         float[] contacto = mia.puntoDeContacto(suya);
-        return contacto[0] >= 1f - TERCIO_DE_LA_HOJA && contacto[1] <= TERCIO_DE_LA_HOJA;
+        return contacto[0] >= DESDE_DONDE_DESARMA && contacto[1] <= HASTA_DONDE_SE_DESARMA;
     }
 
     void soltarEspadaAlAire(float lado) {

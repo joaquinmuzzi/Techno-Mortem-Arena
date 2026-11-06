@@ -22,6 +22,7 @@ import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entidades.Jugador;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
+import com.et35.technomortemarena.mundo.SpawnerArma;
 import com.et35.technomortemarena.niveles.MapaGuardado;
 import com.et35.technomortemarena.niveles.RepositorioMapas;
 
@@ -56,10 +57,13 @@ public class PantallaEditor extends ScreenAdapter {
     private static final Color COLOR_BARRA = new Color(0f, 0f, 0f, 0.75f);
     private static final Color COLOR_VELO = new Color(0f, 0f, 0f, 0.6f);
 
-    private static final char[] HERRAMIENTAS = {'#', 'T', 'L', 'R', 'X', '1', '2', 'P', 'E', '.'};
+    private static final char[] HERRAMIENTAS = {'#', 'T', 'L', 'R', 'X', '1', '2', 'P', 'E', 'F', 'C', '.'};
     private static final String[] ETIQUETAS = {
         "1 BLOQUE", "2 TRAMPOLIN", "3 CINTA <", "4 CINTA >", "5 PINCHO", "6 SPAWN J1", "7 SPAWN J2",
-        "8 PISTOLAS", "9 ESCOPETAS", "0 BORRAR"};
+        "8 PISTOLAS", "9 ESCOPETAS", "Q RIFLES LASER", "E COHETES", "0 BORRAR"};
+    private static final int[] TECLAS_HERRAMIENTAS = {
+        Input.Keys.NUM_1, Input.Keys.NUM_2, Input.Keys.NUM_3, Input.Keys.NUM_4, Input.Keys.NUM_5, Input.Keys.NUM_6,
+        Input.Keys.NUM_7, Input.Keys.NUM_8, Input.Keys.NUM_9, Input.Keys.Q, Input.Keys.E, Input.Keys.NUM_0};
     private static final int LADO_SPAWNER_ARMA = 3;
     private static final int TAMANO_PINCEL_MAXIMO = 4;
 
@@ -195,8 +199,7 @@ public class PantallaEditor extends ScreenAdapter {
                 return;
             }
             for (int i = 0; i < HERRAMIENTAS.length; i++) {
-                int tecla = i < 9 ? Input.Keys.NUM_1 + i : Input.Keys.NUM_0;
-                if (Gdx.input.isKeyJustPressed(tecla)) {
+                if (Gdx.input.isKeyJustPressed(TECLAS_HERRAMIENTAS[i])) {
                     herramienta = HERRAMIENTAS[i];
                 }
             }
@@ -273,7 +276,7 @@ public class PantallaEditor extends ScreenAdapter {
     }
 
     private static boolean esSpawnerDeArma(char caracter) {
-        return caracter == 'P' || caracter == 'E';
+        return SpawnerArma.armaDe(caracter) != null;
     }
 
     private static boolean esSpawn(char caracter) {

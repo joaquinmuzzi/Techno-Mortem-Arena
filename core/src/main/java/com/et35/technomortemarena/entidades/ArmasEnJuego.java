@@ -12,6 +12,7 @@ import com.et35.technomortemarena.entidades.armas.Armas;
 import com.et35.technomortemarena.entidades.armas.Lanzacohetes;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
+import com.et35.technomortemarena.mundo.SpawnerArma;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -291,7 +292,7 @@ public final class ArmasEnJuego {
         for (int fila = 0; fila < alto; fila++) {
             for (int columna = 0; columna < Arena.COLUMNAS; columna++) {
                 char celda = celdaDe(filas, columna, fila);
-                if ((celda != 'P' && celda != 'E') || visto[fila][columna]) {
+                if (SpawnerArma.armaDe(celda) == null || visto[fila][columna]) {
                     continue;
                 }
                 int minimaColumna = columna;
@@ -316,7 +317,7 @@ public final class ArmasEnJuego {
                         }
                     }
                 }
-                Arma tipo = celda == 'P' ? Armas.PISTOLA : Armas.ESCOPETA;
+                Arma tipo = SpawnerArma.armaDe(celda);
                 encontrados.add(new float[] {Armas.codigoDe(tipo), minimaColumna * Arena.CELDA,
                     (maximaColumna + 1) * Arena.CELDA, (filaMasAlta + 1) * Arena.CELDA, INTERVALO_SPAWNER});
             }

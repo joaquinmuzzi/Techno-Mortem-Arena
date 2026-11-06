@@ -858,6 +858,22 @@ class ArmasTest {
     }
 
     @Test
+    void losSpawnersDeRifleLaserYLanzacohetesHacenAparecerLaSuya() {
+        Arena mapa = conSpawner("FFF..........CCC");
+        java.util.List<float[]> spawners = ArmasEnJuego.buscarSpawners(mapa);
+        assertEquals(2, spawners.size());
+        boolean rifle = false;
+        boolean cohetes = false;
+        for (float[] s : spawners) {
+            rifle |= (int) s[0] == Armas.codigoDe(Armas.RIFLE_LASER);
+            cohetes |= (int) s[0] == Armas.codigoDe(Armas.LANZACOHETES);
+        }
+        assertTrue(rifle && cohetes);
+        assertTrue(mapa.getBloques().stream().anyMatch(b -> b instanceof com.et35.technomortemarena.mundo.SpawnerArma
+            && ((com.et35.technomortemarena.mundo.SpawnerArma) b).getArma() == Armas.RIFLE_LASER));
+    }
+
+    @Test
     void lasArmasDeLosSpawnersNoFrenanLasQueAparecenSueltas() {
         Arena mapa = conSpawner("PPP..........EEE");
         Jugador a = blanco(200f);

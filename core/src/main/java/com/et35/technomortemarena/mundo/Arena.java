@@ -184,9 +184,10 @@ public class Arena {
             case 'X':
                 return new Pincho(area);
             case 'P':
-                return new SpawnerArma(area, false);
             case 'E':
-                return new SpawnerArma(area, true);
+            case 'F':
+            case 'C':
+                return new SpawnerArma(area, celda);
             default:
                 return null;
         }

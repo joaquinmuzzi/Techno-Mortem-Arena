@@ -7,6 +7,19 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [No publicado] - rama `sin-red`
 
+### Cambiado
+
+- Las armas pasan de un `enum` (`TipoArma`) a una jerarquía de clases en `entidades.armas`: `Arma` (abstracta)
+  con `Espada` (y `EspadaLaser`, que la extiende) y `ArmaDeFuego` (abstracta) con `Pistola`, `Escopeta`,
+  `RifleLaser` y `Lanzacohetes`. Cada arma responde a su manera (polimorfismo) en lugar de que el juego
+  pregunte qué arma es: `disparar()` (la escopeta lo sobrescribe con un abanico), su imagen, su color, cuánto
+  pega la hoja, si se puede soltar, con qué espada choca y cómo refleja. `Armas` tiene una instancia de cada
+  una y su código.
+- `Proyectil` deja el `enum Tipo` y los `switch`: se mueve según una `DefinicionProyectil` (velocidad,
+  gravedad, tamaño, daño, alcance, si se refleja, si ignora la invulnerabilidad, si explota) que define cada
+  arma. Para cambiar cómo dispara un arma alcanza con tocar su clase.
+- La espada láser ahora también hace la estocada (antes solo la espada común).
+
 ### Quitado
 
 - La parte de red: el paquete `red/` (sala, cliente, protocolo y códecs), la pantalla Multijugador, la

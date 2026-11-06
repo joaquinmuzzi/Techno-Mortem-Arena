@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Random;
 
 import com.et35.technomortemarena.RecursosGraficos;
+import com.et35.technomortemarena.entidades.armas.Arma;
+import com.et35.technomortemarena.entidades.armas.Armas;
+import com.et35.technomortemarena.entidades.armas.Espada;
 import com.et35.technomortemarena.entrada.EntradaJugador;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
@@ -40,13 +43,7 @@ public class Jugador {
     private static final float VELOCIDAD_GIRO = 12f;
     private static final float VELOCIDAD_GIRO_BLOQUEADO = 3f;
     public static final int PARTES_POR_CORAZON = 6;
-    private static final float RECARGA_PISTOLA = 0.22f;
-    private static final float RECARGA_ESCOPETA = 0.6f;
-    private static final float RECARGA_RIFLE = 0.12f;
-    private static final float RECARGA_LANZACOHETES = 1f;
-    static final float ABANICO_ESCOPETA = 0.3f;
-    static final float DISPERSION_PERDIGON = 0.05f;
-    private static final float VARIACION_VELOCIDAD_PERDIGON = 0.1f;
+    public static final int DANIO_PUNIO = 1;
     private static final float DURACION_PUNIO = 0.16f;
     private static final float RECARGA_PUNIO = 0.35f;
     private static final float EMPUJE_PUNIO = 0.35f * VELOCIDAD;
@@ -91,13 +88,13 @@ public class Jugador {
     private float tiempoRodada;
     private float recargaRodada;
     private float direccionRodada;
-    private TipoArma arma = TipoArma.ESPADA;
+    private Arma arma = Armas.ESPADA;
     private int balas;
     private float recargaDisparo;
     private float velocidadDeGiro;
     private int balasSoltadas;
     private boolean punioConecto;
-    private TipoArma armaSoltada;
+    private Arma armaSoltada;
     private Random azar = new Random();
     private final float[] tiempoPowerUp = new float[PowerUp.values().length];
     private final List<Proyectil> lanzados = new ArrayList<>();
@@ -129,14 +126,6 @@ public class Jugador {
 
     public static final float ANCHO_ESPADA = Hoja.LARGO;
     public static final float ALTO_ESPADA = Hoja.GROSOR;
-
-    private static final float ANCHO_PISTOLA = 30f * ESCALA;
-    private static final float ALTO_PISTOLA = 12f * ESCALA;
-    private static final float ANCHO_ESCOPETA = 46f * ESCALA;
-    private static final float ANCHO_RIFLE = 50f * ESCALA;
-    private static final float ANCHO_LANZACOHETES = 52f * ESCALA;
-    private static final float ALTO_LANZACOHETES = 16f * ESCALA;
-    public static final Color COLOR_ESPADA_LASER = new Color(1f, 0.25f, 0.25f, 1f);
 
     private static final float ANCHO_BRAZO = 22f * ESCALA;
     private static final float ALTO_BRAZO = 8f * ESCALA;
@@ -174,7 +163,7 @@ public class Jugador {
         rodando = false;
         tiempoRodada = 0f;
         recargaRodada = 0f;
-        arma = TipoArma.ESPADA;
+        arma = Armas.ESPADA;
         balas = 0;
         recargaDisparo = 0f;
         punioConecto = false;
@@ -292,7 +281,7 @@ public class Jugador {
             recargaEstocada = RECARGA_PUNIO;
             punioConecto = false;
         }
-        if (vivo && arma == TipoArma.ESPADA && entrada.estocada && tiempoEstocada <= 0f && recargaEstocada <= 0f) {
+        if (vivo && arma != null && arma.esEspada() && entrada.estocada && tiempoEstocada <= 0f && recargaEstocada <= 0f) {
             duracionEstocadaActual = DURACION_ESTOCADA * (bloqueadoTimer > 0f ? 1.2f : 1f);
             tiempoEstocada = duracionEstocadaActual;
             recargaEstocada = RECARGA_ESTOCADA * (bloqueadoTimer > 0f ? 6f : 1f);
@@ -305,27 +294,17 @@ public class Jugador {
     private void disparar() {
         float x = pivoteX() + (float) Math.cos(angulo) * LARGO_PISTOLA;
         float y = pivoteY() + (float) Math.sin(angulo) * LARGO_PISTOLA;
-        if (arma == TipoArma.ESCOPETA) {
-            for (int i = 0; i < TipoArma.PERDIGONES; i++) {
-                float abanico = tienePowerUp(PowerUp.PUNTERIA) ? PowerUp.FACTOR_ABANICO : 1f;
-                float desvio = abanico * (ABANICO_ESCOPETA * ((float) i / (TipoArma.PERDIGONES - 1) - 0.5f)
-                    + (azar.nextFloat() * 2f - 1f) * DISPERSION_PERDIGON);
-                float velocidad = Proyectil.VELOCIDAD_PERDIGON
-                    * (1f + (azar.nextFloat() * 2f - 1f) * VARIACION_VELOCIDAD_PERDIGON);
-                lanzados.add(new Proyectil(Proyectil.Tipo.PERDIGON, this, x, y, angulo + desvio, velocidad));
-            }
-            recargaDisparo = RECARGA_ESCOPETA * factorRecarga();
-            contadorDisparosEscopeta++;
-        } else if (arma == TipoArma.RIFLE_LASER) {
-            lanzados.add(new Proyectil(Proyectil.Tipo.LASER, this, x, y, angulo, Proyectil.VELOCIDAD_LASER));
-            recargaDisparo = RECARGA_RIFLE * factorRecarga();
-        } else if (arma == TipoArma.LANZACOHETES) {
-            lanzados.add(new Proyectil(Proyectil.Tipo.COHETE, this, x, y, angulo, Proyectil.VELOCIDAD_COHETE));
-            recargaDisparo = RECARGA_LANZACOHETES * factorRecarga();
-        } else {
-            lanzados.add(new Proyectil(Proyectil.Tipo.BALA, this, x, y, angulo, Proyectil.VELOCIDAD_BALA));
-            recargaDisparo = RECARGA_PISTOLA * factorRecarga();
-            contadorDisparosPistola++;
+        arma.disparar(this, x, y, angulo, azar, tienePowerUp(PowerUp.PUNTERIA), lanzados);
+        recargaDisparo = arma.getRecarga() * factorRecarga();
+        switch (arma.getSonidoDisparo()) {
+            case PISTOLA:
+                contadorDisparosPistola++;
+                break;
+            case ESCOPETA:
+                contadorDisparosEscopeta++;
+                break;
+            default:
+                break;
         }
         balas--;
         if (balas <= 0) {
@@ -337,7 +316,7 @@ public class Jugador {
         if (arma == null || !vivo || desarmado || !entrada.lanzar) {
             return;
         }
-        lanzados.add(new Proyectil(Proyectil.lanzadaDe(arma), this, pivoteX(), pivoteY(), angulo, Proyectil.VELOCIDAD_LANZADA)
+        lanzados.add(Proyectil.lanzada(arma, this, pivoteX(), pivoteY(), angulo, arma.getDefinicionLanzada().getVelocidad())
             .conBalas(balas));
         arma = null;
         balas = 0;
@@ -347,6 +326,10 @@ public class Jugador {
 
     private boolean tieneEspada() {
         return !desarmado && arma != null && arma.esEspada();
+    }
+
+    private Espada espada() {
+        return tieneEspada() ? (Espada) arma : null;
     }
 
     public boolean tieneHoja() {
@@ -537,9 +520,8 @@ public class Jugador {
             }
         }
 
-        boolean seAtraviesan = (arma == TipoArma.ESPADA_LASER) != (oponente.arma == TipoArma.ESPADA_LASER);
-        if (tieneEspada() && oponente.tieneEspada() && !seAtraviesan && hoja.solapa(hojaOponente)) {
-            if (oponente.arma != TipoArma.ESPADA_LASER && desarmaAlChocar(hojaOponente)) {
+        if (tieneEspada() && oponente.tieneEspada() && espada().chocaCon(oponente.espada()) && hoja.solapa(hojaOponente)) {
+            if (oponente.arma.sePuedeSoltar() && desarmaAlChocar(hojaOponente)) {
                 float lado = oponente.posicion.x >= posicion.x ? 1f : -1f;
                 oponente.soltarEspadaAlAire(lado);
                 registrarGolpe();
@@ -611,24 +593,13 @@ public class Jugador {
         dibujarSprite(batch, recursos.jugador, posicion.x, posicion.y, ANCHO, altoActual());
         if (!desarmado) {
             dibujarBrazo(batch, recursos);
-            if (arma == TipoArma.ESPADA) {
-                batch.setColor(Color.WHITE);
-                dibujarEspada(batch, recursos);
-            } else if (arma == TipoArma.PISTOLA) {
-                batch.setColor(Color.WHITE);
-                dibujarGirado(batch, recursos.pistola, ANCHO_PISTOLA, ALTO_PISTOLA);
-            } else if (arma == TipoArma.ESCOPETA) {
-                batch.setColor(Color.WHITE);
-                dibujarGirado(batch, recursos.escopeta, ANCHO_ESCOPETA, ALTO_PISTOLA);
-            } else if (arma == TipoArma.RIFLE_LASER) {
-                batch.setColor(Color.WHITE);
-                dibujarGirado(batch, recursos.rifleLaser, ANCHO_RIFLE, ALTO_PISTOLA);
-            } else if (arma == TipoArma.LANZACOHETES) {
-                batch.setColor(Color.WHITE);
-                dibujarGirado(batch, recursos.lanzacohetes, ANCHO_LANZACOHETES, ALTO_LANZACOHETES);
-            } else if (arma == TipoArma.ESPADA_LASER) {
-                batch.setColor(COLOR_ESPADA_LASER);
-                dibujarEspada(batch, recursos);
+            if (arma != null) {
+                batch.setColor(arma.getColor());
+                if (arma.esEspada()) {
+                    dibujarEspada(batch, recursos);
+                } else {
+                    dibujarGirado(batch, arma.getTextura(recursos), arma.getAnchoEnLaMano(), arma.getAltoEnLaMano());
+                }
             }
         }
         batch.setColor(Color.WHITE);
@@ -649,7 +620,8 @@ public class Jugador {
 	    float direccion = (miCentro < suCentro) ? -1f : 1f;
 	    empujar(direccion, EMPUJE_GOLPE);
 	    velocidad.y += 400f * ESCALA;
-	    quitarVida(atacante.arma != null && atacante.arma.esEspada() ? atacante.arma.getDanioHoja() : PARTES_POR_CORAZON);
+	    Espada suEspada = atacante.espada();
+	    quitarVida(suEspada != null ? suEspada.getDanioHoja() : PARTES_POR_CORAZON);
     }
 
     private boolean desarmaAlChocar(Hoja hojaOponente) {
@@ -665,7 +637,7 @@ public class Jugador {
     }
 
     void soltarEspadaAlAire(float lado) {
-        lanzados.add(Proyectil.inofensiva(Proyectil.lanzadaDe(arma), this, hoja.getBaseX(), hoja.getBaseY(),
+        lanzados.add(Proyectil.inofensiva(arma, this, hoja.getBaseX(), hoja.getBaseY(),
             lado * VUELO_DESARME_X, VUELO_DESARME_Y));
         arma = null;
         balas = 0;
@@ -686,8 +658,8 @@ public class Jugador {
         }
         tiempoRestanteFlash = FLASH_BALA;
         empujar(direccion, EMPUJE_PUNIO);
-        quitarVida(TipoArma.DANIO_PUNIO);
-        if (!desarmado && arma != null && arma != TipoArma.ESPADA_LASER && azar.nextInt(CHANCE_DESARME) == 0) {
+        quitarVida(DANIO_PUNIO);
+        if (!desarmado && arma != null && arma.sePuedeSoltar() && azar.nextInt(CHANCE_DESARME) == 0) {
             armaSoltada = arma;
             balasSoltadas = balas;
             arma = null;
@@ -698,8 +670,8 @@ public class Jugador {
         return true;
     }
 
-    public TipoArma tomarArmaSoltada() {
-        TipoArma soltada = armaSoltada;
+    public Arma tomarArmaSoltada() {
+        Arma soltada = armaSoltada;
         armaSoltada = null;
         return soltada;
     }
@@ -766,11 +738,11 @@ public class Jugador {
         contadorGolpes++;
     }
 
-    public void equipar(TipoArma nueva) {
+    public void equipar(Arma nueva) {
         equipar(nueva, nueva.getBalasIniciales());
     }
 
-    public void equipar(TipoArma nueva, int balasQueTrae) {
+    public void equipar(Arma nueva, int balasQueTrae) {
         arma = nueva;
         balas = nueva.esDeFuego() ? balasQueTrae : 0;
         tiempoEstocada = 0f;
@@ -787,7 +759,7 @@ public class Jugador {
         lanzados.clear();
     }
 
-    public TipoArma getArma() {
+    public Arma getArma() {
         return arma;
     }
 

@@ -76,10 +76,20 @@ core/src/main/java/com/et35/technomortemarena/
 │   └── Pincho.java            Bloque letal al tocarlo
 ├── entidades/
 │   ├── Jugador.java           Entidad controlable: física, salto, apuntado, estocada y apilado
-│   ├── TipoArma.java          Espadas y armas de fuego: daño al tirarlas, de la hoja y balas
-│   ├── Proyectil.java         Balas, perdigones y armas tiradas (la espada rebota)
+│   ├── Proyectil.java         Lo que vuela: se mueve según su DefinicionProyectil
+│   ├── DefinicionProyectil.java  Velocidad, caída, tamaño, daño y comportamiento de un proyectil
 │   ├── ArmasEnJuego.java      Proyectiles y armas que aparecen en el mapa para agarrar
-│   └── Hoja.java              La espada como caja rotada: choque exacto (SAT) y barrido de tajos
+│   ├── Hoja.java              La espada como caja rotada: choque exacto (SAT) y barrido de tajos
+│   └── armas/
+│       ├── Arma.java          Clase abstracta: lo común a toda arma (tirarla, dibujarla)
+│       ├── Espada.java        Cuerpo a cuerpo: daño de la hoja, choque y reflejo
+│       ├── EspadaLaser.java   Espada que pega más, no se suelta y atraviesa a la común
+│       ├── ArmaDeFuego.java   Clase abstracta: balas, recarga y el proyectil que dispara
+│       ├── Pistola.java       Una bala por disparo
+│       ├── Escopeta.java      Sobrescribe disparar(): un abanico de perdigones
+│       ├── RifleLaser.java    Rayo rápido sin caída
+│       ├── Lanzacohetes.java  Cohete que explota
+│       └── Armas.java         Una instancia de cada arma y su código
 ├── entrada/
 │   ├── Controles.java         Mapeo de teclas de cada duelista
 │   ├── FuenteEntrada.java     De dónde lee un jugador lo que hace (teclado o nada)

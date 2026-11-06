@@ -25,7 +25,7 @@ import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entidades.ArmasEnJuego;
 import com.et35.technomortemarena.entidades.Jugador;
 import com.et35.technomortemarena.entidades.PowerUp;
-import com.et35.technomortemarena.entidades.TipoArma;
+import com.et35.technomortemarena.entidades.armas.Arma;
 import com.et35.technomortemarena.entrada.Controles;
 import com.et35.technomortemarena.entrada.EntradaLocal;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
@@ -520,7 +520,7 @@ public class PantallaArena extends ScreenAdapter {
         float abajo = arriba - ALTO_CUADRO_ARMA;
         ui.rectangulo(batch, rectAux.set(x, abajo, ANCHO_CUADRO_ARMA, ALTO_CUADRO_ARMA), FONDO_CUADRO_ARMA);
         dibujarPowerUps(jugador, aLaIzquierda, x, abajo - 6f - ALTO_BALA_HUD - 10f);
-        TipoArma arma = jugador.getArma();
+        Arma arma = jugador.getArma();
         if (arma == null) {
             String vacia = "MANO VACIA";
             float ancho = ui.anchoTexto(vacia, 0.8f);
@@ -530,28 +530,8 @@ public class PantallaArena extends ScreenAdapter {
         batch.setColor(1f, 1f, 1f, 0.85f);
         batch.draw(recursos.brillo, x + 4f, abajo + 4f, ANCHO_CUADRO_ARMA - 8f, ALTO_CUADRO_ARMA - 8f);
         batch.setColor(Color.WHITE);
-        Texture textura;
-        switch (arma) {
-            case ESPADA:
-            case ESPADA_LASER:
-                textura = recursos.espada;
-                break;
-            case ESCOPETA:
-                textura = recursos.escopeta;
-                break;
-            case RIFLE_LASER:
-                textura = recursos.rifleLaser;
-                break;
-            case LANZACOHETES:
-                textura = recursos.lanzacohetes;
-                break;
-            default:
-                textura = recursos.pistola;
-                break;
-        }
-        if (arma == TipoArma.ESPADA_LASER) {
-            batch.setColor(Jugador.COLOR_ESPADA_LASER);
-        }
+        Texture textura = arma.getTextura(recursos);
+        batch.setColor(arma.getColor());
         float maximoAncho = ANCHO_CUADRO_ARMA - 16f;
         float maximoAlto = ALTO_CUADRO_ARMA - 16f;
         float escala = Math.min(maximoAncho / textura.getWidth(), maximoAlto / textura.getHeight());

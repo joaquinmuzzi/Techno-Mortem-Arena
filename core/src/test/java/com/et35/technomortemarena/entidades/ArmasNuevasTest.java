@@ -6,6 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.graphics.Color;
+import com.et35.technomortemarena.entidades.armas.Armas;
+import com.et35.technomortemarena.entidades.armas.Lanzacohetes;
+import com.et35.technomortemarena.entidades.armas.Pistola;
+import com.et35.technomortemarena.entidades.armas.RifleLaser;
 import com.et35.technomortemarena.entrada.EntradaJugador;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
@@ -63,13 +67,13 @@ class ArmasNuevasTest {
         Guion guion = new Guion();
         Jugador j = jugador(guion, 1000f, true);
         Jugador otro = blanco(7000f);
-        j.equipar(TipoArma.RIFLE_LASER);
+        j.equipar(Armas.RIFLE_LASER);
         assertEquals(20, j.getBalas());
         List<Proyectil> salidas = disparar(j, guion, otro, arena);
         assertEquals(1, salidas.size());
         Proyectil rayo = salidas.get(0);
-        assertEquals(Proyectil.Tipo.LASER, rayo.getTipo());
-        assertTrue(rayo.getVx() > Proyectil.VELOCIDAD_BALA, "mas rapido que una bala");
+        assertSame(RifleLaser.RAYO, rayo.getDefinicion());
+        assertTrue(rayo.getVx() > Pistola.BALA.getVelocidad(), "mas rapido que una bala");
         float y0 = rayo.getY();
         for (int i = 0; i < 20; i++) {
             rayo.actualizar(DT, arena, null, null);
@@ -81,12 +85,12 @@ class ArmasNuevasTest {
     void cadaRayoSacaUnSextoYNoRespetaLaInvulnerabilidad() {
         Jugador otro = blanco(2000f);
         for (int i = 0; i < 3; i++) {
-            Proyectil rayo = new Proyectil(Proyectil.Tipo.LASER, null, 1900f, PISO + 80f, 0f, Proyectil.VELOCIDAD_LASER);
+            Proyectil rayo = new Proyectil(RifleLaser.RAYO, null, 1900f, PISO + 80f, 0f, RifleLaser.RAYO.getVelocidad());
             for (int k = 0; k < 10 && rayo.isActivo(); k++) {
                 rayo.actualizar(DT, arena, otro, null);
             }
         }
-        assertEquals(VIDA_LLENA - 3 * TipoArma.DANIO_LASER, otro.getPartes());
+        assertEquals(VIDA_LLENA - 3 * RifleLaser.RAYO.getDanio(), otro.getPartes());
     }
 
     @Test
@@ -94,8 +98,8 @@ class ArmasNuevasTest {
         Jugador espadachin = jugador(FuenteEntrada.NINGUNA, 2000f, false);
         espadachin.actualizar(DT, arena, LEJOS);
         float hojaX = espadachin.getHoja().getPuntaX();
-        Proyectil rayo = new Proyectil(Proyectil.Tipo.LASER, null, hojaX - 200f, espadachin.getHoja().getPuntaY(), 0f,
-            Proyectil.VELOCIDAD_LASER);
+        Proyectil rayo = new Proyectil(RifleLaser.RAYO, null, hojaX - 200f, espadachin.getHoja().getPuntaY(), 0f,
+            RifleLaser.RAYO.getVelocidad());
         rayo.actualizar(DT, arena, espadachin, null);
         assertTrue(rayo.getVx() > 0f);
     }
@@ -104,17 +108,17 @@ class ArmasNuevasTest {
     void elLanzacohetesTraeUnCoheteMedioLento() {
         Guion guion = new Guion();
         Jugador j = jugador(guion, 1000f, true);
-        j.equipar(TipoArma.LANZACOHETES);
+        j.equipar(Armas.LANZACOHETES);
         assertEquals(1, j.getBalas());
         List<Proyectil> salidas = disparar(j, guion, blanco(7000f), arena);
-        assertEquals(Proyectil.Tipo.COHETE, salidas.get(0).getTipo());
-        assertTrue(salidas.get(0).getVx() < Proyectil.VELOCIDAD_BALA);
+        assertSame(Lanzacohetes.COHETE, salidas.get(0).getDefinicion());
+        assertTrue(salidas.get(0).getVx() < Pistola.BALA.getVelocidad());
         assertEquals(0, j.getBalas());
     }
 
     @Test
     void elCoheteExplotaAlChocarConUnBloque() {
-        Proyectil cohete = new Proyectil(Proyectil.Tipo.COHETE, null, 1000f, PISO + 60f, -1.2f, Proyectil.VELOCIDAD_COHETE);
+        Proyectil cohete = new Proyectil(Lanzacohetes.COHETE, null, 1000f, PISO + 60f, -1.2f, Lanzacohetes.COHETE.getVelocidad());
         for (int i = 0; i < 120 && cohete.isActivo(); i++) {
             cohete.actualizar(DT, arena, null, null);
         }
@@ -160,7 +164,7 @@ class ArmasNuevasTest {
         assertTrue(rota.getBloques().size() < arena.getBloques().size());
 
         armas.actualizar(DT, arena, blanco(5000f), null);
-        assertTrue(armas.getProyectiles().stream().anyMatch(p -> p.getTipo() == Proyectil.Tipo.EXPLOSION));
+        assertTrue(armas.getProyectiles().stream().anyMatch(p -> p.getDefinicion() == Lanzacohetes.EXPLOSION));
         armas.limpiar();
         assertTrue(armas.getCeldasRotas().isEmpty(), "al empezar la ronda los bloques vuelven");
     }
@@ -180,7 +184,7 @@ class ArmasNuevasTest {
         Guion guion = new Guion();
         Jugador j = jugador(guion, 1000f, true);
         Jugador otro = blanco(1800f);
-        j.equipar(TipoArma.LANZACOHETES);
+        j.equipar(Armas.LANZACOHETES);
         guion.apuntaX = 1850f;
         guion.apuntaY = PISO + 60f;
         guion.clic = true;
@@ -215,7 +219,7 @@ class ArmasNuevasTest {
         Hoja hoja = espadachin.getHoja();
         float medioX = (hoja.getBaseX() + hoja.getPuntaX()) / 2f;
         float medioY = (hoja.getBaseY() + hoja.getPuntaY()) / 2f;
-        Proyectil bala = new Proyectil(Proyectil.Tipo.BALA, tirador, medioX - 40f, medioY + 40f, -0.785f, Proyectil.VELOCIDAD_BALA);
+        Proyectil bala = new Proyectil(Pistola.BALA, tirador, medioX - 40f, medioY + 40f, -0.785f, Pistola.BALA.getVelocidad());
         float vx = bala.getVx();
         for (int i = 0; i < 3 && bala.getVy() < 0f; i++) {
             bala.actualizar(DT / 4f, arena, tirador, espadachin);
@@ -228,7 +232,7 @@ class ArmasNuevasTest {
     @Test
     void laEspadaLaserReflejaPerfecto() {
         Jugador espadachin = espadachinQuieto(3000f);
-        espadachin.equipar(TipoArma.ESPADA_LASER);
+        espadachin.equipar(Armas.ESPADA_LASER);
         for (int i = 0; i < 5; i++) {
             espadachin.actualizar(DT, arena, LEJOS);
         }
@@ -236,7 +240,7 @@ class ArmasNuevasTest {
         float a = hoja.getAngulo();
         float medioX = (hoja.getBaseX() + hoja.getPuntaX()) / 2f;
         float medioY = (hoja.getBaseY() + hoja.getPuntaY()) / 2f;
-        Proyectil bala = new Proyectil(Proyectil.Tipo.BALA, null, medioX - 40f, medioY + 40f, -0.785f, Proyectil.VELOCIDAD_BALA);
+        Proyectil bala = new Proyectil(Pistola.BALA, null, medioX - 40f, medioY + 40f, -0.785f, Pistola.BALA.getVelocidad());
         float rapidez = (float) Math.hypot(bala.getVx(), bala.getVy());
         for (int i = 0; i < 3 && bala.getVy() < 0f; i++) {
             bala.actualizar(DT / 4f, arena, null, espadachin);
@@ -250,17 +254,17 @@ class ArmasNuevasTest {
 
     @Test
     void laEspadaLaserPegaUnCorazonYUnTercio() {
-        assertEquals(CORAZON + CORAZON / 3, TipoArma.ESPADA_LASER.getDanioHoja());
+        assertEquals(CORAZON + CORAZON / 3, Armas.ESPADA_LASER.getDanioHoja());
         Guion guion = new Guion();
         Jugador a = jugador(guion, 1000f, false);
-        a.equipar(TipoArma.ESPADA_LASER);
+        a.equipar(Armas.ESPADA_LASER);
         Jugador d = blanco(1150f);
         guion.apuntaX = 1200f;
         for (int i = 0; i < 60 && d.getPartes() == VIDA_LLENA; i++) {
             a.actualizar(DT, arena, d);
             d.actualizar(DT, arena, a);
         }
-        assertEquals(VIDA_LLENA - TipoArma.ESPADA_LASER.getDanioHoja(), d.getPartes());
+        assertEquals(VIDA_LLENA - Armas.ESPADA_LASER.getDanioHoja(), d.getPartes());
     }
 
     @Test
@@ -269,7 +273,7 @@ class ArmasNuevasTest {
         Guion guionD = new Guion();
         Jugador a = jugador(guionA, 1000f, true);
         Jugador d = jugador(guionD, 1100f, false);
-        a.equipar(TipoArma.ESPADA_LASER);
+        a.equipar(Armas.ESPADA_LASER);
         guionA.apuntaX = 900f;
         guionD.apuntaX = 1400f;
         for (int i = 0; i < 5; i++) {
@@ -288,7 +292,7 @@ class ArmasNuevasTest {
     @Test
     void laEspadaLaserNoSeSueltaPorUnPunetazo() {
         Jugador j = jugador(FuenteEntrada.NINGUNA, 1000f, true);
-        j.equipar(TipoArma.ESPADA_LASER);
+        j.equipar(Armas.ESPADA_LASER);
         j.setAzar(new Random(0) {
             @Override
             public int nextInt(int limite) {
@@ -298,18 +302,18 @@ class ArmasNuevasTest {
         for (int i = 0; i < 5; i++) {
             j.recibirPunetazo(1f);
         }
-        assertEquals(TipoArma.ESPADA_LASER, j.getArma());
+        assertEquals(Armas.ESPADA_LASER, j.getArma());
     }
 
     @Test
     void laEspadaLaserTiradaCaeMenosQueLaComun() {
-        Proyectil comun = Proyectil.inofensiva(Proyectil.Tipo.ESPADA_LANZADA, null, 1000f, 2000f, 1000f, 0f);
-        Proyectil laser = Proyectil.inofensiva(Proyectil.Tipo.ESPADA_LASER_LANZADA, null, 1000f, 2000f, 1000f, 0f);
+        Proyectil comun = Proyectil.inofensiva(Armas.ESPADA, null, 1000f, 2000f, 1000f, 0f);
+        Proyectil laser = Proyectil.inofensiva(Armas.ESPADA_LASER, null, 1000f, 2000f, 1000f, 0f);
         for (int i = 0; i < 20; i++) {
             comun.actualizar(DT, arena, null, null);
             laser.actualizar(DT, arena, null, null);
         }
         assertTrue(laser.getY() > comun.getY() + 50f);
-        assertEquals(TipoArma.ESPADA_LASER, laser.getArma());
+        assertEquals(Armas.ESPADA_LASER, laser.getArma());
     }
 }

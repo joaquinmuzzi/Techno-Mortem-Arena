@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.graphics.Color;
+import com.et35.technomortemarena.entidades.armas.Armas;
 import com.et35.technomortemarena.entrada.EntradaJugador;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
@@ -103,7 +104,7 @@ class PowerUpTest {
         Guion guion = new Guion();
         Jugador j = jugador(guion);
         Jugador otro = blanco();
-        j.equipar(TipoArma.PISTOLA);
+        j.equipar(Armas.PISTOLA);
         if (conPunteria) {
             j.activarPowerUp(PowerUp.PUNTERIA);
         }
@@ -125,7 +126,7 @@ class PowerUpTest {
     void conPunteriaLaEscopetaAbreMenosLosPerdigones() {
         Guion guion = new Guion();
         Jugador j = jugador(guion);
-        j.equipar(TipoArma.ESCOPETA);
+        j.equipar(Armas.ESCOPETA);
         j.activarPowerUp(PowerUp.PUNTERIA);
         guion.clic = true;
         j.actualizar(DT, arena, blanco());

@@ -1,27 +1,15 @@
 package com.et35.technomortemarena.entidades;
 
 import com.badlogic.gdx.math.Rectangle;
+import com.et35.technomortemarena.entidades.armas.Arma;
+import com.et35.technomortemarena.entidades.armas.Espada;
+import com.et35.technomortemarena.entidades.armas.Lanzacohetes;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class Proyectil {
-    public enum Tipo {
-        BALA, PERDIGON, ESPADA_LANZADA, PISTOLA_LANZADA, ESCOPETA_LANZADA,
-        LASER, COHETE, RIFLE_LASER_LANZADA, LANZACOHETES_LANZADA, ESPADA_LASER_LANZADA, EXPLOSION
-    }
-
     private static final float ESCALA = Arena.ESCALA;
-    public static final float VELOCIDAD_BALA = 1500f * ESCALA;
-    public static final float VELOCIDAD_PERDIGON = 1300f * ESCALA;
-    public static final float VELOCIDAD_LASER = 3000f * ESCALA;
-    public static final float VELOCIDAD_COHETE = 700f * ESCALA;
-    public static final float VELOCIDAD_LANZADA = 1200f * ESCALA;
-    static final float GRAVEDAD_BALA = -250f * ESCALA;
-    static final float GRAVEDAD_COHETE = -150f * ESCALA;
-    static final float GRAVEDAD_LANZADA = -1100f * ESCALA;
-    static final float GRAVEDAD_ESPADA_LASER = -500f * ESCALA;
-    static final float VIDA_PERDIGON = 0.55f;
     static final float DURACION_EXPLOSION = 0.4f;
     private static final float REBOTE = 0.25f;
     private static final float ROCE = 0.6f;
@@ -29,15 +17,12 @@ public final class Proyectil {
     private static final float FRICCION = 8f;
     private static final float VELOCIDAD_PARA_FRENAR = 60f * ESCALA;
     private static final float GIRO_LANZADA = 14f;
-    private static final float LADO_BALA = 8f * ESCALA;
-    private static final float LADO_COHETE = 14f * ESCALA;
     static final float LADO_LANZADA = 28f * ESCALA;
     private static final float PASO_MAXIMO = 10f * ESCALA;
-    static final float VELOCIDAD_REFLEJO_ESPADA = 0.8f;
-    static final float DESVIO_REFLEJO_ESPADA = 0.12f;
     private static final float ESPERA_REFLEJO = 0.1f;
 
-    private final Tipo tipo;
+    private final DefinicionProyectil definicion;
+    private final Arma arma;
     private Jugador duenio;
     private float x;
     private float y;
@@ -56,8 +41,14 @@ public final class Proyectil {
     private float esperaReflejo;
     private final Rectangle caja = new Rectangle();
 
-    public Proyectil(Tipo tipo, Jugador duenio, float x, float y, float angulo, float velocidad) {
-        this.tipo = tipo;
+    public Proyectil(DefinicionProyectil definicion, Jugador duenio, float x, float y, float angulo, float velocidad) {
+        this(definicion, null, duenio, x, y, angulo, velocidad);
+    }
+
+    private Proyectil(DefinicionProyectil definicion, Arma arma, Jugador duenio, float x, float y, float angulo,
+                      float velocidad) {
+        this.definicion = definicion;
+        this.arma = arma;
         this.duenio = duenio;
         this.x = x;
         this.y = y;
@@ -67,11 +58,15 @@ public final class Proyectil {
     }
 
     static Proyectil explosion(float x, float y) {
-        return new Proyectil(Tipo.EXPLOSION, null, x, y, 0f, 0f);
+        return new Proyectil(Lanzacohetes.EXPLOSION, null, x, y, 0f, 0f);
     }
 
-    static Proyectil inofensiva(Tipo tipo, Jugador duenio, float x, float y, float vx, float vy) {
-        Proyectil p = new Proyectil(tipo, duenio, x, y, 0f, 0f);
+    public static Proyectil lanzada(Arma arma, Jugador duenio, float x, float y, float angulo, float velocidad) {
+        return new Proyectil(arma.getDefinicionLanzada(), arma, duenio, x, y, angulo, velocidad);
+    }
+
+    static Proyectil inofensiva(Arma arma, Jugador duenio, float x, float y, float vx, float vy) {
+        Proyectil p = lanzada(arma, duenio, x, y, 0f, 0f);
         p.vx = vx;
         p.vy = vy;
         p.yaHirio = true;
@@ -83,84 +78,20 @@ public final class Proyectil {
         return this;
     }
 
-    static Tipo lanzadaDe(TipoArma arma) {
-        switch (arma) {
-            case ESPADA:
-                return Tipo.ESPADA_LANZADA;
-            case PISTOLA:
-                return Tipo.PISTOLA_LANZADA;
-            case ESCOPETA:
-                return Tipo.ESCOPETA_LANZADA;
-            case RIFLE_LASER:
-                return Tipo.RIFLE_LASER_LANZADA;
-            case LANZACOHETES:
-                return Tipo.LANZACOHETES_LANZADA;
-            default:
-                return Tipo.ESPADA_LASER_LANZADA;
-        }
-    }
-
-    public TipoArma getArma() {
-        switch (tipo) {
-            case ESPADA_LANZADA:
-                return TipoArma.ESPADA;
-            case PISTOLA_LANZADA:
-                return TipoArma.PISTOLA;
-            case ESCOPETA_LANZADA:
-                return TipoArma.ESCOPETA;
-            case RIFLE_LASER_LANZADA:
-                return TipoArma.RIFLE_LASER;
-            case LANZACOHETES_LANZADA:
-                return TipoArma.LANZACOHETES;
-            case ESPADA_LASER_LANZADA:
-                return TipoArma.ESPADA_LASER;
-            default:
-                return null;
-        }
+    public Arma getArma() {
+        return arma;
     }
 
     public int getDanio() {
-        switch (tipo) {
-            case BALA:
-                return TipoArma.DANIO_BALA;
-            case PERDIGON:
-                return TipoArma.DANIO_PERDIGON;
-            case LASER:
-                return TipoArma.DANIO_LASER;
-            case COHETE:
-            case EXPLOSION:
-                return 0;
-            default:
-                return getArma().getDanioLanzada();
-        }
+        return definicion.getDanio();
     }
 
     private boolean esDisparo() {
-        return tipo == Tipo.BALA || tipo == Tipo.PERDIGON || tipo == Tipo.LASER || tipo == Tipo.COHETE;
-    }
-
-    private boolean seRefleja() {
-        return tipo == Tipo.BALA || tipo == Tipo.PERDIGON || tipo == Tipo.COHETE;
+        return arma == null;
     }
 
     private boolean rebota() {
-        return tipo == Tipo.ESPADA_LANZADA || tipo == Tipo.ESPADA_LASER_LANZADA || (!esDisparo() && balas > 0);
-    }
-
-    private float gravedad() {
-        switch (tipo) {
-            case BALA:
-            case PERDIGON:
-                return GRAVEDAD_BALA;
-            case LASER:
-                return 0f;
-            case COHETE:
-                return GRAVEDAD_COHETE;
-            case ESPADA_LASER_LANZADA:
-                return GRAVEDAD_ESPADA_LASER;
-            default:
-                return GRAVEDAD_LANZADA;
-        }
+        return arma != null && arma.quedaEnElMapa(balas);
     }
 
     Jugador actualizar(float delta, Arena arena, Jugador uno, Jugador dos) {
@@ -168,17 +99,17 @@ public final class Proyectil {
             return null;
         }
         tiempoDeVuelo += delta;
-        if (tipo == Tipo.EXPLOSION) {
+        if (definicion.getAspecto() == DefinicionProyectil.Aspecto.EXPLOSION) {
             angulo = Math.min(1f, tiempoDeVuelo / DURACION_EXPLOSION);
             activo = tiempoDeVuelo < DURACION_EXPLOSION;
             return null;
         }
-        if (tipo == Tipo.PERDIGON && tiempoDeVuelo >= VIDA_PERDIGON) {
+        if (definicion.getAlcance() > 0f && tiempoDeVuelo >= definicion.getAlcance()) {
             activo = false;
             return null;
         }
         esperaReflejo = Math.max(0f, esperaReflejo - delta);
-        vy += gravedad() * delta;
+        vy += definicion.getGravedad() * delta;
         if (esDisparo()) {
             angulo = (float) Math.atan2(vy, vx);
         } else if (!apoyada) {
@@ -199,7 +130,7 @@ public final class Proyectil {
                     terminarContraAlgo();
                 }
             }
-            if (activo && seRefleja() && esperaReflejo <= 0f && (reflejarEn(uno) || reflejarEn(dos))) {
+            if (activo && definicion.isSeRefleja() && esperaReflejo <= 0f && (reflejarEn(uno) || reflejarEn(dos))) {
                 continue;
             }
             if (!yaHirio && activo) {
@@ -230,7 +161,7 @@ public final class Proyectil {
 
     private void terminarContraAlgo() {
         activo = false;
-        if (tipo == Tipo.COHETE) {
+        if (definicion.isExplota()) {
             exploto = true;
         }
     }
@@ -246,31 +177,28 @@ public final class Proyectil {
         float punto = vx * nx + vy * ny;
         float rx = vx - 2f * punto * nx;
         float ry = vy - 2f * punto * ny;
-        if (jugador.getArma() != TipoArma.ESPADA_LASER) {
-            float desvio = (float) ((ThreadLocalRandom.current().nextDouble() * 2.0 - 1.0) * DESVIO_REFLEJO_ESPADA);
-            float c = (float) Math.cos(desvio);
-            float s = (float) Math.sin(desvio);
-            float girado = rx * c - ry * s;
-            ry = (rx * s + ry * c) * VELOCIDAD_REFLEJO_ESPADA;
-            rx = girado * VELOCIDAD_REFLEJO_ESPADA;
-        }
+        Espada espada = (Espada) jugador.getArma();
+        float desvio = (float) ((ThreadLocalRandom.current().nextDouble() * 2.0 - 1.0) * espada.getDesvioReflejo());
+        float c = (float) Math.cos(desvio);
+        float s = (float) Math.sin(desvio);
+        float girado = rx * c - ry * s;
+        ry = (rx * s + ry * c) * espada.getVelocidadReflejo();
+        rx = girado * espada.getVelocidadReflejo();
         vx = rx;
         vy = ry;
         duenio = jugador;
         esperaReflejo = ESPERA_REFLEJO;
-        if (tipo == Tipo.PERDIGON) {
-            tiempoDeVuelo = 0f;
-        }
+        tiempoDeVuelo = 0f;
         return true;
     }
 
     private void herir(Jugador tocado) {
-        if (tipo == Tipo.COHETE) {
+        if (definicion.isExplota()) {
             terminarContraAlgo();
             return;
         }
         float direccion = vx >= 0f ? 1f : -1f;
-        boolean hirio = tipo == Tipo.PERDIGON || tipo == Tipo.LASER
+        boolean hirio = definicion.isIgnoraInvulnerabilidad()
             ? tocado.recibirPerdigon(getDanio(), direccion)
             : tocado.recibirDanio(getDanio(), direccion, esDisparo());
         if (hirio && duenio != null) {
@@ -300,7 +228,7 @@ public final class Proyectil {
         if (chocaConBloque(arena)) {
             y -= dy;
             if (vy < 0f) {
-                if ((tipo == Tipo.ESPADA_LANZADA || tipo == Tipo.ESPADA_LASER_LANZADA) && !tocandoPiso) {
+                if (arma.esEspada() && !tocandoPiso) {
                     caidasAlPiso++;
                 }
                 tocandoPiso = true;
@@ -363,7 +291,7 @@ public final class Proyectil {
     }
 
     public Rectangle getCaja() {
-        float lado = tipo == Tipo.COHETE ? LADO_COHETE : esDisparo() ? LADO_BALA : LADO_LANZADA;
+        float lado = definicion.getLado();
         return caja.set(x - lado / 2f, y - lado / 2f, lado, lado);
     }
 
@@ -371,8 +299,8 @@ public final class Proyectil {
         return activo;
     }
 
-    public Tipo getTipo() {
-        return tipo;
+    public DefinicionProyectil getDefinicion() {
+        return definicion;
     }
 
     public float getX() {

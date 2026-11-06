@@ -6,6 +6,10 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.et35.technomortemarena.RecursosGraficos;
+import com.et35.technomortemarena.entidades.armas.Arma;
+import com.et35.technomortemarena.entidades.armas.ArmaDeFuego;
+import com.et35.technomortemarena.entidades.armas.Armas;
+import com.et35.technomortemarena.entidades.armas.Lanzacohetes;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
 import java.util.ArrayDeque;
@@ -28,23 +32,16 @@ public final class ArmasEnJuego {
     static final int MAX_PROYECTILES = 24;
     static final int MAX_ARMAS_TIRADAS = 6;
     private static final float ESCALA = Arena.ESCALA;
-    public static final float ANCHO_EN_EL_SUELO = 56f * ESCALA;
     public static final float ALTO_EN_EL_SUELO = 22f * ESCALA;
-    private static final float ANCHO_PISTOLA = 40f * ESCALA;
-    private static final float ANCHO_ESCOPETA = 64f * ESCALA;
-    private static final float ALTO_ARMA = 18f * ESCALA;
+    private static final float ALTO_HALO = 18f * ESCALA;
     static final float ESPERA_PARA_AGARRAR = 0.8f;
     private static final Color COLOR_BALA = new Color(1f, 0.85f, 0.3f, 1f);
     private static final Color COLOR_LASER = new Color(0.35f, 1f, 1f, 1f);
     private static final Color COLOR_EXPLOSION = new Color(1f, 0.55f, 0.15f, 1f);
-    private static final float ANCHO_RIFLE = 66f * ESCALA;
-    private static final float ANCHO_LANZACOHETES = 66f * ESCALA;
 
     public static final float RADIO_EXPLOSION = 4f * Arena.CELDA;
     public static final int MAX_CELDAS_ROTAS = 120;
     static final int CHANCE_ESPADA_LASER = 12;
-    private static final TipoArma[] ARMAS_QUE_APARECEN = {
-        TipoArma.PISTOLA, TipoArma.ESCOPETA, TipoArma.RIFLE_LASER, TipoArma.LANZACOHETES};
 
     private final List<Proyectil> proyectiles = new ArrayList<>();
     private final List<float[]> enElSuelo = new ArrayList<>();
@@ -102,8 +99,8 @@ public final class ArmasEnJuego {
             contadorEspadasAlCaer += proyectil.tomarCaidasAlPiso();
             if (!proyectil.isActivo()) {
                 if (proyectil.dejaArmaEnElSuelo()) {
-                    TipoArma tipo = proyectil.getArma();
-                    dejarEnElSuelo(tipo, proyectil.getX() - anchoEnElSuelo(tipo) / 2f,
+                    Arma tipo = proyectil.getArma();
+                    dejarEnElSuelo(tipo, proyectil.getX() - tipo.getAnchoEnElSuelo() / 2f,
                         proyectil.getY() - Proyectil.LADO_LANZADA / 2f, 0f, proyectil.getBalas());
                 }
                 it.remove();
@@ -204,7 +201,7 @@ public final class ArmasEnJuego {
             return;
         }
         float direccion = cuerpo.x + cuerpo.width / 2f >= x ? 1f : -1f;
-        if (jugador.recibirDanio(TipoArma.DANIO_EXPLOSION, direccion, false) && duenio != null && duenio != jugador) {
+        if (jugador.recibirDanio(Lanzacohetes.DANIO_EXPLOSION, direccion, false) && duenio != null && duenio != jugador) {
             duenio.registrarGolpe();
         }
     }
@@ -266,9 +263,9 @@ public final class ArmasEnJuego {
             }
             spawner[4] = INTERVALO_SPAWNER;
             if (!hayArmaEncima(spawner)) {
-                TipoArma tipo = TipoArma.porCodigo((int) spawner[0]);
+                Arma tipo = Armas.porCodigo((int) spawner[0]);
                 float centro = (spawner[1] + spawner[2]) / 2f;
-                enElSuelo.add(new float[] {spawner[0], centro - anchoEnElSuelo(tipo) / 2f, spawner[3], 0f,
+                enElSuelo.add(new float[] {spawner[0], centro - tipo.getAnchoEnElSuelo() / 2f, spawner[3], 0f,
                     tipo.getBalasIniciales(), 1f, 0f, 0f});
             }
         }
@@ -276,7 +273,7 @@ public final class ArmasEnJuego {
 
     private boolean hayArmaEncima(float[] spawner) {
         for (float[] arma : enElSuelo) {
-            float centro = arma[1] + anchoEnElSuelo(TipoArma.porCodigo((int) arma[0])) / 2f;
+            float centro = arma[1] + Armas.porCodigo((int) arma[0]).getAnchoEnElSuelo() / 2f;
             boolean encima = centro >= spawner[1] && centro <= spawner[2]
                 && arma[2] >= spawner[3] - 1f && arma[2] <= spawner[3] + 2f * Arena.CELDA;
             if (encima) {
@@ -319,8 +316,8 @@ public final class ArmasEnJuego {
                         }
                     }
                 }
-                TipoArma tipo = celda == 'P' ? TipoArma.PISTOLA : TipoArma.ESCOPETA;
-                encontrados.add(new float[] {TipoArma.codigoDe(tipo), minimaColumna * Arena.CELDA,
+                Arma tipo = celda == 'P' ? Armas.PISTOLA : Armas.ESCOPETA;
+                encontrados.add(new float[] {Armas.codigoDe(tipo), minimaColumna * Arena.CELDA,
                     (maximaColumna + 1) * Arena.CELDA, (filaMasAlta + 1) * Arena.CELDA, INTERVALO_SPAWNER});
             }
         }
@@ -338,11 +335,11 @@ public final class ArmasEnJuego {
         Rectangle cuerpo = jugador.getCaja();
         for (Iterator<float[]> it = enElSuelo.iterator(); it.hasNext(); ) {
             float[] arma = it.next();
-            TipoArma tipo = TipoArma.porCodigo((int) arma[0]);
+            Arma tipo = Armas.porCodigo((int) arma[0]);
             if (arma[3] > 0f || arma[7] == 1f || jugador.getArma() != null) {
                 continue;
             }
-            if (cuerpo.overlaps(new Rectangle(arma[1], arma[2], anchoEnElSuelo(tipo), ALTO_EN_EL_SUELO))) {
+            if (cuerpo.overlaps(new Rectangle(arma[1], arma[2], tipo.getAnchoEnElSuelo(), ALTO_EN_EL_SUELO))) {
                 it.remove();
                 jugador.equipar(tipo, (int) arma[4]);
                 return;
@@ -354,57 +351,40 @@ public final class ArmasEnJuego {
         if (jugador == null) {
             return;
         }
-        TipoArma soltada = jugador.tomarArmaSoltada();
+        Arma soltada = jugador.tomarArmaSoltada();
         if (soltada != null) {
             dejarCayendo(soltada, jugador.getPosicion().x, jugador.getPosicion().y + 1f, jugador.getBalasSoltadas());
             enElSuelo.get(enElSuelo.size() - 1)[3] = ESPERA_PARA_AGARRAR;
         }
     }
 
-    void dejarEnElSuelo(TipoArma tipo, float x, float y, float espera) {
+    void dejarEnElSuelo(Arma tipo, float x, float y, float espera) {
         dejarEnElSuelo(tipo, x, y, espera, tipo.getBalasIniciales());
     }
 
-    void dejarEnElSuelo(TipoArma tipo, float x, float y, float espera, int balas) {
-        enElSuelo.add(new float[] {TipoArma.codigoDe(tipo), x, y, espera, balas, 0f, 0f, 0f});
+    void dejarEnElSuelo(Arma tipo, float x, float y, float espera, int balas) {
+        enElSuelo.add(new float[] {Armas.codigoDe(tipo), x, y, espera, balas, 0f, 0f, 0f});
         while (enElSuelo.size() > MAX_ARMAS_TIRADAS) {
             enElSuelo.remove(0);
         }
     }
 
     private int armasDeFuegoEnElSuelo() {
-        int cantidad = cuantasHay(TipoArma.ESPADA_LASER);
-        for (TipoArma tipo : ARMAS_QUE_APARECEN) {
+        int cantidad = cuantasHay(Armas.ESPADA_LASER);
+        for (Arma tipo : Armas.queAparecen()) {
             cantidad += cuantasHay(tipo);
         }
         return cantidad;
     }
 
-    private int cuantasHay(TipoArma tipo) {
+    private int cuantasHay(Arma tipo) {
         int cantidad = 0;
         for (float[] arma : enElSuelo) {
-            if (TipoArma.porCodigo((int) arma[0]) == tipo && arma[5] == 0f) {
+            if (Armas.porCodigo((int) arma[0]) == tipo && arma[5] == 0f) {
                 cantidad++;
             }
         }
         return cantidad;
-    }
-
-    static float anchoEnElSuelo(TipoArma tipo) {
-        return tipo.esEspada() ? Jugador.ANCHO_ESPADA : ANCHO_EN_EL_SUELO;
-    }
-
-    private static float anchoDibujado(TipoArma tipo) {
-        switch (tipo) {
-            case ESCOPETA:
-                return ANCHO_ESCOPETA;
-            case RIFLE_LASER:
-                return ANCHO_RIFLE;
-            case LANZACOHETES:
-                return ANCHO_LANZACOHETES;
-            default:
-                return ANCHO_PISTOLA;
-        }
     }
 
     void aparecerArma(Arena arena) {
@@ -413,13 +393,13 @@ public final class ArmasEnJuego {
             return;
         }
         float[] lugar = lugares.get(azar.nextInt(lugares.size()));
-        TipoArma tipo;
-        if (cuantasHay(TipoArma.ESPADA_LASER) == 0 && azar.nextInt(CHANCE_ESPADA_LASER) == 0) {
-            tipo = TipoArma.ESPADA_LASER;
+        Arma tipo;
+        if (cuantasHay(Armas.ESPADA_LASER) == 0 && azar.nextInt(CHANCE_ESPADA_LASER) == 0) {
+            tipo = Armas.ESPADA_LASER;
         } else {
-            List<TipoArma> menos = new ArrayList<>();
+            List<Arma> menos = new ArrayList<>();
             int minimo = Integer.MAX_VALUE;
-            for (TipoArma candidata : ARMAS_QUE_APARECEN) {
+            for (ArmaDeFuego candidata : Armas.queAparecen()) {
                 int cantidad = cuantasHay(candidata);
                 if (cantidad < minimo) {
                     minimo = cantidad;
@@ -434,7 +414,7 @@ public final class ArmasEnJuego {
         dejarCayendo(tipo, lugar[0], Arena.ALTO_MUNDO - Arena.CELDA, tipo.getBalasIniciales());
     }
 
-    void dejarCayendo(TipoArma tipo, float x, float y, int balas) {
+    void dejarCayendo(Arma tipo, float x, float y, int balas) {
         dejarEnElSuelo(tipo, x, y, 0f, balas);
         enElSuelo.get(enElSuelo.size() - 1)[7] = 1f;
     }
@@ -443,7 +423,7 @@ public final class ArmasEnJuego {
         arma[6] = Math.max(CAIDA_MAXIMA, arma[6] + GRAVEDAD_CAIDA * delta);
         float antes = arma[2];
         float despues = antes + arma[6] * delta;
-        float ancho = anchoEnElSuelo(TipoArma.porCodigo((int) arma[0]));
+        float ancho = Armas.porCodigo((int) arma[0]).getAnchoEnElSuelo();
         float apoyo = apoyoDebajo(arena, arma[1], ancho, antes, despues);
         if (!Float.isNaN(apoyo)) {
             arma[2] = apoyo;
@@ -507,21 +487,17 @@ public final class ArmasEnJuego {
     public void dibujar(SpriteBatch batch, RecursosGraficos recursos) {
         float flote = (float) Math.sin(tiempoAnimacion * 4f) * 4f * ESCALA;
         for (float[] arma : enElSuelo) {
-            TipoArma tipo = TipoArma.porCodigo((int) arma[0]);
-            float ancho = tipo.esEspada() ? Jugador.ANCHO_ESPADA : anchoDibujado(tipo);
-            float x = arma[1] + (anchoEnElSuelo(tipo) - ancho) / 2f;
+            Arma tipo = Armas.porCodigo((int) arma[0]);
+            float ancho = tipo.getAnchoDibujado();
+            float x = arma[1] + (tipo.getAnchoEnElSuelo() - ancho) / 2f;
             float y = arma[2] + 6f * ESCALA + flote;
             float brillo = 0.6f + 0.3f * (float) Math.sin(tiempoAnimacion * 6f);
             batch.setColor(1f, 1f, 1f, brillo);
             float margenX = 18f * ESCALA;
             float margenY = 14f * ESCALA;
-            batch.draw(recursos.brillo, x - margenX, y - margenY, ancho + 2f * margenX, ALTO_ARMA + 2f * margenY);
-            batch.setColor(tipo == TipoArma.ESPADA_LASER ? Jugador.COLOR_ESPADA_LASER : Color.WHITE);
-            if (tipo.esEspada()) {
-                batch.draw(recursos.espada, x, y, ancho, Jugador.ALTO_ESPADA);
-            } else {
-                batch.draw(texturaDe(recursos, tipo), x, y, ancho, ALTO_ARMA);
-            }
+            batch.draw(recursos.brillo, x - margenX, y - margenY, ancho + 2f * margenX, ALTO_HALO + 2f * margenY);
+            batch.setColor(tipo.getColor());
+            batch.draw(tipo.getTextura(recursos), x, y, ancho, tipo.getAltoDibujado());
         }
         for (float[] mejora : powerUps) {
             float y = mejora[2] + 4f * Arena.ESCALA + flote;
@@ -533,7 +509,14 @@ public final class ArmasEnJuego {
             batch.draw(texturaDePowerUp(recursos, PowerUp.porIndice((int) mejora[0])), mejora[1], y, LADO_POWER_UP, LADO_POWER_UP);
         }
         for (Proyectil p : proyectiles) {
-            switch (p.getTipo()) {
+            if (p.getArma() != null) {
+                Arma tipo = p.getArma();
+                batch.setColor(tipo.getColor());
+                dibujarCentrado(batch, tipo.getTextura(recursos), p.getX(), p.getY(), tipo.getAnchoDibujado(),
+                    tipo.getAltoDibujado(), p.getAngulo());
+                continue;
+            }
+            switch (p.getDefinicion().getAspecto()) {
                 case BALA:
                     batch.setColor(COLOR_BALA);
                     dibujarCentrado(batch, recursos.brazo, p.getX(), p.getY(), 14f * ESCALA, 4f * ESCALA, p.getAngulo());
@@ -571,15 +554,7 @@ public final class ArmasEnJuego {
                         batch.draw(recursos.brillo, p.getX() - centro / 2f, p.getY() - centro / 2f, centro, centro);
                     }
                     break;
-                case ESPADA_LANZADA:
-                case ESPADA_LASER_LANZADA:
-                    batch.setColor(p.getTipo() == Proyectil.Tipo.ESPADA_LASER_LANZADA ? Jugador.COLOR_ESPADA_LASER : Color.WHITE);
-                    dibujarCentrado(batch, recursos.espada, p.getX(), p.getY(), Jugador.ANCHO_ESPADA, Jugador.ALTO_ESPADA, p.getAngulo());
-                    break;
                 default:
-                    batch.setColor(Color.WHITE);
-                    TipoArma tipo = p.getArma();
-                    dibujarCentrado(batch, texturaDe(recursos, tipo), p.getX(), p.getY(), anchoDibujado(tipo), ALTO_ARMA, p.getAngulo());
                     break;
             }
         }
@@ -594,22 +569,6 @@ public final class ArmasEnJuego {
                 return recursos.powerUpSalto;
             default:
                 return recursos.powerUpPunteria;
-        }
-    }
-
-    private static Texture texturaDe(RecursosGraficos recursos, TipoArma tipo) {
-        switch (tipo) {
-            case ESCOPETA:
-                return recursos.escopeta;
-            case RIFLE_LASER:
-                return recursos.rifleLaser;
-            case LANZACOHETES:
-                return recursos.lanzacohetes;
-            case ESPADA:
-            case ESPADA_LASER:
-                return recursos.espada;
-            default:
-                return recursos.pistola;
         }
     }
 

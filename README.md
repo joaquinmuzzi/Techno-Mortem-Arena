@@ -143,8 +143,9 @@ tenía; un arma de fuego sin balas, o que se va del mapa, desaparece. Las armas 
 agarran pasando por encima, pero solo con la mano vacía: para cambiar de arma, primero hay que tirar la
 que se tiene. Sin arma, el
 clic pega un puñetazo de corto alcance que empuja al rival y, una de cada tres veces, le hace soltar el
-arma. Con la espada también se puede desarmar: si la punta de tu hoja (su último tercio) pega en la base
-de la del rival (su primer tercio) mientras la movés, su espada sale volando hacia arriba y cae al mapa.
+arma. Con la espada también se puede desarmar: si la mitad de afuera de tu hoja pega en la parte de adentro
+de la del rival (sus primeros 60 %, desde la mano) mientras la movés, su espada sale volando hacia arriba y
+cae al mapa. Pegarle cerca de la punta de su hoja no lo desarma.
 Cada 8 s cae del cielo un arma de fuego, la que haya menos en el suelo, en un lugar al azar lejos de los
 spawns: una pistola (6 balas), una escopeta (3 disparos de 5 perdigones en un abanico con algo de dispersión
 al azar, alcance medio), un rifle láser (20 rayos largos y muy rápidos que no caen; cada uno saca un sexto y

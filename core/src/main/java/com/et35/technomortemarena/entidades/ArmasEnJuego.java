@@ -14,48 +14,25 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Las armas fuera de las manos durante una ronda: las balas y las armas tiradas que vuelan, y las armas
- * que aparecen en el mapa para que los duelistas las agarren.
- *
- * <p>Cada {@link #INTERVALO_APARICION} segundos, si hay menos de {@link #MAX_EN_EL_SUELO} armas de fuego
- * sueltas en el suelo, aparece una pistola o una escopeta (la que haya menos) en un lugar al azar sobre el
- * piso o una plataforma, fuera de las zonas prohibidas (los spawns). Ademas, cada bloque spawner del mapa
- * ({@code P} o {@code E} en la grilla) hace aparecer su arma encima cada {@link #INTERVALO_SPAWNER}
- * segundos, una sola a la vez. Las armas tiradas o que se caen de la mano quedan en el suelo con las balas
- * que tenian. Cualquier arma la agarra solo quien tiene la mano vacia, pasando por encima: para cambiar de
- * arma, primero hay que tirar la que se tiene.
- */
 public final class ArmasEnJuego {
-
-    /** Segundos entre una aparicion y la siguiente. */
     public static final float INTERVALO_APARICION = 8f;
-    /** Gravedad de las armas que caen: desde arriba del mapa tardan un par de segundos en llegar al piso. */
     static final float GRAVEDAD_CAIDA = -1100f * Arena.ESCALA;
-    /** Tope de la velocidad de caida, para que se las pueda ver venir. */
     static final float CAIDA_MAXIMA = -1400f * Arena.ESCALA;
 
-    /** Segundos entre una mejora y la siguiente, y cuantas puede haber en el mapa a la vez. */
     public static final float INTERVALO_POWER_UP = 12f;
     public static final int MAX_POWER_UPS = 2;
-    /** Lado de la caja de una mejora: con eso se agarra, y asi de grande se dibuja. */
     public static final float LADO_POWER_UP = 40f * Arena.ESCALA;
 
-    /** Segundos entre un arma y la siguiente en cada bloque spawner. */
     public static final float INTERVALO_SPAWNER = 5f;
     public static final int MAX_EN_EL_SUELO = 2;
-    /** Tope de proyectiles en vuelo y de armas tiradas en el mapa a la vez: las mas viejas se van. */
     static final int MAX_PROYECTILES = 24;
     static final int MAX_ARMAS_TIRADAS = 6;
     private static final float ESCALA = Arena.ESCALA;
-    /** Caja de un arma de fuego en el suelo (la de la espada es su largo): con eso se agarra. */
     public static final float ANCHO_EN_EL_SUELO = 56f * ESCALA;
     public static final float ALTO_EN_EL_SUELO = 22f * ESCALA;
-    /** Medidas con que se dibujan la pistola y la escopeta, en el suelo y en vuelo. */
     private static final float ANCHO_PISTOLA = 40f * ESCALA;
     private static final float ANCHO_ESCOPETA = 64f * ESCALA;
     private static final float ALTO_ARMA = 18f * ESCALA;
-    /** Segundos que un arma recien caida no se puede agarrar: si no, quien la solto la levantaria al instante. */
     static final float ESPERA_PARA_AGARRAR = 0.8f;
     private static final Color COLOR_BALA = new Color(1f, 0.85f, 0.3f, 1f);
     private static final Color COLOR_LASER = new Color(0.35f, 1f, 1f, 1f);
@@ -63,64 +40,40 @@ public final class ArmasEnJuego {
     private static final float ANCHO_RIFLE = 66f * ESCALA;
     private static final float ANCHO_LANZACOHETES = 66f * ESCALA;
 
-    /** Radio de la explosion del cohete: a quien quede a menos de esto le saca un corazon, tambien al que lo tiro. */
     public static final float RADIO_EXPLOSION = 4f * Arena.CELDA;
-    /** Tope de celdas rotas por ronda. */
     public static final int MAX_CELDAS_ROTAS = 120;
-    /** Una de cada tantas armas que aparecen solas es la espada laser, si no hay otra en el mapa. */
     static final int CHANCE_ESPADA_LASER = 12;
-    /** Las armas de fuego que aparecen solas en el mapa, repartidas: sale la que haya menos. */
     private static final TipoArma[] ARMAS_QUE_APARECEN = {
         TipoArma.PISTOLA, TipoArma.ESCOPETA, TipoArma.RIFLE_LASER, TipoArma.LANZACOHETES};
 
     private final List<Proyectil> proyectiles = new ArrayList<>();
-    /**
-     * Cada una como {@code {codigo de TipoArma, x, y, segundos hasta que se pueda agarrar, balas, 1 si la
-     * hizo aparecer un spawner, velocidad vertical, 1 mientras cae}}. Las que caen no se pueden agarrar.
-     */
     private final List<float[]> enElSuelo = new ArrayList<>();
     private final List<Proyectil> nuevos = new ArrayList<>();
-    /** Las explosiones de este fotograma: se suman a los proyectiles despues de moverlos. */
     private final List<Proyectil> explosiones = new ArrayList<>();
     private final Random azar;
-    /** Las mejoras en el mapa, como {@code {indice de PowerUp, x, y, velocidad vertical, 1 mientras cae}}. */
     private final List<float[]> powerUps = new ArrayList<>();
     private float tiempoParaPowerUp = INTERVALO_POWER_UP;
     private final List<float[]> zonasProhibidas;
     private float tiempoParaAparicion = INTERVALO_APARICION;
-    /** Los spawners del mapa, como {@code {codigo de TipoArma, x0, x1, y de arriba, segundos para la proxima}}. */
     private final List<float[]> spawners = new ArrayList<>();
-    /** La arena de la que salieron {@link #spawners}: si el mapa cambia (la edicion entre rondas), se vuelven a buscar. */
     private Arena arenaDeLosSpawners;
     private float tiempoAnimacion;
-    /**
-     * Las celdas que rompieron los cohetes en esta ronda, como {@code {columna, fila}} contando las filas desde
-     * abajo. La pantalla rearma el mapa sin ellas; vuelven al empezar la ronda siguiente.
-     */
     private final List<int[]> celdasRotas = new ArrayList<>();
-    /** Veces que una espada tirada toco el piso desde que empezo la partida, para el sonido. */
     private int contadorEspadasAlCaer;
 
-    /** Celdas libres que se dejan alrededor del cuerpo de un duelista al aparecer: ahi no caen armas. */
     public static final int MARGEN_SPAWN = 4;
 
-    /**
-     * La zona prohibida alrededor de un spawn, como {@code {x0, y0, x1, y1}} en celdas: el cuerpo con
-     * {@link #MARGEN_SPAWN} celdas de margen en cada lado. Recibe los pies y las medidas en pixeles del mundo.
-     */
     public static float[] zonaDeSpawn(float x, float y, float ancho, float alto) {
         return new float[] {
             x / Arena.CELDA - MARGEN_SPAWN, y / Arena.CELDA - MARGEN_SPAWN,
             (x + ancho) / Arena.CELDA + MARGEN_SPAWN, (y + alto) / Arena.CELDA + MARGEN_SPAWN};
     }
 
-    /** @param zonasProhibidas zonas {@code {x0, y0, x1, y1}} en celdas donde no aparecen armas */
     public ArmasEnJuego(Random azar, List<float[]> zonasProhibidas) {
         this.azar = azar;
         this.zonasProhibidas = new ArrayList<>(zonasProhibidas);
     }
 
-    /** Saca todo del mapa: se usa al empezar cada ronda. */
     public void limpiar() {
         proyectiles.clear();
         enElSuelo.clear();
@@ -132,10 +85,6 @@ public final class ArmasEnJuego {
         explosiones.clear();
     }
 
-    /**
-     * Un fotograma: junta lo que lanzaron los duelistas, mueve los proyectiles, hace aparecer armas y deja
-     * que los duelistas las agarren. Se llama despues de actualizar a los dos duelistas.
-     */
     public void actualizar(float delta, Arena arena, Jugador uno, Jugador dos) {
         tiempoAnimacion += delta;
         nuevos.clear();
@@ -153,7 +102,6 @@ public final class ArmasEnJuego {
             contadorEspadasAlCaer += proyectil.tomarCaidasAlPiso();
             if (!proyectil.isActivo()) {
                 if (proyectil.dejaArmaEnElSuelo()) {
-                    // el arma termino de rebotar: queda apoyada donde freno, con las balas que tenia
                     TipoArma tipo = proyectil.getArma();
                     dejarEnElSuelo(tipo, proyectil.getX() - anchoEnElSuelo(tipo) / 2f,
                         proyectil.getY() - Proyectil.LADO_LANZADA / 2f, 0f, proyectil.getBalas());
@@ -169,7 +117,7 @@ public final class ArmasEnJuego {
             float[] arma = it.next();
             arma[3] = Math.max(0f, arma[3] - delta);
             if (arma[7] == 1f && !caer(arma, delta, arena)) {
-                it.remove(); // se cayo por un agujero del mapa
+                it.remove();
             }
         }
         while (proyectiles.size() > MAX_PROYECTILES) {
@@ -188,10 +136,6 @@ public final class ArmasEnJuego {
         agarrar(dos);
     }
 
-    /**
-     * Cada {@link #INTERVALO_POWER_UP} segundos cae del cielo una mejora al azar sobre una superficie. Las que
-     * ya se apoyaron las agarra el primer duelista que pasa por encima, tenga o no un arma en la mano.
-     */
     private void actualizarPowerUps(float delta, Arena arena, Jugador uno, Jugador dos) {
         tiempoParaPowerUp -= delta;
         if (tiempoParaPowerUp <= 0f) {
@@ -228,11 +172,6 @@ public final class ArmasEnJuego {
         }
     }
 
-    /**
-     * El cohete estalla en {@code (x, y)}: le saca un corazon a quien tenga el cuerpo a menos de
-     * {@link #RADIO_EXPLOSION}, incluido el que lo tiro, y rompe los bloques de la celda del impacto y las ocho
-     * de alrededor. Las paredes de los costados y la fila de abajo de todo no se rompen.
-     */
     void explotar(float x, float y, Jugador duenio, Arena arena, Jugador uno, Jugador dos) {
         explosiones.add(Proyectil.explosion(x, y));
         herirConExplosion(uno, duenio, x, y);
@@ -258,7 +197,6 @@ public final class ArmasEnJuego {
         if (jugador == null || !jugador.isVivo()) {
             return;
         }
-        // la distancia al punto del cuerpo mas cercano a la explosion, no al centro: asi un cuerpo grande no la esquiva
         Rectangle cuerpo = jugador.getCaja();
         float dx = MathUtils.clamp(x, cuerpo.x, cuerpo.x + cuerpo.width) - x;
         float dy = MathUtils.clamp(y, cuerpo.y, cuerpo.y + cuerpo.height) - y;
@@ -280,7 +218,6 @@ public final class ArmasEnJuego {
         return false;
     }
 
-    /** Las celdas rotas por los cohetes en esta ronda, como {@code {columna, fila}} contando las filas desde abajo. */
     public List<int[]> getCeldasRotas() {
         return celdasRotas;
     }
@@ -289,7 +226,6 @@ public final class ArmasEnJuego {
         return jugador != null && jugador.isVivo() && !jugador.isDesarmado() && jugador.getCaja().overlaps(caja);
     }
 
-    /** Hace caer una mejora al azar desde arriba del mapa sobre una superficie al azar. */
     void aparecerPowerUp(Arena arena) {
         List<float[]> lugares = superficies(arena);
         if (lugares.isEmpty()) {
@@ -300,15 +236,10 @@ public final class ArmasEnJuego {
         powerUps.add(new float[] {tipo, lugar[0], Arena.ALTO_MUNDO - Arena.CELDA, 0f, 1f});
     }
 
-    /** Las mejoras en el mapa, como {@code {indice de PowerUp, x, y, velocidad vertical, 1 mientras cae}}. */
     public List<float[]> getPowerUps() {
         return powerUps;
     }
 
-    /**
-     * La altura del bloque mas alto sobre el que se apoya algo de ancho {@code ancho} en {@code x} que cae de
-     * {@code antes} a {@code despues}, o {@code NaN} si en ese tramo no toca ninguno.
-     */
     private static float apoyoDebajo(Arena arena, float x, float ancho, float antes, float despues) {
         float apoyo = Float.NaN;
         for (Bloque bloque : arena.getBloques()) {
@@ -322,7 +253,6 @@ public final class ArmasEnJuego {
         return apoyo;
     }
 
-    /** Cada spawner cuenta su tiempo y, si no tiene un arma encima, hace aparecer la suya. */
     private void actualizarSpawners(float delta, Arena arena) {
         if (arena != arenaDeLosSpawners) {
             arenaDeLosSpawners = arena;
@@ -344,7 +274,6 @@ public final class ArmasEnJuego {
         }
     }
 
-    /** Verdadero si sobre el spawner ya hay un arma esperando: no apila otra. */
     private boolean hayArmaEncima(float[] spawner) {
         for (float[] arma : enElSuelo) {
             float centro = arma[1] + anchoEnElSuelo(TipoArma.porCodigo((int) arma[0])) / 2f;
@@ -357,10 +286,6 @@ public final class ArmasEnJuego {
         return false;
     }
 
-    /**
-     * Los spawners del mapa: cada grupo de celdas pegadas {@code P} (pistolas) o {@code E} (escopetas) es uno,
-     * y el arma aparece arriba de su fila mas alta, al medio.
-     */
     static List<float[]> buscarSpawners(Arena arena) {
         String[] filas = arena.getFilas();
         int alto = filas.length;
@@ -372,7 +297,6 @@ public final class ArmasEnJuego {
                 if ((celda != 'P' && celda != 'E') || visto[fila][columna]) {
                     continue;
                 }
-                // recorre el grupo de celdas pegadas del mismo tipo
                 int minimaColumna = columna;
                 int maximaColumna = columna;
                 int filaMasAlta = fila;
@@ -416,7 +340,7 @@ public final class ArmasEnJuego {
             float[] arma = it.next();
             TipoArma tipo = TipoArma.porCodigo((int) arma[0]);
             if (arma[3] > 0f || arma[7] == 1f || jugador.getArma() != null) {
-                continue; // recien caida, o quien la pisa ya tiene algo en la mano: para cambiar, primero hay que tirarla
+                continue;
             }
             if (cuerpo.overlaps(new Rectangle(arma[1], arma[2], anchoEnElSuelo(tipo), ALTO_EN_EL_SUELO))) {
                 it.remove();
@@ -426,20 +350,17 @@ public final class ArmasEnJuego {
         }
     }
 
-    /** Las armas que se le cayeron a un duelista por un punetazo quedan a sus pies. */
     private void juntarSoltadas(Jugador jugador) {
         if (jugador == null) {
             return;
         }
         TipoArma soltada = jugador.tomarArmaSoltada();
         if (soltada != null) {
-            // cae a los pies, o al piso si estaba en el aire
             dejarCayendo(soltada, jugador.getPosicion().x, jugador.getPosicion().y + 1f, jugador.getBalasSoltadas());
             enElSuelo.get(enElSuelo.size() - 1)[3] = ESPERA_PARA_AGARRAR;
         }
     }
 
-    /** Deja un arma recien aparecida (cargada) en el suelo. */
     void dejarEnElSuelo(TipoArma tipo, float x, float y, float espera) {
         dejarEnElSuelo(tipo, x, y, espera, tipo.getBalasIniciales());
     }
@@ -462,7 +383,6 @@ public final class ArmasEnJuego {
     private int cuantasHay(TipoArma tipo) {
         int cantidad = 0;
         for (float[] arma : enElSuelo) {
-            // las que puso un spawner no cuentan: esas aparecen por su cuenta
             if (TipoArma.porCodigo((int) arma[0]) == tipo && arma[5] == 0f) {
                 cantidad++;
             }
@@ -470,7 +390,6 @@ public final class ArmasEnJuego {
         return cantidad;
     }
 
-    /** Ancho de la caja de un arma en el suelo: las espadas son mas largas. */
     static float anchoEnElSuelo(TipoArma tipo) {
         return tipo.esEspada() ? Jugador.ANCHO_ESPADA : ANCHO_EN_EL_SUELO;
     }
@@ -488,10 +407,6 @@ public final class ArmasEnJuego {
         }
     }
 
-    /**
-     * Hace caer un arma de fuego (la que haya menos en el suelo) sobre una superficie al azar; muy de vez en
-     * cuando, la espada laser. Sin lugar (un mapa sin piso), no pone nada.
-     */
     void aparecerArma(Arena arena) {
         List<float[]> lugares = superficies(arena);
         if (lugares.isEmpty()) {
@@ -502,8 +417,6 @@ public final class ArmasEnJuego {
         if (cuantasHay(TipoArma.ESPADA_LASER) == 0 && azar.nextInt(CHANCE_ESPADA_LASER) == 0) {
             tipo = TipoArma.ESPADA_LASER;
         } else {
-            // la que haya menos en el suelo, y entre las empatadas una al azar: asi con dos pistolas tiradas
-            // igual aparece otra cosa
             List<TipoArma> menos = new ArrayList<>();
             int minimo = Integer.MAX_VALUE;
             for (TipoArma candidata : ARMAS_QUE_APARECEN) {
@@ -518,21 +431,14 @@ public final class ArmasEnJuego {
             }
             tipo = menos.get(azar.nextInt(menos.size()));
         }
-        // cae desde arriba del mapa sobre el lugar elegido: se la ve venir, y se agarra cuando toca el piso
         dejarCayendo(tipo, lugar[0], Arena.ALTO_MUNDO - Arena.CELDA, tipo.getBalasIniciales());
     }
 
-    /** Deja un arma en el aire, cayendo: se agarra cuando se apoya en algo. */
     void dejarCayendo(TipoArma tipo, float x, float y, int balas) {
         dejarEnElSuelo(tipo, x, y, 0f, balas);
         enElSuelo.get(enElSuelo.size() - 1)[7] = 1f;
     }
 
-    /**
-     * Hace caer un arma un fotograma. Se apoya sobre el primer bloque que encuentra debajo.
-     *
-     * @return {@code false} si se cayo por debajo del mapa y hay que sacarla
-     */
     private boolean caer(float[] arma, float delta, Arena arena) {
         arma[6] = Math.max(CAIDA_MAXIMA, arma[6] + GRAVEDAD_CAIDA * delta);
         float antes = arma[2];
@@ -549,17 +455,12 @@ public final class ArmasEnJuego {
         return despues > -Arena.ALTO_MUNDO / 4f;
     }
 
-    /**
-     * Las celdas donde puede aparecer un arma: arriba de un bloque solido (no un pincho, trampolin ni
-     * cinta), con aire encima y fuera de las zonas prohibidas. Devuelve la esquina inferior izquierda.
-     */
     List<float[]> superficies(Arena arena) {
         String[] filas = arena.getFilas();
         List<float[]> lugares = new ArrayList<>();
         int alto = filas.length;
         for (int fila = 0; fila < alto; fila++) {
             String texto = filas[alto - 1 - fila];
-            // sin las columnas de los bordes: pegada a la pared casi no se ve
             for (int columna = 2; columna + 3 < Arena.COLUMNAS; columna++) {
                 if (texto.charAt(columna) != '#' || texto.charAt(columna + 1) != '#') {
                     continue;
@@ -595,17 +496,14 @@ public final class ArmasEnJuego {
         return proyectiles;
     }
 
-    /** Las armas en el suelo, como {@code {codigo de TipoArma, x, y}}. */
     public List<float[]> getEnElSuelo() {
         return enElSuelo;
     }
 
-    /** Veces que una espada tirada toco el piso; el contador solo sube, para disparar el sonido. */
     public int getContadorEspadasAlCaer() {
         return contadorEspadasAlCaer;
     }
 
-    /** Dibuja las armas en el suelo y los proyectiles. Entre {@code batch.begin()} y {@code end()}. */
     public void dibujar(SpriteBatch batch, RecursosGraficos recursos) {
         float flote = (float) Math.sin(tiempoAnimacion * 4f) * 4f * ESCALA;
         for (float[] arma : enElSuelo) {
@@ -613,7 +511,6 @@ public final class ArmasEnJuego {
             float ancho = tipo.esEspada() ? Jugador.ANCHO_ESPADA : anchoDibujado(tipo);
             float x = arma[1] + (anchoEnElSuelo(tipo) - ancho) / 2f;
             float y = arma[2] + 6f * ESCALA + flote;
-            // un halo propio que late detras, para que se vea de lejos que hay algo para agarrar
             float brillo = 0.6f + 0.3f * (float) Math.sin(tiempoAnimacion * 6f);
             batch.setColor(1f, 1f, 1f, brillo);
             float margenX = 18f * ESCALA;
@@ -646,14 +543,12 @@ public final class ArmasEnJuego {
                     dibujarCentrado(batch, recursos.brazo, p.getX(), p.getY(), 7f * ESCALA, 4f * ESCALA, p.getAngulo());
                     break;
                 case LASER:
-                    // un rayo largo y finito, con un halo
                     batch.setColor(COLOR_LASER.r, COLOR_LASER.g, COLOR_LASER.b, 0.35f);
                     dibujarCentrado(batch, recursos.brazo, p.getX(), p.getY(), 64f * ESCALA, 9f * ESCALA, p.getAngulo());
                     batch.setColor(COLOR_LASER);
                     dibujarCentrado(batch, recursos.brazo, p.getX(), p.getY(), 60f * ESCALA, 3f * ESCALA, p.getAngulo());
                     break;
                 case COHETE:
-                    // la estela de fuego detras
                     float atras = 16f * ESCALA;
                     float estela = 26f * ESCALA * (0.8f + 0.2f * (float) Math.sin(tiempoAnimacion * 40f));
                     batch.setColor(COLOR_EXPLOSION);
@@ -663,8 +558,6 @@ public final class ArmasEnJuego {
                     dibujarCentrado(batch, recursos.cohete, p.getX(), p.getY(), 30f * ESCALA, 13f * ESCALA, p.getAngulo());
                     break;
                 case EXPLOSION:
-                    // el angulo lleva cuanto va, de 0 a 1: crece hasta el radio y se apaga
-                    // el halo es difuso en los bordes: se dibuja mas grande que el radio para que se vea hasta donde pega
                     float avance = p.getAngulo();
                     float apagado = (float) Math.sqrt(1f - avance);
                     float diametro = 3f * RADIO_EXPLOSION * (0.6f + 0.4f * avance);
@@ -693,7 +586,6 @@ public final class ArmasEnJuego {
         batch.setColor(Color.WHITE);
     }
 
-    /** El icono de cada mejora; lo usa tambien la interfaz. */
     public static Texture texturaDePowerUp(RecursosGraficos recursos, PowerUp mejora) {
         switch (mejora) {
             case VELOCIDAD:

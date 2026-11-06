@@ -33,27 +33,7 @@ import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
 import com.et35.technomortemarena.partida.RondasPartida;
 
-/**
- * Ronda de duelo: arma la arena, los dos duelistas y corre el bucle de juego.
- *
- * <p>Es el modo de prueba: un duelista se maneja con el teclado y el mouse y el otro es un blanco quieto,
- * con su espada en la mano. Con TAB se cambia de duelista: el que se manejaba queda como blanco y el otro toma el teclado
- * y el mouse, asi se prueban los dos (el azul y el rojo).
- *
- * <p>Es una partida al mejor de 5 rondas ({@link RondasPartida}). Cuando un duelista cae termina la ronda,
- * hay una pausa breve con el cartel de resultado y la proxima arranca con los dos de vuelta en sus spawns.
- * El primero en ganar 3 rondas se lleva la partida y aparece un cartel de victoria con revancha. En empate
- * la ronda se vuelve a jugar sin sumar nada. El HUD muestra las vidas de cada uno y el marcador.
- *
- * <p>ESC abre el menu de pausa encima de la ronda, con opciones para volver al menu principal, a la
- * seleccion de mapa o cerrar el juego.
- *
- * <p>Extiende {@link ScreenAdapter} en lugar de implementar {@code Screen} para no tener que
- * escribir los metodos del ciclo de vida que todavia no se usan ({@code pause}, {@code resume},
- * {@code hide}).
- */
 public class PantallaArena extends ScreenAdapter {
-
     private static final float DELTA_MAXIMO = 1f / 30f;
     private static final float ANCHO_UI = 960f;
     private static final float ALTO_UI = 540f;
@@ -62,8 +42,6 @@ public class PantallaArena extends ScreenAdapter {
     private static final Color TINTE_DOS = Jugador.TINTE_DOS;
     private static final Color VELO_PAUSA = new Color(0f, 0f, 0f, 0.6f);
 
-    // Volumen de cada efecto. El de correr es mas bajo porque suena en bucle casi todo el tiempo y
-    // taparia el resto; los golpes y aterrizajes son cortos y puntuales.
     private static final float VOLUMEN_CORRER = 0.6f;
     private static final float VOLUMEN_GOLPE = 1.0f;
     private static final float VOLUMEN_ATERRIZAR = 0.8f;
@@ -73,11 +51,7 @@ public class PantallaArena extends ScreenAdapter {
     private static final float VOLUMEN_EQUIPAR_ARMA = 0.7f;
     private static final float VOLUMEN_ESPADA_CAE = 0.8f;
 
-    // Cartel de controles que aparece al empezar la ronda. Se muestran los del Jugador 1 arriba a
-    // la izquierda y los del Jugador 2 arriba a la derecha, para que nadie arranque perdido.
-    /** Segundos que los controles quedan totalmente visibles antes de empezar a desvanecerse. */
     private static final float DURACION_AYUDA = 7f;
-    /** Segundos que tarda el fundido final, al terminar {@link #DURACION_AYUDA}. */
     private static final float DESVANECIDO_AYUDA = 1.5f;
     private static final float MARGEN_AYUDA = 18f;
     private static final float RELLENO_AYUDA = 12f;
@@ -96,23 +70,15 @@ public class PantallaArena extends ScreenAdapter {
         "CAMBIAR DE JUGADOR: TAB",
     };
 
-    /** Vidas con las que arranca cada duelista en cada ronda. */
     private static final int VIDAS_INICIALES = 3;
 
-    /**
-     * Escalas del HUD: el cartel de ronda y el marcador van arriba al centro, y las vidas de cada
-     * duelista a los costados del centro. Las vidas no van en las esquinas porque ahi esta el cartel
-     * de controles y se pisarian.
-     */
     private static final float ESCALA_RONDA_HUD = 1.2f;
     private static final float ESCALA_MARCADOR_HUD = 1.8f;
     private static final float MARGEN_HUD = 18f;
     private static final float TAMANO_VIDA = 20f;
     private static final float SEPARACION_VIDA = 8f;
-    /** Distancia desde el centro de la pantalla hasta la primera vida de cada duelista. */
     private static final float SEPARACION_VIDAS_DEL_CENTRO = 70f;
     private static final Color COLOR_VIDA_PERDIDA = new Color(0.25f, 0.25f, 0.28f, 1f);
-    /** El cuadro del arma en la esquina de cada duelista, y las balas debajo. */
     private static final float ANCHO_CUADRO_ARMA = 120f;
     private static final float ALTO_CUADRO_ARMA = 44f;
     private static final Color FONDO_CUADRO_ARMA = new Color(0f, 0f, 0f, 0.45f);
@@ -123,60 +89,43 @@ public class PantallaArena extends ScreenAdapter {
     private static final Color COLOR_TIMER = new Color(1f, 0.9f, 0.4f, 1f);
     private static final Color COLOR_MUERTE_SUBITA = new Color(1f, 0.3f, 0.2f, 1f);
 
-    /** A cuantas celdas de su pared aparece cada duelista en un mapa que no marca los spawns. */
     static final float DISTANCIA_SPAWN_A_LA_PARED = 15f;
 
     private final RecursosGraficos recursos;
     private final RecursosAudio audio;
-    /** Cambia cuando un cohete rompe bloques: se vuelve a armar desde la grilla. */
     private Arena arena;
     private final Supplier<Screen> alReiniciar;
     private final SpriteBatch batch = new SpriteBatch();
     private final Viewport viewport;
     private final Viewport viewportUi = new FitViewport(ANCHO_UI, ALTO_UI, new OrthographicCamera());
     private final Ui ui = new Ui();
-    /** El duelista azul y el rojo. Uno se maneja con el teclado y el mouse y el otro es el blanco quieto. */
     private Jugador jugadorUno;
     private Jugador jugadorDos;
-    /** Verdadero si el teclado y el mouse manejan al rojo (el Jugador 2): se cambia con TAB. */
     private boolean controlaAlDos;
-    /** Teclado y mouse de quien juega. */
     private EntradaLocal entradaLocal;
     private final Vector2 spawnUno;
     private final Vector2 spawnDos;
-    /** Cuentas de golpes y aterrizajes ya sonados, para disparar cada sonido una sola vez. */
     private int golpesSonados;
     private int aterrizajesSonados;
-    /** Cuentas de disparos y armas recogidas ya sonadas. */
     private int disparosPistolaSonados;
     private int disparosEscopetaSonados;
     private int espadasEquipadasSonadas;
     private int armasDeFuegoEquipadasSonadas;
-    /** Veces que ya sono la espada tirada al caer. */
     private int espadasCaidasSonadas;
 
     private final RondasPartida rondas = new RondasPartida();
 
-    /** El mapa tal como se eligio, sin los bloques que rompen los cohetes. */
     private final String[] filasOriginales;
-    /** Zonas {@code {x0, y0, x1, y1}} en celdas donde no caen armas: los spawns y el centro de la muerte subita. */
     private final List<float[]> zonasProhibidas;
-    /** Cuantas celdas rotas por los cohetes tiene ya sacadas el mapa: cuando cambia la lista, se rearma. */
     private int celdasRotasAplicadas;
-    /** Sigue a los duelistas y se aleja cuando se separan. */
     private final CamaraDuelo camara = new CamaraDuelo();
-    /** Balas, armas tiradas y armas en el mapa. */
     private ArmasEnJuego armas;
 
     private boolean pausado;
-    /** Verdadero despues de dispose(): si un boton de la pausa nos cambio de pantalla, no hay que seguir dibujando. */
     private boolean liberada;
-    /** Verdadero mientras el bucle del sonido de correr esta sonando, para no reiniciarlo cada fotograma. */
     private boolean suenaCorrer;
-    /** Tiempo (segundos de juego) transcurrido desde que arranco la ronda, para el cartel de ayuda. */
     private float tiempoAyuda;
     private boolean muerteSubitaActivada;
-    /** Color y rectangulo de trabajo: evitan crear objetos nuevos en cada fotograma del cartel. */
     private final Color colorAux = new Color();
     private final Rectangle rectAux = new Rectangle();
     private final Rectangle botonSeguir = new Rectangle(330f, 390f, 300f, 50f);
@@ -184,7 +133,6 @@ public class PantallaArena extends ScreenAdapter {
     private final Rectangle botonMenu = new Rectangle(330f, 250f, 300f, 50f);
     private final Rectangle botonSeleccion = new Rectangle(330f, 180f, 300f, 50f);
     private final Rectangle botonSalir = new Rectangle(330f, 110f, 300f, 50f);
-    /** Cartel de victoria: revancha en el mismo mapa o salida hacia otro menu. */
     private final Rectangle botonRevancha = new Rectangle(330f, 250f, 300f, 50f);
     private final Rectangle botonGanadorSeleccion = new Rectangle(330f, 180f, 300f, 50f);
     private final Rectangle botonGanadorMenu = new Rectangle(330f, 110f, 300f, 50f);
@@ -193,10 +141,6 @@ public class PantallaArena extends ScreenAdapter {
         this(recursos, audio, arena, () -> new PantallaArena(recursos, audio, arena));
     }
 
-    /**
-     * @param alReiniciar pantalla que se muestra al apretar R. Por defecto reinicia la ronda; el editor la
-     *                    cambia para volver a edicion con el mismo mapa.
-     */
     public PantallaArena(RecursosGraficos recursos, RecursosAudio audio, Arena arena, Supplier<Screen> alReiniciar) {
         this.recursos = recursos;
         this.audio = audio;
@@ -205,13 +149,7 @@ public class PantallaArena extends ScreenAdapter {
         this.filasOriginales = arena.getFilas();
         this.alReiniciar = alReiniciar;
         ui.setAudio(audio);
-        // FitViewport mantiene la relacion de aspecto agregando bandas negras si hace falta, en
-        // lugar de estirar la imagen. Asi las distancias del duelo son identicas en cualquier
-        // resolucion, que es imprescindible para que el enfrentamiento sea justo. Muestra la vista de
-        // la camara (la mitad del mapa en cada sentido): la camara sigue a los duelistas (CamaraDuelo).
         this.viewport = new FitViewport(Arena.ANCHO_VISTA, Arena.ALTO_VISTA, new OrthographicCamera());
-        // Sin spawns en el mapa, cada uno aparece a 15 celdas de su pared, parado sobre lo que haya ahi
-        // (el piso, o un escalon en el mapa de la escalera).
         float xPorDefectoUno = DISTANCIA_SPAWN_A_LA_PARED * Arena.CELDA;
         float xPorDefectoDos = arena.getAncho() - xPorDefectoUno - Jugador.ANCHO;
         Vector2 spawnUnoMapa = arena.getSpawnUno();
@@ -223,7 +161,6 @@ public class PantallaArena extends ScreenAdapter {
         armarJugadores();
     }
 
-    /** Crea a los dos duelistas de cero, con el teclado y el mouse en el que se maneja. Se usa al empezar y en la revancha. */
     private void armarJugadores() {
         if (entradaLocal == null) {
             entradaLocal = new EntradaLocal(Controles.porDefecto());
@@ -241,16 +178,10 @@ public class PantallaArena extends ScreenAdapter {
         disparosEscopetaSonados = 0;
         espadasEquipadasSonadas = 0;
         armasDeFuegoEquipadasSonadas = 0;
-        // El contador de espadas caidas es de las armas, que no se recrean: se toma el valor actual
-        // para no sonar por caidas de la partida anterior.
         espadasCaidasSonadas = armas.getContadorEspadasAlCaer();
         muerteSubitaActivada = false;
     }
 
-    /**
-     * Le da el teclado y el mouse al duelista que se maneja, y deja al otro como blanco: sin entrada, no se
-     * mueve ni apunta, pero conserva el arma que tenia en la mano.
-     */
     private void asignarControl() {
         Jugador manejado = controlaAlDos ? jugadorDos : jugadorUno;
         Jugador blanco = controlaAlDos ? jugadorUno : jugadorDos;
@@ -258,18 +189,14 @@ public class PantallaArena extends ScreenAdapter {
         blanco.setFuente(FuenteEntrada.NINGUNA);
     }
 
-    /** TAB: el teclado y el mouse pasan al otro duelista, y el que se manejaba queda como blanco. */
     private void cambiarDeJugador() {
         controlaAlDos = !controlaAlDos;
         asignarControl();
-        // el cartel de controles vuelve a aparecer con el color del duelista que se maneja ahora
         tiempoAyuda = 0f;
     }
 
     @Override
     public void render(float delta) {
-        // ESC pausa solo mientras la ronda esta en juego: entre rondas y en el cartel de victoria los
-        // carteles tienen sus propios botones, y superponer dos menues solo confunde.
         boolean enRonda = rondas.getFase() == RondasPartida.Fase.RONDA;
         if (!enRonda) {
             pausado = false;
@@ -277,15 +204,11 @@ public class PantallaArena extends ScreenAdapter {
         if (enRonda && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             pausado = !pausado;
             if (pausado) {
-                // Al pausar deja de correr la simulacion, asi que el bucle quedaria sonando para
-                // siempre: hay que apagarlo a mano.
                 detenerSonidoCorrer();
             }
         }
         if (pausado) {
             if (atenderPausa()) {
-                // Se cambio de pantalla: cambiarA() ya libero el SpriteBatch de esta instancia, asi que
-                // hay que cortar el fotograma sin dibujar, o se dibujaria con recursos ya liberados.
                 return;
             }
             dibujar();
@@ -298,8 +221,6 @@ public class PantallaArena extends ScreenAdapter {
             cambiarDeJugador();
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
-            // Cortar aca todo el fotograma: reiniciar() ya libero el SpriteBatch de esta instancia
-            // (ver dispose() mas abajo), asi que llamar a dibujar() despues crashearia.
             reiniciar();
             return;
         }
@@ -311,18 +232,12 @@ public class PantallaArena extends ScreenAdapter {
     }
 
     private void actualizar(float delta) {
-        // Un delta grande (por ejemplo al arrastrar la ventana, que congela el bucle) haria que los
-        // jugadores se teletransporten y atraviesen el piso. Acotarlo degrada la simulacion en lugar
-        // de romperla.
         float paso = Math.min(delta, DELTA_MAXIMO);
-        // El reloj de la ayuda corre con la simulacion, no con la pausa: mientras el juego esta
-        // pausado no se llama a actualizar(), asi el cartel se queda quieto y no se pierde.
         tiempoAyuda += paso;
         boolean enRonda = rondas.getFase() == RondasPartida.Fase.RONDA
             || rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA;
         entradaLocal.setActiva(!pausado && enRonda);
         if (enRonda) {
-            // entre rondas y en el cartel de victoria el mundo queda congelado
             jugadorUno.actualizar(paso, arena, jugadorDos);
             jugadorDos.actualizar(paso, arena, jugadorUno);
             armas.actualizar(paso, arena, jugadorUno, jugadorDos);
@@ -340,15 +255,7 @@ public class PantallaArena extends ScreenAdapter {
         actualizarSonidos();
     }
 
-    /**
-     * Dispara los efectos segun lo que paso en el fotograma.
-     *
-     * <p>El sonido de correr es un bucle: se enciende la primera vez que algun jugador corre y se
-     * apaga cuando ninguno lo hace. Los otros dos son golpes y aterrizajes puntuales, que cada jugador
-     * marca con una bandera valida solo en el fotograma en que ocurren.
-     */
     private void actualizarSonidos() {
-        // Entre rondas el mundo esta congelado: el bucle de correr no puede seguir sonando.
         boolean corriendo = rondas.getFase() == RondasPartida.Fase.RONDA
             && (jugadorUno.estaCorriendo() || jugadorDos.estaCorriendo());
         if (corriendo && !suenaCorrer) {
@@ -357,7 +264,6 @@ public class PantallaArena extends ScreenAdapter {
         } else if (!corriendo) {
             detenerSonidoCorrer();
         }
-        // Se dispara cuando el contador sube.
         int golpes = jugadorUno.getContadorGolpes() + (jugadorDos != null ? jugadorDos.getContadorGolpes() : 0);
         if (golpes > golpesSonados) {
             audio.reproducir(audio.golpe, VOLUMEN_GOLPE);
@@ -400,7 +306,6 @@ public class PantallaArena extends ScreenAdapter {
         espadasCaidasSonadas = espadasCaidas;
     }
 
-    /** Apaga el bucle del sonido de correr si estaba sonando. Se usa al pausar y al salir de la ronda. */
     private void detenerSonidoCorrer() {
         if (suenaCorrer) {
             audio.correr.stop();
@@ -408,12 +313,6 @@ public class PantallaArena extends ScreenAdapter {
         }
     }
 
-    /**
-     * Atiende los clics del menu de pausa.
-     *
-     * @return {@code true} si se cambio de pantalla: en ese caso hay que cortar el fotograma sin
-     *         dibujar, porque {@link #cambiarA} ya libero el {@code SpriteBatch} de esta instancia.
-     */
     private boolean atenderPausa() {
         if (!Gdx.input.justTouched()) {
             return false;
@@ -423,7 +322,6 @@ public class PantallaArena extends ScreenAdapter {
             ui.clic();
             pausado = false;
         } else if (botonReiniciarRonda.contains(mouse)) {
-            // Reinicia solo la ronda actual: el marcador de la partida no se toca.
             ui.clic();
             pausado = false;
             reiniciarRondaActual();
@@ -442,11 +340,6 @@ public class PantallaArena extends ScreenAdapter {
         return false;
     }
 
-    /**
-     * Atiende los botones del cartel de victoria: revancha en el mismo mapa o salida hacia otro menu.
-     *
-     * @return {@code true} si se cambio de pantalla, con el mismo criterio que {@link #atenderPausa}
-     */
     private boolean atenderGanador() {
         if (!Gdx.input.justTouched()) {
             return false;
@@ -467,7 +360,6 @@ public class PantallaArena extends ScreenAdapter {
         return false;
     }
 
-    /** Devuelve a los dos duelistas a su spawn, con las vidas completas, para jugar la ronda que sigue. */
     private void reiniciarRondaActual() {
         jugadorUno.reiniciar(spawnUno.x, spawnUno.y, true);
         jugadorDos.reiniciar(spawnDos.x, spawnDos.y, false);
@@ -482,16 +374,11 @@ public class PantallaArena extends ScreenAdapter {
         jugadorDos.reiniciar(centroX + 80f - Jugador.ANCHO, yPiso, false);
     }
 
-    /** Marcador en cero, ronda 1 y sin armas tiradas: una partida nueva de verdad. Se usa en la revancha. */
     private void reiniciarRondasYNivel() {
         rondas.reiniciar();
         armas.limpiar();
     }
 
-    /**
-     * La altura de lo mas alto que hay debajo de un cuerpo parado en {@code x}: ahi apoya los pies. Sin nada
-     * debajo, la altura del piso de siempre.
-     */
     static float alturaDelPiso(Arena arena, float x) {
         float altura = 0f;
         boolean hayAlgo = false;
@@ -505,10 +392,6 @@ public class PantallaArena extends ScreenAdapter {
         return hayAlgo ? altura : Arena.FILAS_PISO * Arena.CELDA;
     }
 
-    /**
-     * Las zonas donde no caen armas: alrededor de cada spawn y del centro, donde la muerte subita pone a los
-     * dos duelistas.
-     */
     private List<float[]> crearZonasProhibidas() {
         List<float[]> zonas = new ArrayList<>();
         zonas.add(ArmasEnJuego.zonaDeSpawn(spawnUno.x, spawnUno.y, Jugador.ANCHO, Jugador.ALTO));
@@ -518,20 +401,11 @@ public class PantallaArena extends ScreenAdapter {
         return zonas;
     }
 
-    /** Empieza una partida nueva: marcador en cero, ronda 1 y todos de vuelta en su lugar. */
     private void reiniciarPartida() {
         reiniciarRondasYNivel();
         armarJugadores();
     }
 
-    /**
-     * Vuelve a armar la ronda desde cero, en el mismo mapa: arma una {@code PantallaArena} nueva y la
-     * reemplaza en el {@link Game}.
-     *
-     * <p>{@code setScreen} no libera la pantalla anterior (solo le llama {@code hide()}), asi que hay
-     * que disponer el {@code SpriteBatch} de esta instancia a mano, o cada reinicio dejaria uno sin
-     * liberar.
-     */
     private void reiniciar() {
         cambiarA(alReiniciar.get());
     }
@@ -582,11 +456,6 @@ public class PantallaArena extends ScreenAdapter {
         }
     }
 
-    /**
-     * Dibuja las vidas de cada duelista a los costados del centro y el numero de ronda y el marcador de la
-     * partida arriba al centro, con el viewport de interfaz para que queden ancladas a
-     * la pantalla.
-     */
     private void dibujarHud() {
         viewportUi.apply();
         batch.setProjectionMatrix(viewportUi.getCamera().combined);
@@ -602,16 +471,7 @@ public class PantallaArena extends ScreenAdapter {
         batch.end();
     }
 
-    /**
-     * Fila de vidas de un duelista: un cuadrado de su color por vida restante y otro apagado por cada
-     * vida perdida. La fila empieza pegada al centro y crece hacia afuera.
-     *
-     * @param haciaLaIzquierda la fila crece hacia la izquierda desde {@code xAncla} (el Jugador 1); si no,
-     *                         hacia la derecha (el Jugador 2)
-     */
     private void dibujarVidas(Jugador jugador, Color tinte, float xAncla, boolean haciaLaIzquierda) {
-        // Un duelista muerto muestra las vidas vacias: el contador es "lo que queda por perder".
-        // Cada corazon se llena por sextos: la espada saca uno entero, una bala un tercio y un punetazo un sexto.
         int partes = jugador.isVivo() ? jugador.getPartes() : 0;
         for (int i = 0; i < VIDAS_INICIALES; i++) {
             float x = haciaLaIzquierda
@@ -621,7 +481,6 @@ public class PantallaArena extends ScreenAdapter {
             ui.rectangulo(batch, rectAux.set(x, y, TAMANO_VIDA, TAMANO_VIDA), COLOR_VIDA_PERDIDA);
             int enEste = MathUtils.clamp(partes - i * Jugador.PARTES_POR_CORAZON, 0, Jugador.PARTES_POR_CORAZON);
             if (enEste > 0) {
-                // se vacia desde afuera hacia el centro: la del Jugador 1 de izquierda a derecha, la del 2 al reves
                 float ancho = TAMANO_VIDA * enEste / Jugador.PARTES_POR_CORAZON;
                 float desde = haciaLaIzquierda ? x + TAMANO_VIDA - ancho : x;
                 ui.rectangulo(batch, rectAux.set(desde, y, ancho, TAMANO_VIDA), tinte);
@@ -629,16 +488,6 @@ public class PantallaArena extends ScreenAdapter {
         }
     }
 
-    /**
-     * El arma en la mano de un duelista, en su esquina de arriba (el Jugador 1 a la izquierda, el 2 a la
-     * derecha): el arma sobre un fondo con brillo y, debajo, las balas como rectangulos verticales, llenos
-     * los que quedan y apagados los gastados, en el mismo estilo que las vidas. Mientras se ve el cartel de
-     * controles (arriba a la izquierda), la del Jugador 1 va debajo del cartel y sube cuando se desvanece.
-     */
-    /**
-     * Las mejoras que tiene un duelista, debajo de sus balas: el icono de cada una y una barra con el tiempo
-     * que le queda. En la columna de la esquina del jugador, como el resto de su interfaz.
-     */
     private void dibujarPowerUps(Jugador jugador, boolean aLaIzquierda, float xCuadro, float arriba) {
         int numero = 0;
         for (PowerUp mejora : PowerUp.values()) {
@@ -660,7 +509,7 @@ public class PantallaArena extends ScreenAdapter {
 
     private void dibujarArma(Jugador jugador, Color tinte, boolean aLaIzquierda) {
         if (jugador.isDesarmado()) {
-            return; // el blanco del modo de prueba no usa armas
+            return;
         }
         float x = aLaIzquierda ? MARGEN_HUD : ANCHO_UI - MARGEN_HUD - ANCHO_CUADRO_ARMA;
         float arriba = ALTO_UI - MARGEN_HUD;
@@ -703,7 +552,6 @@ public class PantallaArena extends ScreenAdapter {
         if (arma == TipoArma.ESPADA_LASER) {
             batch.setColor(Jugador.COLOR_ESPADA_LASER);
         }
-        // el arma entra en el cuadro sin deformarse
         float maximoAncho = ANCHO_CUADRO_ARMA - 16f;
         float maximoAlto = ALTO_CUADRO_ARMA - 16f;
         float escala = Math.min(maximoAncho / textura.getWidth(), maximoAlto / textura.getHeight());
@@ -712,7 +560,6 @@ public class PantallaArena extends ScreenAdapter {
         batch.draw(textura, x + (ANCHO_CUADRO_ARMA - ancho) / 2f, abajo + (ALTO_CUADRO_ARMA - alto) / 2f, ancho, alto);
         batch.setColor(Color.WHITE);
         int maximo = arma.getBalasIniciales();
-        // con muchas balas (el rifle laser) se achican para entrar debajo del cuadro
         float separacion = maximo > 10 ? 2f : SEPARACION_BALA_HUD;
         float anchoBala = maximo == 0 ? ANCHO_BALA_HUD
             : Math.min(ANCHO_BALA_HUD, (ANCHO_CUADRO_ARMA - (maximo - 1) * separacion) / maximo);
@@ -725,7 +572,6 @@ public class PantallaArena extends ScreenAdapter {
         }
     }
 
-    /** Cartel entre rondas: quien gano la ronda que acaba de terminar, o el aviso de empate. */
     private void dibujarEntreRondas() {
         viewportUi.apply();
         batch.setProjectionMatrix(viewportUi.getCamera().combined);
@@ -745,7 +591,6 @@ public class PantallaArena extends ScreenAdapter {
         batch.end();
     }
 
-    /** Cartel de victoria: anuncia al ganador de la partida y ofrece revancha o salir. */
     private void dibujarGanador() {
         viewportUi.apply();
         batch.setProjectionMatrix(viewportUi.getCamera().combined);
@@ -764,17 +609,10 @@ public class PantallaArena extends ScreenAdapter {
         batch.end();
     }
 
-    /** Linea de texto centrada en el ancho de la interfaz, para el HUD y los carteles de resultado. */
     private void dibujarTextoCentrado(String texto, float escala, float yArriba, Color color) {
         ui.texto(batch, texto, (ANCHO_UI - ui.anchoTexto(texto, escala)) / 2f, yArriba, escala, color);
     }
 
-    /**
-     * Dibuja el cartel de controles de los dos jugadores mientras no se haya terminado de desvanecer.
-     *
-     * <p>Se dibuja con el viewport de interfaz ({@link #viewportUi}) para que las esquinas queden
-     * ancladas a la pantalla y no se muevan con la camara de la arena.
-     */
     private void dibujarAyudaControles() {
         float alfa = alfaAyuda();
         if (alfa <= 0f) {
@@ -788,10 +626,6 @@ public class PantallaArena extends ScreenAdapter {
         batch.end();
     }
 
-    /**
-     * Opacidad del cartel: entero mientras dura {@link #DURACION_AYUDA}, y despues baja de 1 a 0 en
-     * {@link #DESVANECIDO_AYUDA} segundos. Devuelve 0 cuando ya no hay que dibujarlo.
-     */
     private float alfaAyuda() {
         if (tiempoAyuda < DURACION_AYUDA) {
             return 1f;
@@ -803,14 +637,6 @@ public class PantallaArena extends ScreenAdapter {
         return MathUtils.clamp(restante / DESVANECIDO_AYUDA, 0f, 1f);
     }
 
-    /**
-     * Dibuja un panel de controles: fondo semitransparente, titulo con el color del jugador y una
-     * linea por accion. El ancho se calcula segun el texto mas largo para que el fondo quede ajustado.
-     *
-     * @param aLaDerecha ancla el panel contra el borde derecho de la pantalla (Jugador 2); si es
-     *                   {@code false}, lo ancla contra el izquierdo (Jugador 1)
-     * @param alfa       opacidad global, para el fundido de salida
-     */
     private void dibujarPanelAyuda(String titulo, String[] lineas, Color colorTitulo,
                                    boolean aLaDerecha, float alfa) {
         float anchoContenido = ui.anchoTexto(titulo, ESCALA_TITULO_AYUDA);
@@ -839,7 +665,6 @@ public class PantallaArena extends ScreenAdapter {
         }
     }
 
-    /** Copia {@code base} en {@link #colorAux} con su opacidad multiplicada por {@code alfa}. */
     private Color conAlfa(Color base, float alfa) {
         colorAux.set(base);
         colorAux.a *= alfa;
@@ -864,10 +689,6 @@ public class PantallaArena extends ScreenAdapter {
         batch.end();
     }
 
-    /**
-     * Si los cohetes rompieron bloques (o, al empezar la ronda, se vacio la lista), rearma el mapa original sin
-     * ellos.
-     */
     private void aplicarCeldasRotas() {
         List<int[]> rotas = armas.getCeldasRotas();
         if (rotas.size() == celdasRotasAplicadas) {
@@ -879,7 +700,6 @@ public class PantallaArena extends ScreenAdapter {
         celdasRotasAplicadas = rotas.size();
     }
 
-    /** Lleva la camara hacia los duelistas (o al mapa entero mientras se edita) y la aplica. */
     private void actualizarCamara(float delta) {
         camara.seguir(Math.min(delta, DELTA_MAXIMO), jugadorUno.getCaja(), jugadorDos.getCaja(), false);
         camara.aplicar((OrthographicCamera) viewport.getCamera());

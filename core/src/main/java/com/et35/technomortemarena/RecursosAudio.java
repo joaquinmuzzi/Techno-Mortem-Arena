@@ -6,64 +6,34 @@ import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.utils.Disposable;
 
-/**
- * Punto unico de carga y liberacion de los efectos de sonido del juego.
- *
- * <p>Igual que {@link RecursosGraficos}, centralizar los efectos evita el error de cargarlos dentro
- * del bucle de dibujo: crear un {@link Sound} en cada fotograma abriria el archivo una y otra vez y
- * reservaria memoria que el recolector de basura de Java no administra. Los sonidos se cargan una
- * sola vez y se reutilizan en todas las rondas.
- *
- * <p>Se guardan como {@link Sound} y no como {@code Music} porque son efectos cortos que conviene
- * tener decodificados en memoria: asi se pueden superponer y repetir en bucle (el de correr) sin
- * cortes ni pausas al leer del disco. La musica (la del menu y la de combate), en cambio, es larga: va como {@link Music}, que
- * la lee del disco de a poco.
- *
- * <p>Las {@link OpcionesAudio} deciden si suenan la musica y los efectos: los efectos se reproducen con
- * {@link #reproducir} y {@link #repetir}, que no hacen nada si estan apagados.
- */
 public class RecursosAudio implements Disposable {
-
-    /** Pisada corta que suena en bucle mientras un jugador corre. */
     public final Sound correr;
 
-    /** Golpe de la espada contra el cuerpo del rival. */
     public final Sound golpe;
 
-    /** Aterrizaje despues de un salto o una caida. */
     public final Sound aterrizar;
 
-    /** Disparo de la pistola. */
     public final Sound pistolazo;
 
-    /** Disparo de la escopeta. */
     public final Sound escopetazo;
 
-    /** Espada que se recoge del suelo. */
     public final Sound espadaEquipada;
 
-    /** Espada tirada que toca el piso. */
     public final Sound espadaCae;
 
-    /** Pistola o escopeta que se recoge del suelo. */
     public final Sound armaEquipada;
 
-    /** Sonido de interfaz al pasar el cursor por encima de un boton. */
     public final Sound boton;
 
-    /** Sonido de interfaz al hacer clic en un boton. */
     public final Sound botonSeleccionado;
 
-    /** Que musica pide cada pantalla: la del menu en el menu, la de combate en la partida, ninguna en el editor. */
     public enum Musica { NINGUNA, MENU, COMBATE }
 
-    /** Volumen de la musica: queda por debajo de los sonidos de los botones y de los golpes. */
     private static final float VOLUMEN_MUSICA = 0.5f;
 
     private final Music musicaMenu;
     private final Music musicaCombate;
     private final OpcionesAudio opciones;
-    /** La musica que pide la pantalla actual. */
     private Musica pedida = Musica.NINGUNA;
 
     public RecursosAudio() {
@@ -102,31 +72,23 @@ public class RecursosAudio implements Disposable {
         return opciones;
     }
 
-    /** Reproduce un efecto una vez, si los efectos estan prendidos. */
     public void reproducir(Sound sonido, float volumen) {
         if (opciones.isEfectos()) {
             sonido.play(volumen);
         }
     }
 
-    /** Reproduce un efecto en bucle, si los efectos estan prendidos. Se corta con {@code sonido.stop()}. */
     public void repetir(Sound sonido, float volumen) {
         if (opciones.isEfectos()) {
             sonido.loop(volumen);
         }
     }
 
-    /**
-     * Cada pantalla dice que musica quiere: las del menu la del menu, la partida la de combate y el editor
-     * ninguna. Si ya estaba sonando sigue sin cortarse, asi no vuelve a empezar al pasar de una pantalla del
-     * menu a otra, ni al reiniciar la partida.
-     */
     public void pedirMusica(Musica musica) {
         pedida = musica;
         actualizarMusica();
     }
 
-    /** Prende o apaga la musica y la deja sonando o callada al momento. */
     public void setMusica(boolean musica) {
         opciones.setMusica(musica);
         actualizarMusica();
@@ -149,13 +111,6 @@ public class RecursosAudio implements Disposable {
         }
     }
 
-    /**
-     * Carga un efecto desde la carpeta {@code assets/} del proyecto.
-     *
-     * <p>La ruta es relativa a {@code assets/} y usa barras normales. {@code Gdx.files.internal} busca
-     * primero en el directorio de trabajo y despues en el classpath, por lo que funciona tanto al
-     * ejecutar desde el IDE como desde el .jar empaquetado.
-     */
     private static Sound cargar(String ruta) {
         return Gdx.audio.newSound(Gdx.files.internal(ruta));
     }

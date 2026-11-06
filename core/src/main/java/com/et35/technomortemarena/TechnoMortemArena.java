@@ -7,22 +7,12 @@ import com.badlogic.gdx.Input;
 
 import com.et35.technomortemarena.pantallas.PantallaMenu;
 
-/**
- * Aplicacion compartida por todas las plataformas.
- *
- * <p>Extiende {@link Game} en lugar de {@code ApplicationAdapter} porque {@code Game} administra
- * pantallas: mas adelante van a convivir el menu principal, la seleccion de mapa y la arena, y
- * cambiar entre ellas se reduce a llamar a {@code setScreen}.
- */
 public class TechnoMortemArena extends Game {
-
     private RecursosGraficos recursos;
     private RecursosAudio audio;
 
     @Override
     public void create() {
-        // Las texturas y los sonidos se cargan una sola vez, aca, y se comparten entre todas las
-        // pantallas.
         recursos = new RecursosGraficos();
         audio = new RecursosAudio();
         setScreen(new PantallaMenu(recursos, audio));
@@ -36,7 +26,6 @@ public class TechnoMortemArena extends Game {
         super.render();
     }
 
-    /** Pantalla completa a la resolucion nativa del monitor; al salir, vuelve a una ventana del mismo tamano. */
     private void alternarPantallaCompleta() {
         if (Gdx.graphics.isFullscreen()) {
             Graphics.DisplayMode escritorio = Gdx.graphics.getDisplayMode();
@@ -48,8 +37,6 @@ public class TechnoMortemArena extends Game {
 
     @Override
     public void dispose() {
-        // Game.dispose() solo llama a hide() en la pantalla activa: NO la libera. Hay que hacerlo a
-        // mano o el SpriteBatch de la pantalla queda sin liberar.
         if (getScreen() != null) {
             getScreen().dispose();
         }

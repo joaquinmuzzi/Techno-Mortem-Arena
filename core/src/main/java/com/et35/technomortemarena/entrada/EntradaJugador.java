@@ -1,24 +1,14 @@
 package com.et35.technomortemarena.entrada;
 
-/**
- * Lo que un jugador quiere hacer en un fotograma, sin importar de donde venga.
- *
- * <p>Izquierda y derecha son estados (verdaderos mientras la tecla esta hundida). Saltar, estocada y rodar
- * son acciones de una sola vez: valen solo en el fotograma de la pulsacion. El punto apuntado esta en
- * coordenadas del mundo (las mismas de la arena), no de la pantalla.
- */
 public final class EntradaJugador {
-
     public boolean izquierda;
     public boolean derecha;
 
     public boolean saltar;
     public boolean estocada;
     public boolean rodar;
-    /** Tirar lo que tiene en la mano hacia donde apunta (clic derecho). */
     public boolean lanzar;
 
-    /** Verdadero si hay un punto apuntado. Los blancos de prueba y los jugadores muertos no apuntan. */
     public boolean hayPuntero;
     public float apuntaX;
     public float apuntaY;

@@ -12,7 +12,6 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 class ArenaTest {
-
     private static String fila(char caracter, int veces) {
         char[] celdas = new char[veces];
         Arrays.fill(celdas, caracter);

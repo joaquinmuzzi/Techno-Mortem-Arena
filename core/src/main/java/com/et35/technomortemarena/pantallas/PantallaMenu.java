@@ -19,15 +19,7 @@ import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entidades.Jugador;
 
-/**
- * Menu principal: titulo del juego, los dos duelistas en guardia a los costados y los botones Modo de
- * prueba, Editor de niveles, Opciones y Salir.
- *
- * <p>Usa el mismo mundo de 960x540 que la interfaz de las demas pantallas para que la escala no "salte"
- * al cambiar de pantalla.
- */
 public class PantallaMenu extends ScreenAdapter {
-
     private static final float ESCALA_TITULO = 3.2f;
     private static final float ESCALA_ARENA = 1.6f;
     private static final float SEPARACION_ARENA = 22f;
@@ -43,13 +35,11 @@ public class PantallaMenu extends ScreenAdapter {
     private final Ui ui = new Ui();
     private final Viewport viewport = new FitViewport(ANCHO_MUNDO, ALTO_MUNDO, new OrthographicCamera());
 
-    /** Los duelistas del menu: el doble de su sprite, parados sobre una franja de piso. */
     private static final float ESCALA_DUELISTA = 2f;
     private static final float Y_PISO_MENU = 70f;
     private static final float X_DUELISTA_UNO = 150f;
     private static final float X_DUELISTA_DOS = ANCHO_MUNDO - 150f - 48f * ESCALA_DUELISTA;
 
-    /** Segundos desde que se abrio el menu: mueve un poco las espadas, como si estuvieran en guardia. */
     private float tiempo;
 
     private final Rectangle botonJugar = new Rectangle(ANCHO_MUNDO / 2f - 120f, 330f, 240f, 60f);
@@ -96,10 +86,6 @@ public class PantallaMenu extends ScreenAdapter {
         dibujar(sobreJugar, sobreEditor, sobreOpciones, sobreSalir);
     }
 
-    /**
-     * {@code setScreen} no libera la pantalla anterior, solo le llama {@code hide()}: hay que disponerla a
-     * mano o el batch y la fuente quedan sin liberar.
-     */
     private void cambiarA(com.badlogic.gdx.Screen siguiente) {
         Game juego = (Game) Gdx.app.getApplicationListener();
         juego.setScreen(siguiente);
@@ -122,7 +108,6 @@ public class PantallaMenu extends ScreenAdapter {
         batch.end();
     }
 
-    /** "TECHNO MORTEM" grande, con MORTEM en rojo, y abajo "ARENA" chico, azul y con las letras separadas. */
     private void dibujarTitulo() {
         float arriba = ALTO_MUNDO - 38f;
         String techno = "TECHNO ";
@@ -144,7 +129,6 @@ public class PantallaMenu extends ScreenAdapter {
         }
     }
 
-    /** Los dos duelistas a los costados, mirandose con la espada en guardia hacia el centro. */
     private void dibujarDuelistas() {
         batch.setColor(0.35f, 0.38f, 0.45f, 1f);
         batch.draw(recursos.piso, 0f, Y_PISO_MENU - 24f, ANCHO_MUNDO, 24f);
@@ -160,7 +144,6 @@ public class PantallaMenu extends ScreenAdapter {
         Texture cuerpo = recursos.jugador;
         batch.setColor(tinte);
         batch.draw(cuerpo, x, Y_PISO_MENU, ancho, alto, 0, 0, cuerpo.getWidth(), cuerpo.getHeight(), !mirandoDerecha, false);
-        // el hombro, como en el juego: corrido hacia donde mira, a 56 del piso en la escala del sprite
         float hombroX = x + ancho / 2f + (mirandoDerecha ? 10f : -10f) * ESCALA_DUELISTA;
         float hombroY = Y_PISO_MENU + 56f * ESCALA_DUELISTA;
         dibujarGirado(recursos.brazo, hombroX, hombroY, 22f * ESCALA_DUELISTA, 8f * ESCALA_DUELISTA, angulo);
@@ -170,7 +153,6 @@ public class PantallaMenu extends ScreenAdapter {
         dibujarGirado(recursos.espada, manoX, manoY, 56f * ESCALA_DUELISTA, 10f * ESCALA_DUELISTA, angulo);
     }
 
-    /** Una textura que mira a la derecha, girada alrededor de su extremo izquierdo (espejada si apunta a la izquierda). */
     private void dibujarGirado(Texture textura, float x, float y, float ancho, float alto, float angulo) {
         boolean haciaLaIzquierda = MathUtils.cos(angulo) < 0f;
         batch.draw(textura, x, y - alto / 2f, 0f, alto / 2f, ancho, alto, 1f, 1f, angulo * MathUtils.radiansToDegrees,

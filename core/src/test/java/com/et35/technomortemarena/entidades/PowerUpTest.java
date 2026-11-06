@@ -13,9 +13,7 @@ import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
-/** Prueba las mejoras sin abrir una ventana: cada efecto, cuanto dura y como cae y se agarra. */
 class PowerUpTest {
-
     private static final float DT = 1f / 60f;
     private static final float PISO = Arena.FILAS_PISO * Arena.CELDA;
 
@@ -98,7 +96,6 @@ class PowerUpTest {
     void conSaltoSaltaMasAlto() {
         float normal = alturaMaxima(false);
         float alto = alturaMaxima(true);
-        // la altura crece con el cuadrado del impulso
         assertEquals(PowerUp.FACTOR_SALTO * PowerUp.FACTOR_SALTO, alto / normal, 0.1f);
     }
 
@@ -181,7 +178,7 @@ class PowerUpTest {
         }
         assertEquals(PISO, mejora[2], 0.01f, "y cae al piso");
 
-        mejora[1] = j.getPosicion().x; // la ponemos donde esta el jugador, que tiene la espada en la mano
+        mejora[1] = j.getPosicion().x;
         armas.actualizar(DT, arena, j, otro);
         assertTrue(armas.getPowerUps().isEmpty());
         assertTrue(j.tienePowerUp(PowerUp.porIndice((int) mejora[0])));

@@ -21,6 +21,10 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Música de combate (`assets/music/combate.mp3`, "Glorious Morning"): suena en bucle durante la partida y
+  sigue sin cortarse al reiniciar. En el menú suena la del menú y en el editor ninguna. La opción MÚSICA de
+  Opciones apaga las dos. `RecursosAudio.pedirMusica` reemplaza a `pedirMusicaMenu`: cada pantalla dice
+  qué música quiere (`MENU`, `COMBATE` o `NINGUNA`).
 - `TAB` en el modo de prueba cambia de duelista: el que se manejaba queda como blanco (quieto, con el arma
   que tenía) y el otro, el azul o el rojo, toma el teclado y el mouse (`Jugador.setFuente`).
 

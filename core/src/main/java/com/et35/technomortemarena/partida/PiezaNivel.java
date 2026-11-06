@@ -23,7 +23,11 @@ public enum PiezaNivel {
     /** Bloque de 3x3 que hace aparecer una pistola encima cada tanto. */
     SPAWNER_PISTOLA("SPAWN PISTOLA", "PPP", "PPP", "PPP"),
     /** Bloque de 3x3 que hace aparecer una escopeta encima cada tanto. */
-    SPAWNER_ESCOPETA("SPAWN ESCOPETA", "EEE", "EEE", "EEE");
+    SPAWNER_ESCOPETA("SPAWN ESCOPETA", "EEE", "EEE", "EEE"),
+    /** Bloque de 3x3 que hace aparecer un rifle laser encima cada tanto. */
+    SPAWNER_RIFLE_LASER("SPAWN RIFLE LASER", "FFF", "FFF", "FFF"),
+    /** Bloque de 3x3 que hace aparecer un lanzacohetes encima cada tanto. */
+    SPAWNER_LANZACOHETES("SPAWN COHETES", "CCC", "CCC", "CCC");
 
     private final String nombre;
     /** La forma, la primera fila es la de arriba. */

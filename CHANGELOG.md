@@ -9,6 +9,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Bloques spawner de rifles láser (`F` en la grilla) y de lanzacohetes (`C`): como los de pistolas y
+  escopetas, son de 3x3 y hacen aparecer su arma encima cada 5 s. En el editor son las herramientas
+  "Q RIFLES LASER" y "E COHETES"; los números ya no alcanzaban para todas. También están entre las piezas
+  que se sortean entre rondas. `SpawnerArma` ahora sabe qué arma hace aparecer cada carácter
+  (`SpawnerArma.armaDe`).
 - Música del editor de niveles (`assets/music/editor.mp3`): suena en bucle mientras se edita un mapa. Al
   probar el mapa pasa a la de combate y al volver al menú, a la del menú. La opción MÚSICA de Opciones también
   la apaga. `RecursosAudio.Musica` suma `EDITOR`.

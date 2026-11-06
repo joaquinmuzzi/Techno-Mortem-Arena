@@ -8,6 +8,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.mundo.Bloque;
+import com.et35.technomortemarena.mundo.SpawnerArma;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -349,8 +350,9 @@ public final class ArmasEnJuego {
     }
 
     /**
-     * Los spawners del mapa: cada grupo de celdas pegadas {@code P} (pistolas) o {@code E} (escopetas) es uno,
-     * y el arma aparece arriba de su fila mas alta, al medio.
+     * Los spawners del mapa: cada grupo de celdas pegadas del mismo tipo ({@code P} pistolas, {@code E}
+     * escopetas, {@code F} rifles laser o {@code C} lanzacohetes) es uno, y el arma aparece arriba de su fila
+     * mas alta, al medio.
      */
     static List<float[]> buscarSpawners(Arena arena) {
         String[] filas = arena.getFilas();
@@ -360,7 +362,7 @@ public final class ArmasEnJuego {
         for (int fila = 0; fila < alto; fila++) {
             for (int columna = 0; columna < Arena.COLUMNAS; columna++) {
                 char celda = celdaDe(filas, columna, fila);
-                if ((celda != 'P' && celda != 'E') || visto[fila][columna]) {
+                if (SpawnerArma.armaDe(celda) == null || visto[fila][columna]) {
                     continue;
                 }
                 // recorre el grupo de celdas pegadas del mismo tipo
@@ -386,7 +388,7 @@ public final class ArmasEnJuego {
                         }
                     }
                 }
-                TipoArma tipo = celda == 'P' ? TipoArma.PISTOLA : TipoArma.ESCOPETA;
+                TipoArma tipo = SpawnerArma.armaDe(celda);
                 encontrados.add(new float[] {TipoArma.codigoDe(tipo), minimaColumna * Arena.CELDA,
                     (maximaColumna + 1) * Arena.CELDA, (filaMasAlta + 1) * Arena.CELDA, INTERVALO_SPAWNER});
             }

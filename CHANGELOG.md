@@ -34,6 +34,10 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Música del editor de niveles (`assets/music/editor.mp3`): suena en bucle mientras se edita un mapa. Al
+  probar el mapa pasa a la de combate y al volver al menú, a la del menú. La opción MÚSICA de Opciones también
+  la apaga. `RecursosAudio.Musica` suma `EDITOR`.
+
 - Música de combate (`assets/music/combate.mp3`, "Glorious Morning"): suena en bucle durante la partida y
   sigue sin cortarse al reiniciar. En el menú suena la del menú y en el editor ninguna. La opción MÚSICA de
   Opciones apaga las dos. `RecursosAudio.pedirMusica` reemplaza a `pedirMusicaMenu`: cada pantalla dice

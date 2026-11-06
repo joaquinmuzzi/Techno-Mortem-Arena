@@ -27,12 +27,13 @@ public class RecursosAudio implements Disposable {
 
     public final Sound botonSeleccionado;
 
-    public enum Musica { NINGUNA, MENU, COMBATE }
+    public enum Musica { NINGUNA, MENU, COMBATE, EDITOR }
 
     private static final float VOLUMEN_MUSICA = 0.5f;
 
     private final Music musicaMenu;
     private final Music musicaCombate;
+    private final Music musicaEditor;
     private final OpcionesAudio opciones;
     private Musica pedida = Musica.NINGUNA;
 
@@ -53,6 +54,9 @@ public class RecursosAudio implements Disposable {
         musicaCombate = Gdx.audio.newMusic(Gdx.files.internal("music/combate.mp3"));
         musicaCombate.setLooping(true);
         musicaCombate.setVolume(VOLUMEN_MUSICA);
+        musicaEditor = Gdx.audio.newMusic(Gdx.files.internal("music/editor.mp3"));
+        musicaEditor.setLooping(true);
+        musicaEditor.setVolume(VOLUMEN_MUSICA);
         Preferences preferencias = Gdx.app.getPreferences("techno-mortem-arena");
         opciones = new OpcionesAudio(new OpcionesAudio.Almacen() {
             @Override
@@ -101,6 +105,7 @@ public class RecursosAudio implements Disposable {
     private void actualizarMusica() {
         sonarSolo(musicaMenu, pedida == Musica.MENU && opciones.isMusica());
         sonarSolo(musicaCombate, pedida == Musica.COMBATE && opciones.isMusica());
+        sonarSolo(musicaEditor, pedida == Musica.EDITOR && opciones.isMusica());
     }
 
     private static void sonarSolo(Music musica, boolean debeSonar) {
@@ -129,5 +134,6 @@ public class RecursosAudio implements Disposable {
         botonSeleccionado.dispose();
         musicaMenu.dispose();
         musicaCombate.dispose();
+        musicaEditor.dispose();
     }
 }

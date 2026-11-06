@@ -305,7 +305,7 @@ eso queda en silencio.
 
 La música del menú es `assets/music/menu.mp3`: `RecursosAudio` la carga como `Music` (se lee del
 disco de a poco) y suena en las pantallas del menú. Durante la partida suena en cambio la música de
-combate, `assets/music/combate.mp3`; en el editor no suena ninguna. Desde OPCIONES, en el menú principal, se apagan la
+combate, `assets/music/combate.mp3`, y en el editor de niveles la suya, `assets/music/editor.mp3`. Desde OPCIONES, en el menú principal, se apagan la
 música o los efectos; la elección se guarda entre partidas. Los efectos se reproducen siempre con
 `RecursosAudio.reproducir` y `repetir`, que no suenan si están apagados.
 

@@ -109,7 +109,7 @@ public class PantallaSeleccionMapa extends ScreenAdapter {
                                  Function<Arena, Screen> alElegir, Supplier<Screen> alVolver) {
         this.recursos = recursos;
         this.audio = audio;
-        audio.pedirMusicaMenu(true);
+        audio.pedirMusica(RecursosAudio.Musica.MENU);
         this.alElegir = alElegir;
         this.alVolver = alVolver;
         ui.setAudio(audio);

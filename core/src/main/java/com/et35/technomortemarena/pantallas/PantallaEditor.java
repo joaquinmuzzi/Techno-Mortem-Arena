@@ -195,7 +195,7 @@ public class PantallaEditor extends ScreenAdapter {
     public PantallaEditor(RecursosGraficos recursos, RecursosAudio audio) {
         this.recursos = recursos;
         this.audio = audio;
-        audio.pedirMusicaMenu(false);
+        audio.pedirMusica(RecursosAudio.Musica.NINGUNA);
         Gdx.input.setInputProcessor(entrada);
         barraPanel.setContenido(HERRAMIENTAS.length, HERRAMIENTAS_VISIBLES);
         // arranca al centro y pegada abajo (limitarCamara la sube lo justo), asi se ve el piso

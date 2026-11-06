@@ -5,6 +5,15 @@ Todos los cambios significativos de **Techno Mortem Arena** se documentan en est
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto adhiere a
 [Versionado Semántico](https://semver.org/lang/es/).
 
+## [No publicado]
+
+### Añadido
+
+- Música de combate (`assets/music/combate.mp3`, "Glorious Morning"): suena en bucle durante la partida
+  (modo de prueba y en red) y sigue sin cortarse al reiniciar. En el menú suena la del menú y en el editor
+  ninguna. La opción MÚSICA de Opciones apaga las dos. `RecursosAudio.pedirMusica` reemplaza a
+  `pedirMusicaMenu`: cada pantalla dice qué música quiere (`MENU`, `COMBATE` o `NINGUNA`).
+
 ## [0.5.0] - 2026-11-05
 
 Armas de fuego y espada láser, mejoras que caen del cielo, mapa el doble de grande, fuentes pixeladas

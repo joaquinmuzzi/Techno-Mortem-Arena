@@ -41,7 +41,7 @@ public class PantallaOpciones extends ScreenAdapter {
     public PantallaOpciones(RecursosGraficos recursos, RecursosAudio audio) {
         this.recursos = recursos;
         this.audio = audio;
-        audio.pedirMusicaMenu(true);
+        audio.pedirMusica(RecursosAudio.Musica.MENU);
         ui.setAudio(audio);
     }
 

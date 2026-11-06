@@ -1,30 +1,17 @@
-"""
-Convierte las fuentes TTF en fuentes de mapa de bits (formato BMFont de texto, el que lee libGDX) sin
-suavizado: cada pixel de cada letra queda entero o vacio.
-
-Uso: python herramientas/hornear_fuentes.py CARPETA_CON_LOS_TTF
-
-Necesita Pillow. Escribe en assets/fuentes/ una fuente por tamano: titulo-NN (Orbitron en negrita) y
-mono-NN (Share Tech Mono), donde NN es el tamano equivalente a la fuente de 15 px que usaba la interfaz:
-la letra mayuscula de una fuente NN mide lo mismo que la de la fuente vieja a escala NN / 15.
-"""
 import os
 import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
 TAMANIOS = [12, 14, 16, 18, 20, 24, 28, 32, 40, 48]
-# alto de la H en la fuente de 15 px que traia libGDX
 ALTO_H_DE_15 = 11
 CARACTERES = [chr(c) for c in range(32, 127)] + list("áéíóúÁÉÍÓÚñÑüÜ¿¡°×·")
 ANCHO_TEXTURA = 512
 SEPARACION = 2
 FUENTES = [
-    # (archivo, nombre de salida, peso de la fuente variable o None)
     ("Orbitron.ttf", "titulo", 700),
     ("ShareTechMono.ttf", "mono", None),
 ]
-
 
 def cargar(ruta, tamanio, peso):
     fuente = ImageFont.truetype(ruta, tamanio)
@@ -32,9 +19,7 @@ def cargar(ruta, tamanio, peso):
         fuente.set_variation_by_axes([peso])
     return fuente
 
-
 def tamanio_para(ruta, peso, objetivo):
-    """El tamano de Pillow con el que la H mide lo que mide en la fuente vieja a ese tamano."""
     alto_h = round(ALTO_H_DE_15 * objetivo / 15)
     mejor = None
     for tamanio in range(6, 200):
@@ -44,14 +29,13 @@ def tamanio_para(ruta, peso, objetivo):
             mejor = (error, tamanio)
     return mejor[1]
 
-
 def hornear(ruta, nombre, peso, objetivo, salida):
     fuente = cargar(ruta, tamanio_para(ruta, peso, objetivo), peso)
     ascenso, descenso = fuente.getmetrics()
     glifos = []
     for caracter in CARACTERES:
         if caracter != " " and fuente.getmask(caracter).getbbox() is None:
-            continue  # la fuente no tiene ese caracter
+            continue
         x0, y0, x1, y1 = fuente.getbbox(caracter, anchor="ls")
         ancho, alto = max(0, x1 - x0), max(0, y1 - y0)
         imagen = Image.new("L", (max(1, ancho), max(1, alto)), 0)
@@ -60,7 +44,6 @@ def hornear(ruta, nombre, peso, objetivo, salida):
         dibujo.text((-x0, -y0), caracter, font=fuente, anchor="ls", fill=255)
         glifos.append((caracter, imagen, ancho, alto, x0, ascenso + y0, round(fuente.getlength(caracter))))
 
-    # acomoda los glifos en filas
     x = y = alto_fila = 0
     lugares = []
     for _, imagen, ancho, alto, *_ in glifos:
@@ -97,7 +80,6 @@ def hornear(ruta, nombre, peso, objetivo, salida):
     with open(os.path.join(salida, base + ".fnt"), "w", encoding="utf-8", newline="\n") as archivo:
         archivo.write("\n".join(lineas) + "\n")
 
-
 def main():
     origen = sys.argv[1]
     salida = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "fuentes")
@@ -106,7 +88,6 @@ def main():
         for objetivo in TAMANIOS:
             hornear(os.path.join(origen, archivo), nombre, peso, objetivo, salida)
     print("listo")
-
 
 if __name__ == "__main__":
     main()

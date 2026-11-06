@@ -6,20 +6,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-/**
- * La edicion del nivel entre rondas, del lado del anfitrion: quien perdio la ronda recibe tres objetos al
- * azar, elige uno y lo coloca donde quiera dentro de lo que permite {@link ColocadorPiezas}.
- *
- * <p>Lleva la grilla del mapa con todas las piezas colocadas hasta ahora ({@link #getFilas}) y la lista de
- * piezas, que es lo que viaja por la red: el cliente rearma el mismo mapa aplicando esa lista sobre el
- * mapa original. Si el tiempo se agota, {@link #autocolocar} coloca la pieza elegida donde estaba el
- * cursor, o una al azar si no se eligio ninguna. Es logica pura, sin libGDX.
- */
 public final class EdicionNivel {
-
-    /** Cantidad de objetos entre los que elige el perdedor. */
     public static final int OPCIONES = 3;
-    /** Tope de piezas colocadas en una partida: una por ronda perdida, y una partida no pasa de 5 rondas. */
     public static final int MAX_PIEZAS = 16;
 
     private final String[] filasOriginales;
@@ -35,10 +23,6 @@ public final class EdicionNivel {
     private int cursorColumna;
     private int cursorFila;
 
-    /**
-     * @param filasOriginales el mapa de la partida, sin piezas
-     * @param zonasProhibidas zonas {@code {x0, y0, x1, y1}} en celdas donde no se puede colocar nada
-     */
     public EdicionNivel(String[] filasOriginales, List<float[]> zonasProhibidas, Random azar) {
         this.filasOriginales = filasOriginales.clone();
         this.filas = filasOriginales.clone();
@@ -46,7 +30,6 @@ public final class EdicionNivel {
         this.azar = azar;
     }
 
-    /** Empieza una edicion: sortea tres objetos distintos para el jugador {@code editor} (0 o 1). */
     public void iniciar(int editor) {
         this.editor = editor;
         List<PiezaNivel> pool = new ArrayList<>(Arrays.asList(PiezaNivel.values()));
@@ -57,20 +40,17 @@ public final class EdicionNivel {
         colocadaEstaVez = false;
     }
 
-    /** Termina la edicion sin colocar nada mas. */
     public void terminar() {
         editor = -1;
         eleccion = -1;
     }
 
-    /** Vuelve al mapa original, sin ninguna pieza: para empezar una partida nueva. */
     public void reiniciarNivel() {
         filas = filasOriginales.clone();
         colocadas.clear();
         terminar();
     }
 
-    /** Elige uno de los objetos ofrecidos; un numero que no corresponde a ninguno deja sin elegir. */
     public void elegir(int indice) {
         if (editor < 0 || colocadaEstaVez) {
             return;
@@ -78,13 +58,11 @@ public final class EdicionNivel {
         eleccion = indice >= 0 && indice < OPCIONES ? indice : -1;
     }
 
-    /** Hacia donde apunta el cursor del editor: es la celda sobre la que se centra la pieza elegida. */
     public void moverCursor(int columna, int fila) {
         cursorColumna = Math.max(0, Math.min(Arena.COLUMNAS - 1, columna));
         cursorFila = Math.max(0, Math.min(Arena.FILAS - 1, fila));
     }
 
-    /** Si la pieza elegida se puede colocar donde esta el cursor. */
     public boolean sePuedeColocar() {
         PiezaNivel pieza = getElegida();
         if (pieza == null || colocadaEstaVez || colocadas.size() >= MAX_PIEZAS) {
@@ -94,11 +72,6 @@ public final class EdicionNivel {
         return ColocadorPiezas.puedeColocar(filas, pieza, origen[0], origen[1], zonasProhibidas);
     }
 
-    /**
-     * Coloca la pieza elegida donde esta el cursor.
-     *
-     * @return {@code false} si no hay pieza elegida, ya se coloco una, o ahi no se puede: no pasa nada
-     */
     public boolean colocar() {
         if (!sePuedeColocar()) {
             return false;
@@ -109,12 +82,6 @@ public final class EdicionNivel {
         return true;
     }
 
-    /**
-     * Se acabo el tiempo: coloca la pieza elegida en el ultimo lugar del cursor (o en el lugar valido mas
-     * cercano) y, si no habia elegido ninguna, una de las tres al azar en un lugar valido al azar.
-     *
-     * @return {@code true} si coloco algo; {@code false} si ya habia colocado o no hay lugar en el mapa
-     */
     public boolean autocolocar() {
         if (editor < 0 || colocadaEstaVez || colocadas.size() >= MAX_PIEZAS) {
             return false;
@@ -145,7 +112,6 @@ public final class EdicionNivel {
         return colocadaEstaVez;
     }
 
-    /** Quien edita: 0 el Jugador 1, 1 el Jugador 2, -1 si no hay edicion en curso. */
     public int getEditor() {
         return editor;
     }
@@ -154,7 +120,6 @@ public final class EdicionNivel {
         return opciones[indice];
     }
 
-    /** El numero (0 a 2) del objeto elegido, o -1 si todavia no eligio. */
     public int getEleccion() {
         return eleccion;
     }
@@ -163,12 +128,10 @@ public final class EdicionNivel {
         return eleccion >= 0 && editor >= 0 ? opciones[eleccion] : null;
     }
 
-    /** La grilla con todas las piezas colocadas, la primera fila la de arriba. */
     public String[] getFilas() {
         return filas.clone();
     }
 
-    /** Las piezas colocadas, en orden, como {@code {tipo, columna, fila}}. */
     public List<int[]> getColocadas() {
         List<int[]> copia = new ArrayList<>();
         for (int[] pieza : colocadas) {
@@ -185,7 +148,6 @@ public final class EdicionNivel {
         return cursorFila;
     }
 
-    /** Copia en {@code destino} lo de la edicion que viaja por la red. */
     public void exportar(EstadoPartida destino) {
         destino.editor = editor;
         for (int i = 0; i < OPCIONES; i++) {
@@ -198,10 +160,6 @@ public final class EdicionNivel {
         destino.piezas.addAll(getColocadas());
     }
 
-    /**
-     * Rearma un mapa aplicando una lista de piezas sobre el original: es lo que hace el cliente con lo
-     * que le llega del anfitrion.
-     */
     public static String[] reconstruir(String[] filasOriginales, List<int[]> piezas) {
         String[] filas = filasOriginales.clone();
         for (int[] datos : piezas) {

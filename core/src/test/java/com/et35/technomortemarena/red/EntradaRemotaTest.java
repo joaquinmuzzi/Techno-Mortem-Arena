@@ -8,7 +8,6 @@ import com.et35.technomortemarena.entrada.EntradaJugador;
 import org.junit.jupiter.api.Test;
 
 class EntradaRemotaTest {
-
     private final EntradaRemota remota = new EntradaRemota();
     private final EntradaJugador salida = new EntradaJugador();
 
@@ -76,8 +75,8 @@ class EntradaRemotaTest {
         remota.leer(salida);
         assertTrue(salida.rodar);
 
-        remota.aplicar(1, false, false, true, (byte) 0, (byte) 0, (byte) 1, (byte) 0, -1, (byte) 0, 0f, 0f); // duplicado
-        remota.aplicar(2, false, false, true, (byte) 0, (byte) 0, (byte) 1, (byte) 0, -1, (byte) 0, 0f, 0f); // mismo contador
+        remota.aplicar(1, false, false, true, (byte) 0, (byte) 0, (byte) 1, (byte) 0, -1, (byte) 0, 0f, 0f);
+        remota.aplicar(2, false, false, true, (byte) 0, (byte) 0, (byte) 1, (byte) 0, -1, (byte) 0, 0f, 0f);
         remota.leer(salida);
         assertFalse(salida.rodar);
     }
@@ -98,7 +97,6 @@ class EntradaRemotaTest {
     @Test
     void siSePierdeUnPaqueteElSiguienteTraeLaAccion() {
         paquete(1, false, false, 0, 0);
-        // el paquete 2, con la estocada, se pierde; llega el 3 con el contador ya subido
         paquete(3, false, false, 0, 1);
 
         remota.leer(salida);

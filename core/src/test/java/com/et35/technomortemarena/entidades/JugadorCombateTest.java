@@ -12,20 +12,11 @@ import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
 import org.junit.jupiter.api.Test;
 
-/**
- * Prueba el combate sin abrir una ventana: dos jugadores con entrada guionada sobre la arena plana.
- *
- * <p>Medidas (escala 2): el cuerpo mide 96 x 192, el hombro esta 112 sobre los pies y a 20 del centro,
- * y la hoja mide 112, asi que un jugador en x = 1000 mirando a la derecha tiene el hombro en x = 1068 y la
- * punta en x = 1180. El piso sube hasta y = 128.
- */
 class JugadorCombateTest {
-
     private static final float DT = 1f / 60f;
     private static final float PISO = Arena.FILAS_PISO * Arena.CELDA;
     private static final float HOMBRO_Y = PISO + 112f;
 
-    /** Entrada que el test controla: el punto apuntado y los clics. */
     private static final class Guion implements FuenteEntrada {
         private float apuntaX;
         private float apuntaY;
@@ -61,7 +52,6 @@ class JugadorCombateTest {
         return new Jugador(fuente, x, y, derecha, Color.WHITE, 3);
     }
 
-    /** Un blanco de prueba: sin entrada y sin espada, como el del modo de prueba. */
     private Jugador blanco(float x, float y) {
         Jugador blanco = jugador(FuenteEntrada.NINGUNA, x, y, false);
         blanco.setDesarmado(true);
@@ -81,14 +71,12 @@ class JugadorCombateTest {
 
     @Test
     void apuntarAlRivalConLaHojaLoHiere() {
-        // empieza mirando para el otro lado: la hoja no toca al rival hasta que se apunta hacia el
         Jugador a = jugador(guionA, 1000f, PISO, false);
         Jugador d = blanco(1150f, PISO);
         pasos(a, d, 5);
         assertEquals(3, d.getVida());
         guionA.apuntar(1200f, HOMBRO_Y);
 
-        // la espada tarda unos fotogramas en girar hasta el rival
         int fotogramas = 0;
         while (d.getVida() == 3 && fotogramas < 60) {
             paso(a, d);
@@ -104,8 +92,6 @@ class JugadorCombateTest {
     void apuntarParaOtroLadoNoHiere() {
         Jugador a = jugador(guionA, 1000f, PISO, true);
         Jugador d = blanco(1150f, PISO);
-        // el primer fotograma gira la hoja hacia la izquierda; se hace lejos del rival para que el giro no
-        // cuente como un tajo sobre el
         guionA.apuntar(500f, HOMBRO_Y);
         a.actualizar(DT, arena, blanco(3000f, PISO));
 
@@ -119,7 +105,6 @@ class JugadorCombateTest {
         Jugador a = jugador(guionA, 1000f, PISO, false);
         Jugador d = blanco(1100f, PISO);
         pasos(a, d, 5);
-        // 80 grados: la punta queda en x = 1068 + 112 * cos(80) = 1087, antes del cuerpo del rival (1100)
         float angulo = (float) Math.toRadians(80);
         guionA.apuntar(1068f + (float) Math.cos(angulo) * 300f, HOMBRO_Y + (float) Math.sin(angulo) * 300f);
 
@@ -134,10 +119,9 @@ class JugadorCombateTest {
         Jugador a = jugador(guionA, 1000f, PISO, true);
         Jugador d = blanco(3000f, PISO);
         pasos(a, d, 5);
-        // un punto a 3 de ancho y 4 de alto del hombro (ver pivote: 1068, 240): angulo de 53.13 grados
         guionA.apuntar(1068f + 300f, HOMBRO_Y + 400f);
 
-        pasos(a, d, 30); // la espada tarda unos fotogramas en girar hasta el cursor
+        pasos(a, d, 30);
 
         assertEquals(Math.atan2(4, 3), a.getAngulo(), 0.001);
         assertEquals(a.getAngulo(), a.getHoja().getAngulo(), 0.0001f);
@@ -159,7 +143,6 @@ class JugadorCombateTest {
 
     @Test
     void laEstocadaAlcanzaLoQueLaHojaQuietaNo() {
-        // la punta quieta llega a x = 1180; el rival empieza en 1190, y la estocada suma hasta 48
         Jugador a = jugador(guionA, 1000f, PISO, true);
         Jugador d = blanco(1190f, PISO);
         pasos(a, d, 5);
@@ -200,14 +183,14 @@ class JugadorCombateTest {
         pasos(a, d, 5);
 
         guionA.hacerClic();
-        pasos(a, d, 12); // la estocada (0,18 s) ya termino, la recarga (0,30 s) no
+        pasos(a, d, 12);
         assertEquals(0f, a.getExtension());
 
         guionA.hacerClic();
         paso(a, d);
         assertEquals(0f, a.getExtension(), "un clic durante la recarga no hace nada");
 
-        pasos(a, d, 12); // ya paso la recarga
+        pasos(a, d, 12);
         guionA.hacerClic();
         pasos(a, d, 3);
         assertTrue(a.getExtension() > 0f, "pasada la recarga, la estocada vuelve a salir");
@@ -223,7 +206,6 @@ class JugadorCombateTest {
         paso(a, d);
         assertEquals(2, d.getVida());
 
-        // se mantiene la hoja sobre el rival: durante la invulnerabilidad no baja mas
         for (int i = 0; i < 40; i++) {
             guionA.apuntar(d.getPosicion().x + 40f, HOMBRO_Y);
             paso(a, d);
@@ -233,12 +215,10 @@ class JugadorCombateTest {
 
     @Test
     void unTajoRapidoCuentaLoQueLaHojaCruzoEnElCamino() {
-        // el rival esta en el aire, entre la hoja horizontal (abajo) y la vertical (a la izquierda)
         Jugador a = jugador(guionA, 1000f, PISO, true);
         Jugador d = blanco(1110f, PISO + 172f);
-        guionA.apuntar(1068f, HOMBRO_Y + 500f); // arriba
+        guionA.apuntar(1068f, HOMBRO_Y + 500f);
 
-        // la espada tarda varios fotogramas en girar hasta alli, pero en el camino cruza al rival
         for (int i = 0; i < 30; i++) {
             a.actualizar(DT, arena, d);
         }
@@ -285,8 +265,6 @@ class JugadorCombateTest {
         Jugador d = blanco(3000f, PISO);
         pasos(a, d, 5);
         guionA.apuntar(1300f, HOMBRO_Y + 250f);
-        // hasta que la espada termine de girar: el angulo exportado y la hoja dibujada tienen que
-        // coincidir, y eso recien pasa cuando el giro se fija en el cursor
         pasos(a, d, 30);
         guionA.hacerClic();
         pasos(a, d, 4);
@@ -323,8 +301,6 @@ class JugadorCombateTest {
 
     @Test
     void laEspadaGiraPorElArcoMasCortoAlCruzarLosCientoOchentaGrados() {
-        // arriba a la izquierda (170 grados) y abajo a la izquierda (-170 grados) son vecinos: el giro correcto
-        // pasa por el costado izquierdo (180 grados), nunca por el derecho
         Jugador a = jugador(guionA, 1000f, PISO, false);
         Jugador d = blanco(3000f, PISO);
         float pivoteX = 1068f - 40f;
@@ -344,7 +320,7 @@ class JugadorCombateTest {
     void laEspadaNoGiraMasRapidoQueSuVelocidad() {
         Jugador a = jugador(guionA, 1000f, PISO, true);
         Jugador d = blanco(3000f, PISO);
-        guionA.apuntar(200f, HOMBRO_Y); // el lado opuesto: el giro mas largo posible
+        guionA.apuntar(200f, HOMBRO_Y);
 
         float anterior = a.getAngulo();
         for (int i = 0; i < 6; i++) {
@@ -365,10 +341,10 @@ class JugadorCombateTest {
         guionA.apuntar(200f, HOMBRO_Y);
         guionD.apuntar(200f, HOMBRO_Y);
 
-        for (int i = 0; i < 12; i++) { // 0,2 s a 60 FPS
+        for (int i = 0; i < 12; i++) {
             rapido.actualizar(1f / 60f, arena, lejos);
         }
-        for (int i = 0; i < 6; i++) { // 0,2 s a 30 FPS
+        for (int i = 0; i < 6; i++) {
             lento.actualizar(1f / 30f, arena, lejos2);
         }
 
@@ -382,7 +358,7 @@ class JugadorCombateTest {
         pasos(a, d, 5);
         guionA.apuntar(1400f, HOMBRO_Y);
         guionD.apuntar(700f, HOMBRO_Y);
-        paso(a, d); // las hojas se cruzan y los dos quedan bloqueados un rato
+        paso(a, d);
         guionA.apuntar(a.getPosicion().x - 400f, HOMBRO_Y + 300f);
         float antes = a.getAngulo();
 
@@ -399,7 +375,7 @@ class JugadorCombateTest {
         pasos(a, d, 5);
         guionA.apuntar(1400f, HOMBRO_Y);
         guionD.apuntar(700f, HOMBRO_Y);
-        paso(a, d); // choque: los dos bloqueados, la estocada dura 1,2 veces mas
+        paso(a, d);
         guionA.apuntar(2000f, HOMBRO_Y + 50f);
 
         guionA.hacerClic();

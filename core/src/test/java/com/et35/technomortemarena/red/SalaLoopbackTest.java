@@ -26,12 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * Prueba la sala de punta a punta con sockets UDP reales sobre loopback. El reloj es falso: el
- * tiempo solo avanza cuando el test lo dice, asi los timeouts se prueban sin esperar.
- */
 class SalaLoopbackTest {
-
     private final AtomicLong reloj = new AtomicLong();
     private final String[] filas = Arena.conCintasYPinchos().getFilas();
     private ServidorSala servidor;
@@ -66,7 +61,6 @@ class SalaLoopbackTest {
         return ClienteSala.conectar(direccionDeLaSala(), reloj::get);
     }
 
-    /** Hace girar a los dos lados hasta que se cumpla la condicion, avanzando el reloj falso. */
     private void girarHasta(BooleanSupplier condicion) throws InterruptedException {
         for (int i = 0; i < 400 && !condicion.getAsBoolean(); i++) {
             reloj.addAndGet(20);
@@ -110,9 +104,8 @@ class SalaLoopbackTest {
     void elClienteEligeYColocaUnObjetoYAmbosQuedanConElMismoMapa() throws Exception {
         conectarCliente();
         EdicionNivel edicion = new EdicionNivel(filas, new ArrayList<>(), new Random(7));
-        edicion.iniciar(1); // pierde el cliente: edita el Jugador 2
+        edicion.iniciar(1);
 
-        // el cliente elige la segunda tarjeta, apunta a una celda del aire y pide colocar
         EntradaJugador mano = new EntradaJugador();
         mano.hayPuntero = true;
         mano.apuntaX = 50 * Arena.CELDA;
@@ -121,7 +114,6 @@ class SalaLoopbackTest {
         mano.colocarPieza = true;
         cliente.enviarEntrada(mano);
         EntradaJugador recibida = new EntradaJugador();
-        // leer() consume las acciones de una sola vez: se guarda lo que llego en la primera lectura que las trae
         EntradaJugador conLaAccion = new EntradaJugador();
         girarHasta(() -> {
             servidor.getEntradaRemota().leer(recibida);
@@ -144,7 +136,6 @@ class SalaLoopbackTest {
         assertTrue(edicion.colocar());
         edicion.terminar();
 
-        // el anfitrion manda el estado con la lista de piezas y el cliente rearma el mismo mapa
         EstadoPartida estado = new EstadoPartida();
         edicion.exportar(estado);
         girarHasta(() -> {
@@ -153,7 +144,6 @@ class SalaLoopbackTest {
         });
 
         assertArrayEquals(edicion.getFilas(), EdicionNivel.reconstruir(cliente.getFilas(), cliente.getEstadoPartida().piezas));
-        // y el cliente no vuelve a disparar la colocacion: es una accion de una sola vez
         cliente.enviarEntrada(new EntradaJugador());
         girarHasta(() -> {
             servidor.getEntradaRemota().leer(recibida);
@@ -356,7 +346,6 @@ class SalaLoopbackTest {
         crudo.send(paquete, direccionDeLaSala());
     }
 
-    /** Un "cliente" hecho a mano: se une a la sala y devuelve el token que le dio el anfitrion. */
     private int unirseACrudo(DatagramChannel canal) throws Exception {
         ByteBuffer hello = Protocolo.nuevo(Protocolo.HELLO);
         hello.putLong(0L).putLong(0L);
@@ -437,7 +426,6 @@ class SalaLoopbackTest {
     @Test
     void unMapaDeMasDe64FilasYDe180ColumnasLlegaEntero() throws Exception {
         servidor.close();
-        // un mapa del alto maximo, con filas que codificadas pasan de 255 bytes (celdas alternadas)
         String[] grande = new String[Arena.FILAS];
         StringBuilder alternada = new StringBuilder();
         for (int c = 0; c < Arena.COLUMNAS; c++) {
@@ -498,7 +486,6 @@ class SalaLoopbackTest {
         for (int i = 0; i < 300; i++) {
             byte[] basura = new byte[azar.nextInt(200)];
             azar.nextBytes(basura);
-            // la mitad con la cabecera correcta, para llegar mas adentro del procesamiento
             if (i % 2 == 0 && basura.length >= 4) {
                 basura[0] = 0x54;
                 basura[1] = 0x4D;
@@ -509,7 +496,6 @@ class SalaLoopbackTest {
             paquete.put(basura);
             mandarCrudo(paquete);
         }
-        // y los mismos bytes dirigidos al cliente
         DatagramChannel haciaCliente = crudo;
         Thread.sleep(30);
         servidor.sondear();

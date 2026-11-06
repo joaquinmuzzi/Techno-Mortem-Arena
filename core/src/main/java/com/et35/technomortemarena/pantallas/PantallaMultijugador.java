@@ -23,18 +23,7 @@ import com.et35.technomortemarena.red.ServidorSala;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-/**
- * Pantalla del multijugador: crear una sala (ser el anfitrion) o unirse a la de otro.
- *
- * <p>Se une escribiendo la direccion del anfitrion como {@code ip:puerto} (por ejemplo
- * {@code 127.0.0.1:7777} para probar con dos instancias en la misma maquina). Para crear una sala se
- * usa el puerto de ese mismo campo, o {@value Protocolo#PUERTO_POR_DEFECTO} si no se escribio ninguno.
- *
- * <p>Esta misma pantalla se muestra mientras el cliente conecta y baja el mapa, y cuando se vuelve de
- * una partida con el motivo por el que se cerro la sala.
- */
 public class PantallaMultijugador extends ScreenAdapter {
-
     private static final float ANCHO_MUNDO = 960f;
     private static final float ALTO_MUNDO = 540f;
     private static final Color FONDO = new Color(0.09f, 0.10f, 0.14f, 1f);
@@ -42,7 +31,6 @@ public class PantallaMultijugador extends ScreenAdapter {
     private static final Color COLOR_AVISO = new Color(1f, 0.82f, 0.35f, 1f);
     private static final int LARGO_MAXIMO = 60;
 
-    /** La ultima direccion escrita, para no tener que volver a escribirla al reintentar. */
     private static String ultimaDireccion = "127.0.0.1:" + Protocolo.PUERTO_POR_DEFECTO;
 
     private final RecursosGraficos recursos;
@@ -58,11 +46,9 @@ public class PantallaMultijugador extends ScreenAdapter {
 
     private final StringBuilder direccion = new StringBuilder(ultimaDireccion);
     private String aviso;
-    /** No es nulo mientras se esta conectando a una sala. */
     private ClienteSala cliente;
     private String destinoTexto = "";
 
-    /** @param aviso mensaje para mostrar al entrar, por ejemplo por que se cerro la sala; puede ser vacio */
     public PantallaMultijugador(RecursosGraficos recursos, RecursosAudio audio, String aviso) {
         this.recursos = recursos;
         this.audio = audio;
@@ -73,8 +59,6 @@ public class PantallaMultijugador extends ScreenAdapter {
 
     @Override
     public void show() {
-        // El campo de texto recibe las letras por el procesador de entrada; el resto de la pantalla
-        // sigue leyendo el teclado y el mouse directamente.
         Gdx.input.setInputProcessor(new InputAdapter() {
             @Override
             public boolean keyTyped(char caracter) {
@@ -137,7 +121,6 @@ public class PantallaMultijugador extends ScreenAdapter {
         dibujar(sobreCrear, sobreUnirse, sobreVolver);
     }
 
-    /** Elige el mapa y abre la sala con el. Si el puerto esta ocupado, vuelve aca con el error. */
     private void crearSala() {
         ultimaDireccion = direccion.toString();
         int puerto = puertoDe(ultimaDireccion);
@@ -185,11 +168,6 @@ public class PantallaMultijugador extends ScreenAdapter {
         }
     }
 
-    /**
-     * Puerto de un texto como {@code ip:puerto}, {@code ip} o solo {@code puerto}.
-     *
-     * @return el puerto, el por defecto si el texto no trae ninguno, o -1 si trae uno que no es valido
-     */
     private static int puertoDe(String texto) {
         String limpio = texto.trim();
         int dosPuntos = limpio.lastIndexOf(':');
@@ -199,7 +177,6 @@ public class PantallaMultijugador extends ScreenAdapter {
         return soloDigitos(limpio) ? parsearPuerto(limpio) : Protocolo.PUERTO_POR_DEFECTO;
     }
 
-    /** @return el puerto, el por defecto si el texto esta vacio, o -1 si no es un numero entre 1 y 65535 */
     private static int parsearPuerto(String texto) {
         String limpio = texto.trim();
         if (limpio.isEmpty()) {
@@ -216,7 +193,6 @@ public class PantallaMultijugador extends ScreenAdapter {
         return !texto.isEmpty() && texto.chars().allMatch(c -> c >= '0' && c <= '9');
     }
 
-    /** Mientras conecta: avanza la conexion y pasa a la partida cuando el mapa esta completo. */
     private void atenderConexion() {
         cliente.sondear();
         if (cliente.getFase() == ClienteSala.Fase.JUGANDO) {
@@ -275,7 +251,6 @@ public class PantallaMultijugador extends ScreenAdapter {
         batch.end();
     }
 
-    /** Igual que en las demas pantallas: {@code setScreen} no libera la anterior, hay que disponerla a mano. */
     private void cambiarA(Screen siguiente) {
         Game juego = (Game) Gdx.app.getApplicationListener();
         juego.setScreen(siguiente);

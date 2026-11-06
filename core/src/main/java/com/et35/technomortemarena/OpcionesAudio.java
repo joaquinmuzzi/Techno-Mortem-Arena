@@ -1,12 +1,6 @@
 package com.et35.technomortemarena;
 
-/**
- * Si suenan la musica y los efectos. Por defecto suena todo. Se guarda en un {@link Almacen} para que se
- * mantenga entre una partida y la siguiente; en el juego, las preferencias de libGDX.
- */
 public final class OpcionesAudio {
-
-    /** Donde se guardan las opciones. Es una interfaz para poder probarlas sin abrir el juego. */
     public interface Almacen {
         boolean leer(String clave, boolean porDefecto);
 

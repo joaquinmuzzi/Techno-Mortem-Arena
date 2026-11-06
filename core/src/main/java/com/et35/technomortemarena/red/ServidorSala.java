@@ -13,23 +13,7 @@ import java.nio.channels.DatagramChannel;
 import java.security.SecureRandom;
 import java.util.function.LongSupplier;
 
-/**
- * El lado del anfitrion: recibe la entrada del otro jugador y le manda el estado de la partida.
- *
- * <p>El anfitrion es autoritativo: simula todo el juego y los clientes solo mandan sus teclas. La
- * sala admite {@link Protocolo#MAX_JUGADORES} jugadores contando al anfitrion, o sea un cliente.
- *
- * <p>No usa hilos: el socket es no bloqueante y {@link #sondear()} se llama una vez por fotograma
- * desde el bucle del juego, asi que todo corre en el mismo hilo que la simulacion.
- *
- * <p>Seguridad: al unirse, el cliente recibe un token al azar que tiene que repetir en cada
- * entrada, y los paquetes solo valen si vienen de su misma direccion. Cualquier paquete mal
- * formado se descarta. La sala escucha en todas las interfaces: en una red local la ve cualquiera
- * que conozca la direccion y el puerto.
- */
 public final class ServidorSala implements AutoCloseable {
-
-    /** Bytes del cuerpo de una entrada: token, secuencia, banderas, contadores de salto, estocada, rodar y lanzar, objeto elegido y contador de colocar, y el punto apuntado. */
     private static final int LARGO_ENTRADA = 4 + 4 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 2;
 
     private final DatagramChannel canal;
@@ -53,13 +37,6 @@ public final class ServidorSala implements AutoCloseable {
         this.reloj = reloj;
     }
 
-    /**
-     * Abre la sala.
-     *
-     * @param puerto puerto UDP en el que escuchar; con 0 el sistema elige uno libre (lo usan los tests)
-     * @param filas  filas del mapa que se les manda a los clientes ({@link Arena#getFilas()})
-     * @throws IOException si no se puede usar el puerto, por ejemplo porque ya hay otra sala abierta
-     */
     public static ServidorSala abrir(int puerto, String[] filas, LongSupplier reloj) throws IOException {
         if (filas.length < 1 || filas.length > Protocolo.MAX_FILAS) {
             throw new IllegalArgumentException("El mapa debe tener entre 1 y " + Protocolo.MAX_FILAS + " filas");
@@ -90,7 +67,6 @@ public final class ServidorSala implements AutoCloseable {
         }
     }
 
-    /** Lee todo lo que llego desde el ultimo fotograma. Hay que llamarlo una vez por fotograma. */
     public void sondear() {
         while (true) {
             entrante.clear();
@@ -107,7 +83,6 @@ public final class ServidorSala implements AutoCloseable {
             try {
                 procesar(origen, entrante);
             } catch (RuntimeException e) {
-                // Paquete mal formado: se ignora, no puede tumbar el juego.
             }
         }
         if (cliente != null && reloj.getAsLong() - ultimoMensaje > Protocolo.TIEMPO_SIN_NOTICIAS_MS) {
@@ -170,7 +145,6 @@ public final class ServidorSala implements AutoCloseable {
             }
             ByteBuffer fila = Protocolo.nuevo(Protocolo.FILA_MAPA);
             fila.put((byte) i);
-            // el largo en dos bytes: una fila de 180 celdas codificada puede pasar de 255 bytes
             fila.putShort((short) filasCodificadas[i].length);
             fila.put(filasCodificadas[i]);
             Protocolo.enviar(canal, fila, origen);
@@ -219,37 +193,28 @@ public final class ServidorSala implements AutoCloseable {
         entrada = new EntradaRemota();
     }
 
-    /** Hay alguien que pidio unirse (aunque todavia no haya terminado de bajar el mapa). */
     public boolean hayCliente() {
         return cliente != null;
     }
 
-    /** El cliente ya bajo el mapa y esta mandando su entrada: hay que simular a su jugador. */
     public boolean clienteListo() {
         return listo;
     }
 
-    /** Verdadero una sola vez despues de que un cliente que ya estaba jugando se va o se cae. */
     public boolean consumirDesconexion() {
         boolean fue = desconexionPendiente;
         desconexionPendiente = false;
         return fue;
     }
 
-    /** La entrada del jugador remoto, para pasarsela a su {@code Jugador}. */
     public FuenteEntrada getEntradaRemota() {
         return entrada;
     }
 
-    /**
-     * Le manda al cliente el estado de la partida: el del anfitrion (indice 0), el de el (indice 1) y
-     * como va el marcador. No hace nada si el cliente todavia no esta listo.
-     */
     public void enviarEstado(EstadoJugador anfitrion, EstadoJugador remoto, EstadoPartida partida) {
         enviarEstado(anfitrion, remoto, partida, new EstadoArmas());
     }
 
-    /** Igual que el anterior, con los proyectiles y las armas en el suelo. */
     public void enviarEstado(EstadoJugador anfitrion, EstadoJugador remoto, EstadoPartida partida, EstadoArmas armas) {
         if (cliente == null || !listo) {
             return;
@@ -266,7 +231,6 @@ public final class ServidorSala implements AutoCloseable {
     @Override
     public void close() {
         if (cliente != null) {
-            // Dos veces, porque en UDP un solo aviso puede perderse.
             for (int i = 0; i < 2; i++) {
                 ByteBuffer adios = Protocolo.nuevo(Protocolo.ADIOS);
                 adios.putInt(token);
@@ -276,7 +240,6 @@ public final class ServidorSala implements AutoCloseable {
         try {
             canal.close();
         } catch (IOException e) {
-            // Ya se esta cerrando: no hay nada mas que hacer.
         }
     }
 }

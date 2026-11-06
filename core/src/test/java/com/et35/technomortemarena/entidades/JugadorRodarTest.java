@@ -11,9 +11,7 @@ import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
 import org.junit.jupiter.api.Test;
 
-/** Prueba la rodada sin abrir una ventana: entrada guionada sobre la arena plana. */
 class JugadorRodarTest {
-
     private static final float DT = 1f / 60f;
     private static final float PISO = Arena.FILAS_PISO * Arena.CELDA;
 
@@ -28,7 +26,7 @@ class JugadorRodarTest {
             destino.izquierda = izquierda;
             destino.derecha = derecha;
             destino.rodar = rodar;
-            rodar = false; // una sola vez por pulsacion
+            rodar = false;
         }
     }
 
@@ -106,14 +104,14 @@ class JugadorRodarTest {
         Jugador j = jugador(true);
         guion.derecha = true;
         guion.rodar = true;
-        pasos(j, 30); // mas que la duracion de 0,35 s
+        pasos(j, 30);
         assertFalse(j.estaRodando());
 
         guion.rodar = true;
         pasos(j, 1);
         assertFalse(j.estaRodando(), "todavia en enfriamiento");
 
-        pasos(j, 60); // ya paso el enfriamiento
+        pasos(j, 60);
         guion.rodar = true;
         pasos(j, 1);
         assertTrue(j.estaRodando());
@@ -136,7 +134,7 @@ class JugadorRodarTest {
                 destino.limpiar();
                 destino.hayPuntero = true;
                 destino.apuntaX = 2000f;
-                destino.apuntaY = PISO + 40f; // a la altura de la caja baja
+                destino.apuntaY = PISO + 40f;
             }
         }, 1500f, PISO, true, Color.WHITE, 3);
         Jugador victima = new Jugador(guion, 1620f, PISO, false, Color.WHITE, 3);

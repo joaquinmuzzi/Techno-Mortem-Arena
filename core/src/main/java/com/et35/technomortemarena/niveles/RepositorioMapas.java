@@ -7,14 +7,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.et35.technomortemarena.mundo.Arena;
 
-/**
- * Guarda todos los mapas del editor en un unico archivo de texto, {@code niveles/mapas.txt}.
- *
- * <p>Cada mapa ocupa un encabezado {@code [nombre]} seguido de sus filas, con el mismo formato que
- * acepta {@link Arena#desdeGrilla}. Guardar un mapa con un nombre existente lo reemplaza.
- */
 public final class RepositorioMapas {
-
     private static final String ARCHIVO = "niveles/mapas.txt";
 
     private RepositorioMapas() {
@@ -49,7 +42,6 @@ public final class RepositorioMapas {
         return mapas;
     }
 
-    /** Guarda el mapa, reemplazando el que tenga el mismo nombre si ya existe. */
     public static void guardar(MapaGuardado mapa) {
         List<MapaGuardado> mapas = cargarTodos();
         boolean reemplazado = false;

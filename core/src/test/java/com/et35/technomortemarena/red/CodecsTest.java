@@ -16,7 +16,6 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 class CodecsTest {
-
     private static String fila(char caracter, int veces) {
         char[] celdas = new char[veces];
         Arrays.fill(celdas, caracter);
@@ -51,12 +50,9 @@ class CodecsTest {
 
     @Test
     void filasInvalidasSeRechazan() {
-        // largo equivocado
         assertNull(CodecMapa.decodificarFila(CodecMapa.codificarFila(fila('#', Arena.COLUMNAS - 1)), Arena.COLUMNAS));
         assertNull(CodecMapa.decodificarFila(CodecMapa.codificarFila(fila('#', Arena.COLUMNAS + 1)), Arena.COLUMNAS));
-        // caracter que el juego no entiende
         assertNull(CodecMapa.decodificarFila(new byte[] {'Z', (byte) Arena.COLUMNAS}, Arena.COLUMNAS));
-        // cantidad cero, bytes impares y vacio
         assertNull(CodecMapa.decodificarFila(new byte[] {'#', 0, '.', (byte) Arena.COLUMNAS}, Arena.COLUMNAS));
         assertNull(CodecMapa.decodificarFila(new byte[] {'#'}, Arena.COLUMNAS));
         assertNull(CodecMapa.decodificarFila(new byte[0], Arena.COLUMNAS));
@@ -146,7 +142,6 @@ class CodecsTest {
             assertFalse(CodecEstado.leer(buffer, new EstadoJugador()));
         }
 
-        // una extension de la estocada fuera de 0 a 1
         EstadoJugador conExtensionAbsurda = estadoDeEjemplo();
         conExtensionAbsurda.extension = 1.5f;
         ByteBuffer buffer = ByteBuffer.allocate(128);
@@ -184,10 +179,10 @@ class CodecsTest {
     @Test
     void unEstadoDePartidaConValoresAbsurdosSeRechaza() {
         int[][] malos = {
-            {7, 1, 0, 0, 0},   // una etapa que no existe
-            {0, 0, 0, 0, 0},   // ronda 0
-            {0, 1, 9, 0, 0},   // mas rondas ganadas de las que alcanzan para ganar
-            {0, 1, 0, 0, 5},   // un ganador que no es 0, 1 ni -1
+            {7, 1, 0, 0, 0},
+            {0, 0, 0, 0, 0},
+            {0, 1, 9, 0, 0},
+            {0, 1, 0, 0, 5},
         };
         for (int[] m : malos) {
             ByteBuffer buffer = ByteBuffer.allocate(8);
@@ -304,8 +299,8 @@ class CodecsTest {
     @Test
     void unasArmasAbsurdasSeRechazan() {
         float[][][] malas = {
-            {{99, 0, 0, 0}},         // un proyectil que no existe
-            {{0, Float.NaN, 0, 0}},  // una posicion no finita
+            {{99, 0, 0, 0}},
+            {{0, Float.NaN, 0, 0}},
         };
         for (float[][] proyectiles : malas) {
             EstadoArmas armas = new EstadoArmas();
@@ -316,7 +311,7 @@ class CodecsTest {
             assertFalse(CodecEstado.leer(buffer, new EstadoArmas()));
         }
         EstadoArmas conArmaInexistente = new EstadoArmas();
-        conArmaInexistente.enElSuelo.add(new float[] {0, 1f, 1f}); // 0 es "sin arma": no se puede tirar en el suelo
+        conArmaInexistente.enElSuelo.add(new float[] {0, 1f, 1f});
         ByteBuffer buffer = ByteBuffer.allocate(256);
         CodecEstado.escribir(buffer, conArmaInexistente);
         buffer.flip();

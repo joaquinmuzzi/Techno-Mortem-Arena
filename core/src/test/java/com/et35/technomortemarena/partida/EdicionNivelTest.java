@@ -18,7 +18,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class EdicionNivelTest {
-
     private static String aire() {
         StringBuilder texto = new StringBuilder();
         for (int i = 0; i < Arena.COLUMNAS; i++) {
@@ -31,7 +30,6 @@ class EdicionNivelTest {
         return aire().replace('.', '#');
     }
 
-    /** Mapa de 9 filas de aire y 3 de piso (alto 12), como los mapas predefinidos. */
     private static String[] mapa() {
         String[] filas = new String[12];
         for (int i = 0; i < 12; i++) {
@@ -40,7 +38,6 @@ class EdicionNivelTest {
         return filas;
     }
 
-    /** Zonas prohibidas de un spawn en la columna 24 sobre el piso, como en los mapas sin spawn. */
     private static List<float[]> zonas() {
         List<float[]> zonas = new ArrayList<>();
         zonas.add(ColocadorPiezas.zonaDeSpawn(24f * Arena.CELDA, 3f * Arena.CELDA, 96f, 192f));
@@ -166,7 +163,6 @@ class EdicionNivelTest {
     void sePuedeColocarSobreElPisoYSobreOtraPieza() {
         String[] filas = mapa();
         List<float[]> sin = new ArrayList<>();
-        // el piso mide 3 filas: una pieza apoyada en la fila 0 lo pisa, y se puede
         assertTrue(ColocadorPiezas.puedeColocar(filas, PiezaNivel.FILA_DE_PINCHOS, 40, 0, sin));
         String[] con = ColocadorPiezas.aplicar(filas, PiezaNivel.FILA_DE_PINCHOS, 40, 1);
         assertEquals('X', ColocadorPiezas.celdaDe(con, 40, 1), "los pinchos reemplazan al piso");
@@ -207,14 +203,12 @@ class EdicionNivelTest {
     void noSePuedeColocarCercaDeLosSpawns() {
         EdicionNivel e = edicion(2);
         e.iniciar(0);
-        // ponemos una fila de pinchos justo sobre el spawn del jugador 1 (columna 24, sobre el piso)
         PiezaNivel pinchos = PiezaNivel.FILA_DE_PINCHOS;
         for (int i = 0; i < 3; i++) {
             if (e.getOpcion(i) == pinchos) {
                 e.elegir(i);
             }
         }
-        // si no salio la fila de pinchos, se prueba directo con el colocador
         List<float[]> zonas = zonas();
         String[] filas = mapa();
         assertFalse(ColocadorPiezas.puedeColocar(filas, pinchos, 24, 3, zonas), "sobre el spawn");
@@ -222,7 +216,6 @@ class EdicionNivelTest {
         assertFalse(ColocadorPiezas.puedeColocar(filas, pinchos, 24, 8, zonas), "arriba del spawn, dentro del margen");
         assertFalse(ColocadorPiezas.puedeColocar(filas, pinchos, 17, 3, zonas), "a la izquierda, dentro del margen");
         assertTrue(ColocadorPiezas.puedeColocar(filas, pinchos, 40, 3, zonas), "lejos del spawn");
-        // y la del jugador 2, del otro lado
         int columnaSpawnDos = (int) ((Arena.ANCHO_MUNDO - 24f * Arena.CELDA - 96f) / Arena.CELDA);
         assertFalse(ColocadorPiezas.puedeColocar(filas, pinchos, columnaSpawnDos, 3, zonas));
     }
@@ -232,7 +225,6 @@ class EdicionNivelTest {
         for (long semilla = 0; semilla < 100; semilla++) {
             EdicionNivel e = edicion(semilla);
             e.iniciar(1);
-            // sin elegir: una al azar
             assertTrue(e.autocolocar());
             int[] pieza = e.getColocadas().get(0);
             PiezaNivel tipo = PiezaNivel.porIndice(pieza[0]);
@@ -267,7 +259,7 @@ class EdicionNivelTest {
         e.iniciar(0);
         e.elegir(0);
         PiezaNivel pieza = e.getElegida();
-        e.moverCursor(24, 4); // justo sobre el spawn
+        e.moverCursor(24, 4);
         assertFalse(e.sePuedeColocar());
 
         assertTrue(e.autocolocar());
@@ -284,7 +276,7 @@ class EdicionNivelTest {
         assertEquals(28, con.length);
         assertEquals('#', ColocadorPiezas.celdaDe(con, 40, 27));
         assertEquals(piso(), con[con.length - 1], "el piso sigue abajo");
-        Arena.desdeGrilla(con); // la grilla resultante sigue siendo valida
+        Arena.desdeGrilla(con);
     }
 
     @Test
@@ -317,14 +309,12 @@ class EdicionNivelTest {
     @Test
     void sinLugarFueraDeLasZonasNoColocaNada() {
         List<float[]> todo = new ArrayList<>();
-        todo.add(new float[] {-1f, -1f, Arena.COLUMNAS + 1f, Arena.FILAS + 1f}); // una zona que tapa todo el mapa
+        todo.add(new float[] {-1f, -1f, Arena.COLUMNAS + 1f, Arena.FILAS + 1f});
         EdicionNivel e = new EdicionNivel(mapa(), todo, new Random(1));
         e.iniciar(0);
         assertFalse(e.autocolocar());
         assertNull(ColocadorPiezas.buscarValidaCerca(mapa(), PiezaNivel.TRAMPOLIN, 5, 5, todo));
     }
-
-    // ---- la fase de edicion en la partida
 
     private static void perderLaRonda(RondasPartida rondas, boolean gana1) {
         rondas.actualizar(0.016f, gana1, !gana1);

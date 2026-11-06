@@ -69,14 +69,15 @@ public class RecursosAudio implements Disposable {
     /** Sonido de interfaz al hacer clic en un boton. */
     public final Sound botonSeleccionado;
 
-    /** Que musica pide cada pantalla: la del menu en el menu, la de combate en la partida, ninguna en el editor. */
-    public enum Musica { NINGUNA, MENU, COMBATE }
+    /** Que musica pide cada pantalla: la del menu en el menu, la de combate en la partida y la del editor en el editor. */
+    public enum Musica { NINGUNA, MENU, COMBATE, EDITOR }
 
     /** Volumen de la musica: queda por debajo de los sonidos de los botones y de los golpes. */
     private static final float VOLUMEN_MUSICA = 0.5f;
 
     private final Music musicaMenu;
     private final Music musicaCombate;
+    private final Music musicaEditor;
     private final OpcionesAudio opciones;
     /** La musica que pide la pantalla actual. */
     private Musica pedida = Musica.NINGUNA;
@@ -103,6 +104,9 @@ public class RecursosAudio implements Disposable {
         musicaCombate = Gdx.audio.newMusic(Gdx.files.internal("music/combate.mp3"));
         musicaCombate.setLooping(true);
         musicaCombate.setVolume(VOLUMEN_MUSICA);
+        musicaEditor = Gdx.audio.newMusic(Gdx.files.internal("music/editor.mp3"));
+        musicaEditor.setLooping(true);
+        musicaEditor.setVolume(VOLUMEN_MUSICA);
         Preferences preferencias = Gdx.app.getPreferences("techno-mortem-arena");
         opciones = new OpcionesAudio(new OpcionesAudio.Almacen() {
             @Override
@@ -138,7 +142,7 @@ public class RecursosAudio implements Disposable {
 
     /**
      * Cada pantalla dice que musica quiere: las del menu la del menu, la partida la de combate y el editor
-     * ninguna. Si ya estaba sonando sigue sin cortarse, asi no vuelve a empezar al pasar de una pantalla del
+     * la suya. Si ya estaba sonando sigue sin cortarse, asi no vuelve a empezar al pasar de una pantalla del
      * menu a otra, ni al reiniciar la partida.
      */
     public void pedirMusica(Musica musica) {
@@ -159,6 +163,7 @@ public class RecursosAudio implements Disposable {
     private void actualizarMusica() {
         sonarSolo(musicaMenu, pedida == Musica.MENU && opciones.isMusica());
         sonarSolo(musicaCombate, pedida == Musica.COMBATE && opciones.isMusica());
+        sonarSolo(musicaEditor, pedida == Musica.EDITOR && opciones.isMusica());
     }
 
     private static void sonarSolo(Music musica, boolean debeSonar) {
@@ -199,5 +204,6 @@ public class RecursosAudio implements Disposable {
         botonSeleccionado.dispose();
         musicaMenu.dispose();
         musicaCombate.dispose();
+        musicaEditor.dispose();
     }
 }

@@ -1,6 +1,8 @@
 package com.et35.technomortemarena;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.utils.Disposable;
 
@@ -14,7 +16,11 @@ import com.badlogic.gdx.utils.Disposable;
  *
  * <p>Se guardan como {@link Sound} y no como {@code Music} porque son efectos cortos que conviene
  * tener decodificados en memoria: asi se pueden superponer y repetir en bucle (el de correr) sin
- * cortes ni pausas al leer del disco.
+ * cortes ni pausas al leer del disco. La musica (la del menu y la de combate), en cambio, es larga: va como {@link Music}, que
+ * la lee del disco de a poco.
+ *
+ * <p>Las {@link OpcionesAudio} deciden si suenan la musica y los efectos: los efectos se reproducen con
+ * {@link #reproducir} y {@link #repetir}, que no hacen nada si estan apagados.
  */
 public class RecursosAudio implements Disposable {
 
@@ -63,6 +69,18 @@ public class RecursosAudio implements Disposable {
     /** Sonido de interfaz al hacer clic en un boton. */
     public final Sound botonSeleccionado;
 
+    /** Que musica pide cada pantalla: la del menu en el menu, la de combate en la partida, ninguna en el editor. */
+    public enum Musica { NINGUNA, MENU, COMBATE }
+
+    /** Volumen de la musica: queda por debajo de los sonidos de los botones y de los golpes. */
+    private static final float VOLUMEN_MUSICA = 0.5f;
+
+    private final Music musicaMenu;
+    private final Music musicaCombate;
+    private final OpcionesAudio opciones;
+    /** La musica que pide la pantalla actual. */
+    private Musica pedida = Musica.NINGUNA;
+
     public RecursosAudio() {
         correr = cargar("sounds/Running.mp3");
         golpe = cargar("sounds/Bloody Sword Hit Sound Effect.mp3");
@@ -79,6 +97,76 @@ public class RecursosAudio implements Disposable {
         powerUp = cargar("sounds/power-up.mp3");
         boton = cargar("sounds/Boton.wav");
         botonSeleccionado = cargar("sounds/Boton Seleccionado.mp3");
+        musicaMenu = Gdx.audio.newMusic(Gdx.files.internal("music/menu.mp3"));
+        musicaMenu.setLooping(true);
+        musicaMenu.setVolume(VOLUMEN_MUSICA);
+        musicaCombate = Gdx.audio.newMusic(Gdx.files.internal("music/combate.mp3"));
+        musicaCombate.setLooping(true);
+        musicaCombate.setVolume(VOLUMEN_MUSICA);
+        Preferences preferencias = Gdx.app.getPreferences("techno-mortem-arena");
+        opciones = new OpcionesAudio(new OpcionesAudio.Almacen() {
+            @Override
+            public boolean leer(String clave, boolean porDefecto) {
+                return preferencias.getBoolean(clave, porDefecto);
+            }
+
+            @Override
+            public void guardar(String clave, boolean valor) {
+                preferencias.putBoolean(clave, valor);
+                preferencias.flush();
+            }
+        });
+    }
+
+    public OpcionesAudio getOpciones() {
+        return opciones;
+    }
+
+    /** Reproduce un efecto una vez, si los efectos estan prendidos. */
+    public void reproducir(Sound sonido, float volumen) {
+        if (opciones.isEfectos()) {
+            sonido.play(volumen);
+        }
+    }
+
+    /** Reproduce un efecto en bucle, si los efectos estan prendidos. Se corta con {@code sonido.stop()}. */
+    public void repetir(Sound sonido, float volumen) {
+        if (opciones.isEfectos()) {
+            sonido.loop(volumen);
+        }
+    }
+
+    /**
+     * Cada pantalla dice que musica quiere: las del menu la del menu, la partida la de combate y el editor
+     * ninguna. Si ya estaba sonando sigue sin cortarse, asi no vuelve a empezar al pasar de una pantalla del
+     * menu a otra, ni al reiniciar la partida.
+     */
+    public void pedirMusica(Musica musica) {
+        pedida = musica;
+        actualizarMusica();
+    }
+
+    /** Prende o apaga la musica y la deja sonando o callada al momento. */
+    public void setMusica(boolean musica) {
+        opciones.setMusica(musica);
+        actualizarMusica();
+    }
+
+    public void setEfectos(boolean efectos) {
+        opciones.setEfectos(efectos);
+    }
+
+    private void actualizarMusica() {
+        sonarSolo(musicaMenu, pedida == Musica.MENU && opciones.isMusica());
+        sonarSolo(musicaCombate, pedida == Musica.COMBATE && opciones.isMusica());
+    }
+
+    private static void sonarSolo(Music musica, boolean debeSonar) {
+        if (debeSonar && !musica.isPlaying()) {
+            musica.play();
+        } else if (!debeSonar && musica.isPlaying()) {
+            musica.stop();
+        }
     }
 
     /**
@@ -109,5 +197,7 @@ public class RecursosAudio implements Disposable {
         powerUp.dispose();
         boton.dispose();
         botonSeleccionado.dispose();
+        musicaMenu.dispose();
+        musicaCombate.dispose();
     }
 }

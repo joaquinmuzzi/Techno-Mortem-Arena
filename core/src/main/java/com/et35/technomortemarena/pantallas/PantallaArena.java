@@ -262,6 +262,7 @@ public class PantallaArena extends ScreenAdapter {
                           Supplier<Screen> alReiniciar, ServidorSala servidor, ClienteSala cliente) {
         this.recursos = recursos;
         this.audio = audio;
+        audio.pedirMusica(RecursosAudio.Musica.COMBATE);
         this.arena = arena;
         this.filasOriginales = arena.getFilas();
         this.rondas = new RondasPartida(servidor != null && filasOriginales.length > 0);
@@ -536,7 +537,7 @@ public class PantallaArena extends ScreenAdapter {
         boolean corriendo = rondas.getFase() == RondasPartida.Fase.RONDA
             && (jugadorUno.estaCorriendo() || (jugadorDos != null && jugadorDos.estaCorriendo()));
         if (corriendo && !suenaCorrer) {
-            audio.correr.loop(VOLUMEN_CORRER);
+            audio.repetir(audio.correr, VOLUMEN_CORRER);
             suenaCorrer = true;
         } else if (!corriendo) {
             detenerSonidoCorrer();
@@ -545,13 +546,13 @@ public class PantallaArena extends ScreenAdapter {
         // instancia o si es una copia que llega por la red.
         int golpes = jugadorUno.getContadorGolpes() + (jugadorDos != null ? jugadorDos.getContadorGolpes() : 0);
         if (golpes > golpesSonados) {
-            audio.golpe.play(VOLUMEN_GOLPE);
+            audio.reproducir(audio.golpe, VOLUMEN_GOLPE);
         }
         golpesSonados = golpes;
         int aterrizajes = jugadorUno.getContadorAterrizajes()
             + (jugadorDos != null ? jugadorDos.getContadorAterrizajes() : 0);
         if (aterrizajes > aterrizajesSonados) {
-            audio.aterrizar.play(VOLUMEN_ATERRIZAR);
+            audio.reproducir(audio.aterrizar, VOLUMEN_ATERRIZAR);
         }
         aterrizajesSonados = aterrizajes;
         int disparosPistola = jugadorUno.getContadorDisparosPistola()
@@ -586,31 +587,31 @@ public class PantallaArena extends ScreenAdapter {
         int disparosLaser = jugadorUno.getContadorDisparosLaser()
             + (jugadorDos != null ? jugadorDos.getContadorDisparosLaser() : 0);
         if (disparosLaser > disparosLaserSonados) {
-            audio.disparoLaser.play(VOLUMEN_DISPARO_LASER);
+            audio.reproducir(audio.disparoLaser, VOLUMEN_DISPARO_LASER);
         }
         disparosLaserSonados = disparosLaser;
         int disparosBazuca = jugadorUno.getContadorDisparosBazuca()
             + (jugadorDos != null ? jugadorDos.getContadorDisparosBazuca() : 0);
         if (disparosBazuca > disparosBazucaSonados) {
-            audio.bazucazo.play(VOLUMEN_DISPARO_BAZUCA);
+            audio.reproducir(audio.bazucazo, VOLUMEN_DISPARO_BAZUCA);
         }
         disparosBazucaSonados = disparosBazuca;
         int armasDeFuegoCaidas = armas.getContadorArmasDeFuegoAlCaer();
         // Gun-drop suena recien cuando el arma toca el piso, no al tirarla. Cada rebote suma uno; si
         // varios toques caen en el mismo fotograma, suena una sola vez.
         if (armasDeFuegoCaidas > armasDeFuegoCaidasSonadas) {
-            audio.armaCae.play(VOLUMEN_ARMA_CAE);
+            audio.reproducir(audio.armaCae, VOLUMEN_ARMA_CAE);
         }
         armasDeFuegoCaidasSonadas = armasDeFuegoCaidas;
         int powerUps = jugadorUno.getContadorPowerUps()
             + (jugadorDos != null ? jugadorDos.getContadorPowerUps() : 0);
         if (powerUps > powerUpsSonados) {
-            audio.powerUp.play(VOLUMEN_POWER_UP);
+            audio.reproducir(audio.powerUp, VOLUMEN_POWER_UP);
         }
         powerUpsSonados = powerUps;
         int explosiones = armas.getContadorExplosiones();
         if (explosiones > explosionesSonadas) {
-            audio.explosion.play(VOLUMEN_EXPLOSION);
+            audio.reproducir(audio.explosion, VOLUMEN_EXPLOSION);
         }
         explosionesSonadas = explosiones;
     }

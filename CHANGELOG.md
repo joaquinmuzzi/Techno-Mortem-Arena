@@ -7,10 +7,15 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [0.6.0] - 2026-11-05
 
-Efectos de sonido para el lanzacohetes, el rifle láser, las armas de fuego tiradas y las mejoras.
+Música de combate y efectos de sonido para el lanzacohetes, el rifle láser, las armas de fuego tiradas y
+las mejoras.
 
 ### Añadido
 
+- Música de combate (`assets/music/combate.mp3`, "Glorious Morning"): suena en bucle durante la partida
+  (modo de prueba y en red) y sigue sin cortarse al reiniciar. En el menú suena la del menú y en el editor
+  ninguna. La opción MÚSICA de Opciones apaga las dos. `RecursosAudio.pedirMusica` reemplaza a
+  `pedirMusicaMenu`: cada pantalla dice qué música quiere (`MENU`, `COMBATE` o `NINGUNA`).
 - `bazooka-shot.mp3` al disparar el lanzacohetes.
 - `explosion.mp3` cuando un cohete choca contra un bloque o un cuerpo y explota.
 - `disparo-laser.mp3` al disparar el rifle láser, en lugar de `pistol-shot.mp3` o `shotgun-blast.mp3`.
@@ -34,6 +39,12 @@ y efectos de sonido de las armas.
 
 ### Añadido
 
+- Música del menú (`assets/music/menu.mp3`): suena en bucle en el menú, la elección de mapa, el multijugador y
+  las opciones sin cortarse al pasar de una a otra, y se apaga en la partida y en el editor.
+- Pantalla de opciones (`pantallas.PantallaOpciones`, botón OPCIONES del menú principal): prende y apaga la
+  música y los efectos de sonido. Por defecto suena todo; lo elegido se guarda en las preferencias de libGDX
+  (`OpcionesAudio`) y se mantiene al cerrar el juego. Con los efectos apagados no suenan ni los botones ni los
+  golpes, los pasos o los aterrizajes.
 - Fuentes nuevas, pixeladas y sin suavizado (`assets/fuentes/`, hechas con `herramientas/hornear_fuentes.py`):
   Orbitron en negrita para los títulos y los botones, y Share Tech Mono para el resto. `pantallas.Ui` elige
   el tamaño horneado más cercano a cada escala. Reemplazan a la fuente que traía libGDX, cuyos bordes
@@ -274,6 +285,8 @@ y efectos de sonido de las armas.
 
 ### Corregido
 
+- Elegir mapa: el rótulo "PREDEFINIDOS" quedaba tapado por el botón "1 - ARENA CLASICA"; el título y los
+  rótulos de las columnas subieron.
 - Red: cuando un jugador se iba o llegaba a la sala, las armas del suelo y las que volaban quedaban en la
   partida nueva hasta el primer reinicio de ronda. Ahora la partida arranca sin armas (lo mismo en la
   revancha).

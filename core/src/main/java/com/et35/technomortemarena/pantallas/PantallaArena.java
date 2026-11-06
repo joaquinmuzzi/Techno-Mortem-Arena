@@ -37,7 +37,7 @@ import com.et35.technomortemarena.partida.RondasPartida;
  * Ronda de duelo: arma la arena, los dos duelistas y corre el bucle de juego.
  *
  * <p>Es el modo de prueba: un duelista se maneja con el teclado y el mouse y el otro es un blanco quieto,
- * sin arma. Con TAB se cambia de duelista: el que se manejaba queda como blanco y el otro toma el teclado
+ * con su espada en la mano. Con TAB se cambia de duelista: el que se manejaba queda como blanco y el otro toma el teclado
  * y el mouse, asi se prueban los dos (el azul y el rojo).
  *
  * <p>Es una partida al mejor de 5 rondas ({@link RondasPartida}). Cuando un duelista cae termina la ronda,
@@ -248,16 +248,14 @@ public class PantallaArena extends ScreenAdapter {
     }
 
     /**
-     * Le da el teclado y el mouse al duelista que se maneja, y deja al otro como blanco: sin entrada y sin
-     * arma, no se mueve, no apunta y no agarra nada.
+     * Le da el teclado y el mouse al duelista que se maneja, y deja al otro como blanco: sin entrada, no se
+     * mueve ni apunta, pero conserva el arma que tenia en la mano.
      */
     private void asignarControl() {
         Jugador manejado = controlaAlDos ? jugadorDos : jugadorUno;
         Jugador blanco = controlaAlDos ? jugadorUno : jugadorDos;
         manejado.setFuente(entradaLocal);
-        manejado.setDesarmado(false);
         blanco.setFuente(FuenteEntrada.NINGUNA);
-        blanco.setDesarmado(true);
     }
 
     /** TAB: el teclado y el mouse pasan al otro duelista, y el que se manejaba queda como blanco. */
@@ -473,8 +471,6 @@ public class PantallaArena extends ScreenAdapter {
     private void reiniciarRondaActual() {
         jugadorUno.reiniciar(spawnUno.x, spawnUno.y, true);
         jugadorDos.reiniciar(spawnDos.x, spawnDos.y, false);
-        // reiniciar le devuelve la espada a los dos: el blanco tiene que seguir sin arma
-        asignarControl();
         muerteSubitaActivada = false;
         armas.limpiar();
     }
@@ -484,7 +480,6 @@ public class PantallaArena extends ScreenAdapter {
         float yPiso = Arena.FILAS_PISO * Arena.CELDA;
         jugadorUno.reiniciar(centroX - 80f, yPiso, true);
         jugadorDos.reiniciar(centroX + 80f - Jugador.ANCHO, yPiso, false);
-        asignarControl();
     }
 
     /** Marcador en cero, ronda 1 y sin armas tiradas: una partida nueva de verdad. Se usa en la revancha. */

@@ -21,8 +21,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
-- `TAB` en el modo de prueba cambia de duelista: el que se manejaba queda como blanco (sin arma) y el
-  otro, el azul o el rojo, toma el teclado y el mouse (`Jugador.setFuente`).
+- `TAB` en el modo de prueba cambia de duelista: el que se manejaba queda como blanco (quieto, con el arma
+  que tenía) y el otro, el azul o el rojo, toma el teclado y el mouse (`Jugador.setFuente`).
 
 ## [0.5.0] - 2026-11-05
 

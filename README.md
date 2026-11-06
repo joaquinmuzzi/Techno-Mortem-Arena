@@ -159,9 +159,9 @@ no solo a quien queda debajo de la hoja al terminar. Al iniciar la ronda se mues
 controles.
 
 **Modo de prueba** (botón del menú principal): una partida al mejor de 5 rondas, con el temporizador y
-la muerte súbita, de un duelista manejado con el teclado y el mouse contra un blanco quieto y sin arma.
-Con `TAB` se cambia de duelista: el que se manejaba queda como blanco y el otro (el azul o el rojo) toma
-el teclado y el mouse. Sirve para probar mapas (también desde el editor) y armas.
+la muerte súbita, de un duelista manejado con el teclado y el mouse contra un blanco quieto.
+Con `TAB` se cambia de duelista: el que se manejaba queda como blanco, quieto pero con el arma que tenía,
+y el otro (el azul o el rojo) toma el teclado y el mouse. Sirve para probar mapas (también desde el editor) y armas.
 
 Controles generales: `ESC` pausa la partida y `F11` alterna la pantalla completa.
 

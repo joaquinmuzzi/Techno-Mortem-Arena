@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.graphics.Color;
+import com.et35.technomortemarena.entidades.armas.Armas;
 import com.et35.technomortemarena.entrada.EntradaJugador;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
@@ -103,7 +104,7 @@ class PowerUpTest {
         Guion guion = new Guion();
         Jugador j = jugador(guion);
         Jugador otro = blanco();
-        j.equipar(TipoArma.PISTOLA);
+        j.equipar(Armas.PISTOLA);
         if (conPunteria) {
             j.activarPowerUp(PowerUp.PUNTERIA);
         }
@@ -125,7 +126,7 @@ class PowerUpTest {
     void conPunteriaLaEscopetaAbreMenosLosPerdigones() {
         Guion guion = new Guion();
         Jugador j = jugador(guion);
-        j.equipar(TipoArma.ESCOPETA);
+        j.equipar(Armas.ESCOPETA);
         j.activarPowerUp(PowerUp.PUNTERIA);
         guion.clic = true;
         j.actualizar(DT, arena, blanco());
@@ -161,17 +162,6 @@ class PowerUpTest {
     }
 
     @Test
-    void lasMejorasViajanAlCliente() {
-        Jugador j = jugador(new Guion());
-        j.activarPowerUp(PowerUp.PUNTERIA);
-        EstadoJugador estado = new EstadoJugador();
-        j.exportar(estado);
-        Jugador copia = new Jugador(FuenteEntrada.NINGUNA, 0f, PISO, true, Color.WHITE, 3);
-        copia.importar(estado);
-        assertEquals(PowerUp.DURACION, copia.getTiempoPowerUp(PowerUp.PUNTERIA), 0.001f);
-    }
-
-    @Test
     void cadaTantoCaeUnaMejoraDelCieloYLaAgarraQuienPasaAunqueTengaArma() {
         ArmasEnJuego armas = new ArmasEnJuego(new Random(2), new ArrayList<>());
         Guion guion = new Guion();
@@ -202,7 +192,7 @@ class PowerUpTest {
         Jugador j = jugador(guion);
         Jugador otro = blanco();
         assertEquals(0, j.getContadorPowerUps());
-        j.equipar(TipoArma.PISTOLA);
+        j.equipar(Armas.PISTOLA);
         assertEquals(0, j.getContadorPowerUps(), "un arma no es una mejora");
 
         armas.aparecerPowerUp(arena);
@@ -231,5 +221,16 @@ class PowerUpTest {
         assertEquals(1, armas.getPowerUps().size());
         armas.limpiar();
         assertTrue(armas.getPowerUps().isEmpty());
+    }
+
+    @Test
+    void lasMejorasViajanAlCliente() {
+        Jugador j = jugador(new Guion());
+        j.activarPowerUp(PowerUp.PUNTERIA);
+        EstadoJugador estado = new EstadoJugador();
+        j.exportar(estado);
+        Jugador copia = new Jugador(FuenteEntrada.NINGUNA, 0f, PISO, true, Color.WHITE, 3);
+        copia.importar(estado);
+        assertEquals(PowerUp.DURACION, copia.getTiempoPowerUp(PowerUp.PUNTERIA), 0.001f);
     }
 }

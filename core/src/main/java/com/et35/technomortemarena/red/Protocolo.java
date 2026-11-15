@@ -8,7 +8,7 @@ import java.util.function.LongSupplier;
 
 public final class Protocolo {
     public static final short MAGIA = 0x544D;
-    public static final byte VERSION = 12;
+    public static final byte VERSION = 13;
 
     public static final int PUERTO_POR_DEFECTO = 7777;
 

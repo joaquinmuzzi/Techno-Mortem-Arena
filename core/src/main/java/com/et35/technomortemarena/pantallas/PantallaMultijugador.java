@@ -134,6 +134,7 @@ public class PantallaMultijugador extends ScreenAdapter {
                 try {
                     ServidorSala sala = ServidorSala.abrir(puerto, arena.getFilas(), Protocolo.RELOJ_SISTEMA);
                     sala.setNombreAnfitrion(TechnoMortemArena.getPerfil().getNombre());
+                    sala.setColorAnfitrion(TechnoMortemArena.getPerfil().getColor());
                     return new PantallaArena(recursos, audio, arena, sala);
                 } catch (IOException | RuntimeException e) {
                     return new PantallaMultijugador(recursos, audio,
@@ -164,6 +165,7 @@ public class PantallaMultijugador extends ScreenAdapter {
         try {
             cliente = ClienteSala.conectar(new InetSocketAddress(host, puerto), Protocolo.RELOJ_SISTEMA);
             cliente.setNombre(TechnoMortemArena.getPerfil().getNombre());
+            cliente.setColor(TechnoMortemArena.getPerfil().getColor());
             destinoTexto = host + ":" + puerto;
             aviso = "";
         } catch (IOException | RuntimeException e) {

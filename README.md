@@ -68,7 +68,7 @@ core/src/main/java/com/et35/technomortemarena/
 ├── TechnoMortemArena.java     Aplicación (Game): carga assets, abre el menú y alterna F11
 ├── RecursosGraficos.java      Carga y liberación centralizada de texturas
 ├── RecursosAudio.java         Carga y liberación centralizada de los efectos de sonido
-├── PerfilJugador.java         Nombre elegido en PERSONAJE: se limpia, se guarda y viaja por la red
+├── PerfilJugador.java         Nombre y color elegidos en PERSONAJE (paleta de 8): se guardan y viajan por la red
 ├── mundo/
 │   ├── Arena.java             Escenario cerrado en grilla (180 x 101 celdas) y fábricas de mapas
 │   ├── Bloque.java            Base de los bloques interactivos
@@ -116,7 +116,7 @@ core/src/main/java/com/et35/technomortemarena/
 │   └── RepositorioMapas.java  Guardado y lectura de mapas
 └── pantallas/
     ├── PantallaMenu.java          Menú principal (Modo de prueba / Multijugador / Personaje / Editor / Opciones / Salir)
-    ├── PantallaPersonaje.java     Elegir el nombre, con una vista del personaje con el nombre arriba
+    ├── PantallaPersonaje.java     Elegir el nombre y el color, con una vista del personaje como en la partida
     ├── PantallaMultijugador.java  Crear una sala o unirse a la de otro
     ├── PantallaSeleccionMapa.java Elección del mapa: predefinidos y "Mis mapas" del editor (con scroll)
     ├── PantallaArena.java         Modo de prueba, anfitrión o cliente: rondas, HUD, marcador y pausa
@@ -204,6 +204,11 @@ espacios y guiones; se pasa a mayúsculas). Queda guardado para la próxima vez.
 de cada duelista, debajo de sus vidas, en el cartel de controles y en los carteles de la ronda y de la
 victoria. Quien no eligió ninguno aparece como `JUGADOR 1` o `JUGADOR 2`. Al unirse, el cliente manda su
 nombre en el saludo y el anfitrión le responde con el suyo.
+
+**Color.** En la misma pantalla se elige el color de una paleta de 8 (clic en el cuadro o las flechas).
+Tiñe el cuerpo, las vidas, las balas del HUD y el nombre. Por defecto es el azul. En red el anfitrión
+decide: si el cliente eligió el mismo color que él, le toca el rojo (o el azul, si el repetido era el
+rojo). En el modo de prueba, el blanco usa el rojo, o el azul si elegiste el rojo.
 
 Para probarlo en una sola máquina, abrí el juego dos veces:
 

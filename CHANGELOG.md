@@ -7,6 +7,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [No publicado]
 
+## [0.7.0] - 2026-11-15
+
+Las armas como clases llegan a la versión en red, el modo de prueba se juega por rondas, y cada jugador
+elige su nombre y el color de su personaje en la pantalla nueva PERSONAJE.
+
 ### Cambiado
 
 - Las armas son clases: `entidades/armas/` tiene la clase abstracta `Arma`, `Espada` y `EspadaLaser`, la clase
@@ -526,7 +531,8 @@ Primera pre-entrega: configuración inicial del proyecto y del repositorio.
 - Título de la ventana del juego: de `TechnoMortemArena` (nombre técnico del módulo) a
   `Techno Mortem Arena`.
 
-[No publicado]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.6.0...HEAD
+[No publicado]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/joaquinmuzzi/Techno-Mortem-Arena/compare/v0.4.0...v0.4.1

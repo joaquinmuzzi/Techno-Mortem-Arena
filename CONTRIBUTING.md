@@ -63,9 +63,10 @@ CHANGELOG.md qué cambió en cada versión
 
 ## Estilo de código
 
-El código y los comentarios están en español, y los comentarios explican *por qué* el código hace
-algo, no qué hace. Respetá el `.editorconfig` (4 espacios en Java, 2 en Gradle, finales de línea LF).
-Mantené el código parecido al que lo rodea.
+El código está en español y, desde #47, el repositorio va **sin comentarios**: los nombres de clases,
+métodos y variables tienen que alcanzar para entenderlo. El *por qué* de un cambio se explica en la
+descripción del pull request (y, si hace falta, en el README o el CHANGELOG). Respetá el `.editorconfig`
+(4 espacios en Java, 2 en Gradle, finales de línea LF). Mantené el código parecido al que lo rodea.
 
 ## Pull requests
 

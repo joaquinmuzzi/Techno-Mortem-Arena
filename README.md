@@ -76,11 +76,21 @@ core/src/main/java/com/et35/technomortemarena/
 │   └── Pincho.java            Bloque letal al tocarlo
 ├── entidades/
 │   ├── Jugador.java           Entidad controlable: física, salto, apuntado, estocada y apilado
-│   ├── TipoArma.java          Espadas y armas de fuego: daño al tirarlas, de la hoja y balas
-│   ├── Proyectil.java         Balas, perdigones y armas tiradas (la espada rebota)
+│   ├── DefinicionProyectil.java  Cómo vuela, choca y se dibuja cada clase de proyectil
+│   ├── Proyectil.java         Balas, perdigones y armas tiradas, y su código para la red
 │   ├── ArmasEnJuego.java      Proyectiles y armas que aparecen en el mapa para agarrar
 │   ├── EstadoJugador.java     Lo necesario para dibujar a un jugador (viaja por la red)
-│   └── Hoja.java              La espada como caja rotada: choque exacto (SAT) y barrido de tajos
+│   ├── Hoja.java              La espada como caja rotada: choque exacto (SAT) y barrido de tajos
+│   └── armas/
+│       ├── Arma.java          Clase abstracta: lo común a toda arma (tirarla, dibujarla)
+│       ├── Espada.java        Cuerpo a cuerpo: daño de la hoja, choque y reflejo
+│       ├── EspadaLaser.java   Espada que pega más, no se suelta y atraviesa a la común
+│       ├── ArmaDeFuego.java   Clase abstracta: balas, recarga y el proyectil que dispara
+│       ├── Pistola.java       Una bala por disparo
+│       ├── Escopeta.java      Sobrescribe disparar(): un abanico de perdigones
+│       ├── RifleLaser.java    Rayo rápido sin caída
+│       ├── Lanzacohetes.java  Cohete que explota
+│       └── Armas.java         Una instancia de cada arma y su código (el que viaja por la red)
 ├── entrada/
 │   ├── Controles.java         Mapeo de teclas de cada duelista
 │   ├── FuenteEntrada.java     De dónde lee un jugador lo que hace (teclado o red)
@@ -173,9 +183,11 @@ un instante (más alcance) y tiene una recarga corta. Un tajo rápido hiere a qu
 no solo a quien queda debajo de la hoja al terminar. Al iniciar la ronda se muestra un cartel con los
 controles.
 
-**Modo de prueba** (botón del menú principal): un jugador con mouse contra un blanco quieto y sin
-espada, que reaparece unos segundos después de caer. Sirve para probar mapas (también desde el editor)
-y, más adelante, armas. El 1 contra 1 se juega por Multijugador.
+**Modo de prueba** (botón del menú principal): una partida al mejor de 5 rondas, con el temporizador y
+la muerte súbita, de un duelista manejado con el teclado y el mouse contra un blanco quieto.
+Con `TAB` se cambia de duelista: el que se manejaba queda como blanco, quieto pero con el arma que tenía,
+y el otro (el azul o el rojo) toma el teclado y el mouse. Sirve para probar mapas (también desde el editor)
+y armas. El 1 contra 1 se juega por Multijugador.
 
 Controles generales: `ESC` pausa la partida y `F11` alterna la pantalla completa.
 

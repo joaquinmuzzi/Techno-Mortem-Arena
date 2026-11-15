@@ -9,6 +9,15 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Cambiado
 
+- Las armas son clases: `entidades/armas/` tiene la clase abstracta `Arma`, `Espada` y `EspadaLaser`, la clase
+  abstracta `ArmaDeFuego` y `Pistola`, `Escopeta`, `RifleLaser` y `Lanzacohetes`, con una instancia de cada una
+  en `Armas`. Cada arma sabe disparar, dibujarse y tirarse, y cada proyectil lleva su `DefinicionProyectil`.
+  Reemplazan al enum `TipoArma` y a `Proyectil.Tipo` (se borra `TipoArma.java`). Es lo mismo que en la rama
+  `sin-red`, con la red adaptada: el arma viaja con su código de `Armas` y cada proyectil con
+  `Proyectil.getCodigo()` (un número por disparo y uno por arma tirada). El protocolo pasa a la versión 13.
+- El modo de prueba juega la partida al mejor de 5 rondas, con temporizador, muerte súbita y marcador, igual
+  que en red. El blanco ya no reaparece solo ni pierde la espada: con `TAB` se pasa a manejar al otro duelista
+  y el que se manejaba queda quieto con el arma que tenía. El cartel de controles suma "CAMBIAR DE JUGADOR: TAB".
 - Desarmar con la espada es más fácil: alcanza con pegar con la mitad de afuera de tu hoja (antes, el último
   tercio) en los primeros 60 % de la del rival desde la mano (antes, el primer tercio), girándola a 2,5 rad/s
   o más (antes, 4). En choques de hojas al azar, desarman casi el doble que antes (del 19 % al 36 %, sin contar

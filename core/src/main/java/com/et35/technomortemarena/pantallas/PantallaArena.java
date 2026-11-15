@@ -27,7 +27,7 @@ import com.et35.technomortemarena.entidades.ArmasEnJuego;
 import com.et35.technomortemarena.entidades.EstadoArmas;
 import com.et35.technomortemarena.entidades.Jugador;
 import com.et35.technomortemarena.entidades.PowerUp;
-import com.et35.technomortemarena.entidades.TipoArma;
+import com.et35.technomortemarena.entidades.armas.Arma;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entrada.Controles;
 import com.et35.technomortemarena.entrada.EntradaJugador;
@@ -84,6 +84,15 @@ public class PantallaArena extends ScreenAdapter {
         "ATACAR: CLIC (SIN ARMA, GOLPE)",
         "TIRAR EL ARMA: CLIC DERECHO",
     };
+    private static final String[] LINEAS_AYUDA_PRUEBA = {
+        "MOVER: A / D",
+        "SALTAR: W",
+        "RODAR: SHIFT",
+        "APUNTAR: MOUSE",
+        "ATACAR: CLIC (SIN ARMA, GOLPE)",
+        "TIRAR EL ARMA: CLIC DERECHO",
+        "CAMBIAR DE JUGADOR: TAB",
+    };
 
     private static final int VIDAS_INICIALES = 3;
 
@@ -106,8 +115,6 @@ public class PantallaArena extends ScreenAdapter {
 
     static final float DISTANCIA_SPAWN_A_LA_PARED = 15f;
 
-    private static final float REAPARICION_BLANCO = 2f;
-
     private final RecursosGraficos recursos;
     private final RecursosAudio audio;
     private Arena arena;
@@ -123,7 +130,7 @@ public class PantallaArena extends ScreenAdapter {
     private final ClienteSala cliente;
     private EntradaLocal entradaLocal;
     private Jugador fantasma;
-    private float tiempoBlancoCaido;
+    private boolean controlaAlDos;
     private final Vector2 spawnUno;
     private final Vector2 spawnDos;
     private final EntradaJugador entradaAux = new EntradaJugador();
@@ -230,7 +237,8 @@ public class PantallaArena extends ScreenAdapter {
         } else {
             jugadorUno = new Jugador(entradaLocal, spawnUno.x, spawnUno.y, true, TINTE_UNO, VIDAS_INICIALES);
             if (servidor == null) {
-                jugadorDos = nuevoBlanco();
+                jugadorDos = new Jugador(FuenteEntrada.NINGUNA, spawnDos.x, spawnDos.y, false, TINTE_DOS, VIDAS_INICIALES);
+                asignarControl();
             } else {
                 jugadorDos = servidor.clienteListo()
                     ? new Jugador(servidor.getEntradaRemota(), spawnDos.x, spawnDos.y, false, TINTE_DOS, VIDAS_INICIALES)
@@ -240,7 +248,6 @@ public class PantallaArena extends ScreenAdapter {
                 }
             }
         }
-        tiempoBlancoCaido = 0f;
         if (armas != null) {
             armas.limpiar();
         }
@@ -259,10 +266,17 @@ public class PantallaArena extends ScreenAdapter {
         muerteSubitaActivada = false;
     }
 
-    private Jugador nuevoBlanco() {
-        Jugador blanco = new Jugador(FuenteEntrada.NINGUNA, spawnDos.x, spawnDos.y, false, TINTE_DOS, VIDAS_INICIALES);
-        blanco.setDesarmado(true);
-        return blanco;
+    private void asignarControl() {
+        Jugador manejado = controlaAlDos ? jugadorDos : jugadorUno;
+        Jugador blanco = controlaAlDos ? jugadorUno : jugadorDos;
+        manejado.setFuente(entradaLocal);
+        blanco.setFuente(FuenteEntrada.NINGUNA);
+    }
+
+    private void cambiarDeJugador() {
+        controlaAlDos = !controlaAlDos;
+        asignarControl();
+        tiempoAyuda = 0f;
     }
 
     @Override
@@ -291,7 +305,10 @@ public class PantallaArena extends ScreenAdapter {
         }
         if (servidor != null && Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             reiniciarPartida();
-        } else if (!enRed() && Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+        } else if (!enRed() && enRonda && Gdx.input.isKeyJustPressed(Input.Keys.TAB)) {
+            cambiarDeJugador();
+        }
+        if (!enRed() && Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             reiniciar();
             return;
         }
@@ -317,23 +334,29 @@ public class PantallaArena extends ScreenAdapter {
                 return;
             }
         } else {
-            jugadorUno.actualizar(paso, arena, jugadorDos);
-            jugadorDos.actualizar(paso, arena, jugadorUno);
-            armas.actualizar(paso, arena, jugadorUno, jugadorDos);
-            reaparecerBlanco(paso);
+            actualizarModoDePrueba(paso);
         }
         aplicarCeldasRotas();
         actualizarSonidos();
     }
 
-    private void reaparecerBlanco(float paso) {
-        if (jugadorDos.isVivo()) {
-            return;
+    private void actualizarModoDePrueba(float paso) {
+        boolean enRonda = rondas.getFase() == RondasPartida.Fase.RONDA
+            || rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA;
+        entradaLocal.setActiva(!pausado && enRonda);
+        if (enRonda) {
+            jugadorUno.actualizar(paso, arena, jugadorDos);
+            jugadorDos.actualizar(paso, arena, jugadorUno);
+            armas.actualizar(paso, arena, jugadorUno, jugadorDos);
         }
-        tiempoBlancoCaido += paso;
-        if (tiempoBlancoCaido >= REAPARICION_BLANCO) {
-            jugadorDos = nuevoBlanco();
-            tiempoBlancoCaido = 0f;
+        if (rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA && !muerteSubitaActivada) {
+            forzarMuerteSubita();
+            muerteSubitaActivada = true;
+        } else if (rondas.getFase() == RondasPartida.Fase.RONDA) {
+            muerteSubitaActivada = false;
+        }
+        if (rondas.actualizar(paso, jugadorUno.isVivo(), jugadorDos.isVivo())) {
+            reiniciarRondaActual();
         }
     }
 
@@ -558,7 +581,6 @@ public class PantallaArena extends ScreenAdapter {
         if (jugadorDos != null) {
             jugadorDos.reiniciar(spawnDos.x, spawnDos.y, false);
         }
-        tiempoBlancoCaido = 0f;
         muerteSubitaActivada = false;
         armas.limpiar();
     }
@@ -641,7 +663,7 @@ public class PantallaArena extends ScreenAdapter {
         dibujarAyudaControles();
         dibujarHud();
         dibujarEstadoRed();
-        boolean hayDuelo = enRed() && jugadorDos != null;
+        boolean hayDuelo = jugadorDos != null;
         if (hayDuelo && (rondas.getFase() == RondasPartida.Fase.RONDA || rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA)) {
             if (rondas.getFase() == RondasPartida.Fase.MUERTE_SUBITA) {
                 int seg = Math.max(0, (int) Math.ceil(rondas.getTiempoMuerteSubita()));
@@ -681,11 +703,9 @@ public class PantallaArena extends ScreenAdapter {
         if (jugadorDos != null) {
             dibujarVidas(jugadorDos, TINTE_DOS, centro + SEPARACION_VIDAS_DEL_CENTRO, false);
             dibujarArma(jugadorDos, TINTE_DOS, false);
-            if (enRed()) {
-                dibujarTextoCentrado("RONDA " + rondas.getNumeroRonda(), ESCALA_RONDA_HUD, ALTO_UI - MARGEN_HUD, Color.WHITE);
-                String marcadorTexto = rondas.getRondasGanadasUno() + " - " + rondas.getRondasGanadasDos();
-                dibujarTextoCentrado(marcadorTexto, ESCALA_MARCADOR_HUD, ALTO_UI - MARGEN_HUD - 20f, Color.WHITE);
-            }
+            dibujarTextoCentrado("RONDA " + rondas.getNumeroRonda(), ESCALA_RONDA_HUD, ALTO_UI - MARGEN_HUD, Color.WHITE);
+            String marcadorTexto = rondas.getRondasGanadasUno() + " - " + rondas.getRondasGanadasDos();
+            dibujarTextoCentrado(marcadorTexto, ESCALA_MARCADOR_HUD, ALTO_UI - MARGEN_HUD - 20f, Color.WHITE);
         }
         batch.end();
     }
@@ -733,13 +753,13 @@ public class PantallaArena extends ScreenAdapter {
         float x = aLaIzquierda ? MARGEN_HUD : ANCHO_UI - MARGEN_HUD - ANCHO_CUADRO_ARMA;
         float arriba = ALTO_UI - MARGEN_HUD;
         if (aLaIzquierda) {
-            float altoCartel = 2f * RELLENO_AYUDA + SEPARACION_TITULO_AYUDA + LINEAS_AYUDA.length * INTERLINEA_AYUDA;
+            float altoCartel = 2f * RELLENO_AYUDA + SEPARACION_TITULO_AYUDA + lineasAyuda().length * INTERLINEA_AYUDA;
             arriba -= (altoCartel + 24f) * alfaAyuda();
         }
         float abajo = arriba - ALTO_CUADRO_ARMA;
         ui.rectangulo(batch, rectAux.set(x, abajo, ANCHO_CUADRO_ARMA, ALTO_CUADRO_ARMA), FONDO_CUADRO_ARMA);
         dibujarPowerUps(jugador, aLaIzquierda, x, abajo - 6f - ALTO_BALA_HUD - 10f);
-        TipoArma arma = jugador.getArma();
+        Arma arma = jugador.getArma();
         if (arma == null) {
             String vacia = "MANO VACIA";
             float ancho = ui.anchoTexto(vacia, 0.8f);
@@ -749,28 +769,8 @@ public class PantallaArena extends ScreenAdapter {
         batch.setColor(1f, 1f, 1f, 0.85f);
         batch.draw(recursos.brillo, x + 4f, abajo + 4f, ANCHO_CUADRO_ARMA - 8f, ALTO_CUADRO_ARMA - 8f);
         batch.setColor(Color.WHITE);
-        Texture textura;
-        switch (arma) {
-            case ESPADA:
-            case ESPADA_LASER:
-                textura = recursos.espada;
-                break;
-            case ESCOPETA:
-                textura = recursos.escopeta;
-                break;
-            case RIFLE_LASER:
-                textura = recursos.rifleLaser;
-                break;
-            case LANZACOHETES:
-                textura = recursos.lanzacohetes;
-                break;
-            default:
-                textura = recursos.pistola;
-                break;
-        }
-        if (arma == TipoArma.ESPADA_LASER) {
-            batch.setColor(Jugador.COLOR_ESPADA_LASER);
-        }
+        Texture textura = arma.getTextura(recursos);
+        batch.setColor(arma.getColor());
         float maximoAncho = ANCHO_CUADRO_ARMA - 16f;
         float maximoAlto = ALTO_CUADRO_ARMA - 16f;
         float escala = Math.min(maximoAncho / textura.getWidth(), maximoAlto / textura.getHeight());
@@ -845,10 +845,21 @@ public class PantallaArena extends ScreenAdapter {
         viewportUi.apply();
         batch.setProjectionMatrix(viewportUi.getCamera().combined);
         batch.begin();
-        String titulo = cliente != null ? "VOS: JUGADOR 2"
-            : servidor != null ? "VOS: JUGADOR 1 (ANFITRION)" : "MODO DE PRUEBA";
-        dibujarPanelAyuda(titulo, LINEAS_AYUDA, cliente != null ? TINTE_DOS : TINTE_UNO, false, alfa);
+        String titulo;
+        Color color;
+        if (enRed()) {
+            titulo = cliente != null ? "VOS: JUGADOR 2" : "VOS: JUGADOR 1 (ANFITRION)";
+            color = cliente != null ? TINTE_DOS : TINTE_UNO;
+        } else {
+            titulo = controlaAlDos ? "MODO DE PRUEBA: JUGADOR 2" : "MODO DE PRUEBA: JUGADOR 1";
+            color = controlaAlDos ? TINTE_DOS : TINTE_UNO;
+        }
+        dibujarPanelAyuda(titulo, lineasAyuda(), color, false, alfa);
         batch.end();
+    }
+
+    private String[] lineasAyuda() {
+        return enRed() ? LINEAS_AYUDA : LINEAS_AYUDA_PRUEBA;
     }
 
     private void dibujarEstadoRed() {

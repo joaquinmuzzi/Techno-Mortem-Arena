@@ -5,7 +5,7 @@ import com.et35.technomortemarena.entidades.EstadoArmas;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entidades.PowerUp;
 import com.et35.technomortemarena.entidades.Proyectil;
-import com.et35.technomortemarena.entidades.TipoArma;
+import com.et35.technomortemarena.entidades.armas.Armas;
 import com.et35.technomortemarena.mundo.Arena;
 import com.et35.technomortemarena.partida.EdicionNivel;
 import com.et35.technomortemarena.partida.EstadoPartida;
@@ -89,7 +89,7 @@ final class CodecEstado {
         int disparosLaser = buffer.getInt();
         int disparosBazuca = buffer.getInt();
         int powerUps = buffer.getInt();
-        if (arma < 0 || arma > TipoArma.values().length || balas < 0 || balas > TipoArma.MAX_BALAS) {
+        if (arma < 0 || arma > Armas.CANTIDAD || balas < 0 || balas > Armas.MAX_BALAS) {
             return false;
         }
         if (disparosPistola < 0 || disparosEscopeta < 0 || espadasEquipadas < 0 || armasDeFuegoEquipadas < 0
@@ -268,7 +268,7 @@ final class CodecEstado {
         for (int i = 0; i < proyectiles; i++) {
             int tipo = buffer.get();
             leidos[i] = new float[] {tipo, buffer.getFloat(), buffer.getFloat(), buffer.getFloat()};
-            if (tipo < 0 || tipo >= Proyectil.Tipo.values().length
+            if (tipo < 0 || tipo >= Proyectil.CODIGOS
                 || !finito(leidos[i][1]) || !finito(leidos[i][2]) || !finito(leidos[i][3])) {
                 return false;
             }
@@ -282,7 +282,7 @@ final class CodecEstado {
         for (int i = 0; i < enElSuelo; i++) {
             int tipo = buffer.get();
             armas[i] = new float[] {tipo, buffer.getFloat(), buffer.getFloat()};
-            if (TipoArma.porCodigo(tipo) == null || !finito(armas[i][1]) || !finito(armas[i][2])) {
+            if (Armas.porCodigo(tipo) == null || !finito(armas[i][1]) || !finito(armas[i][2])) {
                 return false;
             }
         }

@@ -30,6 +30,8 @@ public final class ServidorSala implements AutoCloseable {
     private boolean desconexionPendiente;
     private EntradaRemota entrada = new EntradaRemota();
     private int secuenciaEstado;
+    private String nombreAnfitrion = "";
+    private String nombreCliente = "";
 
     private ServidorSala(DatagramChannel canal, byte[][] filasCodificadas, LongSupplier reloj) {
         this.canal = canal;
@@ -65,6 +67,14 @@ public final class ServidorSala implements AutoCloseable {
         } catch (IOException e) {
             return -1;
         }
+    }
+
+    public void setNombreAnfitrion(String nombre) {
+        nombreAnfitrion = nombre;
+    }
+
+    public String getNombreCliente() {
+        return nombreCliente;
     }
 
     public void sondear() {
@@ -123,6 +133,7 @@ public final class ServidorSala implements AutoCloseable {
             listo = false;
             entrada = new EntradaRemota();
             secuenciaEstado = 0;
+            nombreCliente = Protocolo.leerNombre(paquete);
         } else if (!cliente.equals(origen)) {
             Protocolo.enviar(canal, Protocolo.nuevo(Protocolo.SALA_LLENA), origen);
             return;
@@ -137,6 +148,7 @@ public final class ServidorSala implements AutoCloseable {
         bienvenida.put((byte) 1);
         bienvenida.putInt(token);
         bienvenida.put((byte) filasCodificadas.length);
+        Protocolo.escribirNombre(bienvenida, nombreAnfitrion);
         Protocolo.enviar(canal, bienvenida, origen);
         for (int i = 0; i < filasCodificadas.length; i++) {
             boolean falta = i < 64 ? (faltantesBajas & (1L << i)) != 0 : (faltantesAltas & (1L << (i - 64))) != 0;

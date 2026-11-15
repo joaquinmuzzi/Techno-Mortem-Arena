@@ -1,14 +1,16 @@
 package com.et35.technomortemarena.red;
 
+import com.et35.technomortemarena.PerfilJugador;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.function.LongSupplier;
 
 public final class Protocolo {
     public static final short MAGIA = 0x544D;
-    public static final byte VERSION = 13;
+    public static final byte VERSION = 14;
 
     public static final int PUERTO_POR_DEFECTO = 7777;
 
@@ -62,6 +64,25 @@ public final class Protocolo {
             canal.send(buffer, destino);
         } catch (IOException e) {
         }
+    }
+
+    static void escribirNombre(ByteBuffer buffer, String nombre) {
+        byte[] bytes = PerfilJugador.limpiar(nombre).getBytes(StandardCharsets.UTF_8);
+        buffer.put((byte) bytes.length);
+        buffer.put(bytes);
+    }
+
+    static String leerNombre(ByteBuffer buffer) {
+        if (buffer.remaining() < 1) {
+            return "";
+        }
+        int largo = buffer.get() & 0xFF;
+        if (largo > 2 * PerfilJugador.LARGO_MAXIMO || largo > buffer.remaining()) {
+            return "";
+        }
+        byte[] bytes = new byte[largo];
+        buffer.get(bytes);
+        return PerfilJugador.limpiar(new String(bytes, StandardCharsets.UTF_8));
     }
 
     static boolean esMasNueva(int nueva, int vieja) {

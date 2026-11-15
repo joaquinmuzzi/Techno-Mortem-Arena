@@ -4,17 +4,37 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Graphics;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Preferences;
 
 import com.et35.technomortemarena.pantallas.PantallaMenu;
 
 public class TechnoMortemArena extends Game {
+    private static PerfilJugador perfil;
+
     private RecursosGraficos recursos;
     private RecursosAudio audio;
+
+    public static PerfilJugador getPerfil() {
+        return perfil;
+    }
 
     @Override
     public void create() {
         recursos = new RecursosGraficos();
         audio = new RecursosAudio();
+        Preferences preferencias = Gdx.app.getPreferences("techno-mortem-arena");
+        perfil = new PerfilJugador(new PerfilJugador.Almacen() {
+            @Override
+            public String leer(String clave, String porDefecto) {
+                return preferencias.getString(clave, porDefecto);
+            }
+
+            @Override
+            public void guardar(String clave, String valor) {
+                preferencias.putString(clave, valor);
+                preferencias.flush();
+            }
+        });
         setScreen(new PantallaMenu(recursos, audio));
     }
 

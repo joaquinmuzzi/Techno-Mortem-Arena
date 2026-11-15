@@ -91,6 +91,44 @@ class SalaLoopbackTest {
     }
 
     @Test
+    void losNombresViajanEnElSaludo() throws Exception {
+        servidor.setNombreAnfitrion("Ana");
+        cliente = nuevoCliente();
+        cliente.setNombre("Beto");
+        girarHasta(() -> cliente.getFase() == ClienteSala.Fase.JUGANDO);
+
+        assertEquals("ANA", cliente.getNombreAnfitrion());
+        assertEquals("BETO", servidor.getNombreCliente());
+    }
+
+    @Test
+    void sinNombreElegidoLlegaVacio() throws Exception {
+        conectarCliente();
+
+        assertEquals("", cliente.getNombreAnfitrion());
+        assertEquals("", servidor.getNombreCliente());
+    }
+
+    @Test
+    void elNombreSeEscribeYSeLeeIgualYLoQueNoVaSeDescarta() {
+        ByteBuffer buffer = ByteBuffer.allocate(64);
+        Protocolo.escribirNombre(buffer, "ñandú 7");
+        buffer.flip();
+        assertEquals("ÑAND 7", Protocolo.leerNombre(buffer));
+
+        ByteBuffer corto = ByteBuffer.wrap(new byte[] {40, 'A', 'B'});
+        assertEquals("", Protocolo.leerNombre(corto));
+        ByteBuffer enorme = ByteBuffer.allocate(200);
+        enorme.put((byte) 100);
+        for (int i = 0; i < 100; i++) {
+            enorme.put((byte) 'A');
+        }
+        enorme.flip();
+        assertEquals("", Protocolo.leerNombre(enorme));
+        assertEquals("", Protocolo.leerNombre(ByteBuffer.allocate(0)));
+    }
+
+    @Test
     void elMapaBajadoArmaLaMismaArena() throws Exception {
         conectarCliente();
 

@@ -29,6 +29,15 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ### Añadido
 
+- Nombre del jugador: la pantalla `PERSONAJE` del menú principal tiene un campo para escribirlo (hasta 12
+  letras, números, espacios y guiones, en mayúsculas) y muestra al personaje con el nombre arriba. Se guarda
+  en las preferencias del juego (`PerfilJugador`). En la partida se ve arriba de la cabeza de cada duelista,
+  debajo de sus vidas, en el cartel de controles ("VOS: ...", "MODO DE PRUEBA: ...") y en los carteles de la
+  ronda y de la victoria, en lugar de "JUGADOR 1" y "JUGADOR 2". Sin nombre elegido se sigue viendo así.
+- En red, el cliente manda su nombre en el `HELLO` y el anfitrión el suyo en la `BIENVENIDA`. Lo que llega
+  se limpia igual que lo que se escribe, así un paquete armado a mano no puede meter cualquier texto. El
+  protocolo pasa a la versión 14.
+
 - Bloques spawner de rifles láser (`F` en la grilla) y de lanzacohetes (`C`): como los de pistolas y
   escopetas, son de 3x3 y hacen aparecer su arma encima cada 5 s. En el editor son las herramientas
   "Q RIFLES LASER" y "E COHETES"; los números ya no alcanzaban para todas. También están entre las piezas

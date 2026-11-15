@@ -30,6 +30,8 @@ public final class ClienteSala implements AutoCloseable {
     private int token;
     private int idJugador;
     private String[] filas;
+    private String nombre = "";
+    private String nombreAnfitrion = "";
 
     private final EstadoJugador[] estados = {new EstadoJugador(), new EstadoJugador()};
     private final EstadoPartida estadoPartida = new EstadoPartida();
@@ -63,6 +65,14 @@ public final class ClienteSala implements AutoCloseable {
             throw e;
         }
         return new ClienteSala(canal, servidor, reloj);
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getNombreAnfitrion() {
+        return nombreAnfitrion;
     }
 
     public void sondear() {
@@ -133,6 +143,7 @@ public final class ClienteSala implements AutoCloseable {
             token = recibido;
             idJugador = id;
             filas = new String[cantidad];
+            nombreAnfitrion = Protocolo.leerNombre(paquete);
         } else if (recibido != token || cantidad != filas.length) {
             return;
         }
@@ -245,6 +256,7 @@ public final class ClienteSala implements AutoCloseable {
         ByteBuffer hello = Protocolo.nuevo(Protocolo.HELLO);
         hello.putLong(faltantesBajas);
         hello.putLong(faltantesAltas);
+        Protocolo.escribirNombre(hello, nombre);
         Protocolo.enviar(canal, hello, servidor);
     }
 

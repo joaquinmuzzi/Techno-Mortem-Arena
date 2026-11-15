@@ -42,11 +42,12 @@ public class PantallaMenu extends ScreenAdapter {
 
     private float tiempo;
 
-    private final Rectangle botonJugar = new Rectangle(ANCHO_MUNDO / 2f - 120f, 350f, 240f, 52f);
-    private final Rectangle botonMultijugador = new Rectangle(ANCHO_MUNDO / 2f - 120f, 288f, 240f, 52f);
-    private final Rectangle botonEditor = new Rectangle(ANCHO_MUNDO / 2f - 120f, 226f, 240f, 52f);
-    private final Rectangle botonOpciones = new Rectangle(ANCHO_MUNDO / 2f - 120f, 164f, 240f, 52f);
-    private final Rectangle botonSalir = new Rectangle(ANCHO_MUNDO / 2f - 120f, 102f, 240f, 52f);
+    private final Rectangle botonJugar = new Rectangle(ANCHO_MUNDO / 2f - 120f, 366f, 240f, 46f);
+    private final Rectangle botonMultijugador = new Rectangle(ANCHO_MUNDO / 2f - 120f, 312f, 240f, 46f);
+    private final Rectangle botonPersonaje = new Rectangle(ANCHO_MUNDO / 2f - 120f, 258f, 240f, 46f);
+    private final Rectangle botonEditor = new Rectangle(ANCHO_MUNDO / 2f - 120f, 204f, 240f, 46f);
+    private final Rectangle botonOpciones = new Rectangle(ANCHO_MUNDO / 2f - 120f, 150f, 240f, 46f);
+    private final Rectangle botonSalir = new Rectangle(ANCHO_MUNDO / 2f - 120f, 96f, 240f, 46f);
 
     public PantallaMenu(RecursosGraficos recursos, RecursosAudio audio) {
         this.recursos = recursos;
@@ -61,6 +62,7 @@ public class PantallaMenu extends ScreenAdapter {
         Vector2 mouse = viewport.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
         boolean sobreJugar = botonJugar.contains(mouse);
         boolean sobreMultijugador = botonMultijugador.contains(mouse);
+        boolean sobrePersonaje = botonPersonaje.contains(mouse);
         boolean sobreEditor = botonEditor.contains(mouse);
         boolean sobreOpciones = botonOpciones.contains(mouse);
         boolean sobreSalir = botonSalir.contains(mouse);
@@ -73,6 +75,11 @@ public class PantallaMenu extends ScreenAdapter {
         if (Gdx.input.justTouched() && sobreMultijugador) {
             ui.clic();
             cambiarA(new PantallaMultijugador(recursos, audio, ""));
+            return;
+        }
+        if (Gdx.input.justTouched() && sobrePersonaje) {
+            ui.clic();
+            cambiarA(new PantallaPersonaje(recursos, audio));
             return;
         }
         if (Gdx.input.justTouched() && sobreEditor) {
@@ -90,7 +97,7 @@ public class PantallaMenu extends ScreenAdapter {
             return;
         }
 
-        dibujar(sobreJugar, sobreMultijugador, sobreEditor, sobreOpciones, sobreSalir);
+        dibujar(sobreJugar, sobreMultijugador, sobrePersonaje, sobreEditor, sobreOpciones, sobreSalir);
     }
 
     private void cambiarA(com.badlogic.gdx.Screen siguiente) {
@@ -99,8 +106,8 @@ public class PantallaMenu extends ScreenAdapter {
         dispose();
     }
 
-    private void dibujar(boolean sobreJugar, boolean sobreMultijugador, boolean sobreEditor, boolean sobreOpciones,
-                         boolean sobreSalir) {
+    private void dibujar(boolean sobreJugar, boolean sobreMultijugador, boolean sobrePersonaje, boolean sobreEditor,
+                         boolean sobreOpciones, boolean sobreSalir) {
         ScreenUtils.clear(FONDO);
         viewport.apply();
         batch.setProjectionMatrix(viewport.getCamera().combined);
@@ -109,6 +116,7 @@ public class PantallaMenu extends ScreenAdapter {
         dibujarDuelistas();
         ui.boton(batch, botonJugar, sobreJugar, "MODO DE PRUEBA", 1.3f);
         ui.boton(batch, botonMultijugador, sobreMultijugador, "MULTIJUGADOR", 1.3f);
+        ui.boton(batch, botonPersonaje, sobrePersonaje, "PERSONAJE", 1.3f);
         ui.boton(batch, botonEditor, sobreEditor, "EDITOR DE NIVELES", 1.3f);
         ui.boton(batch, botonOpciones, sobreOpciones, "OPCIONES", 1.3f);
         ui.boton(batch, botonSalir, sobreSalir, "SALIR", 1.6f);

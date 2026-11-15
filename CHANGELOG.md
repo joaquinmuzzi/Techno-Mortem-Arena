@@ -34,6 +34,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
   en las preferencias del juego (`PerfilJugador`). En la partida se ve arriba de la cabeza de cada duelista,
   debajo de sus vidas, en el cartel de controles ("VOS: ...", "MODO DE PRUEBA: ...") y en los carteles de la
   ronda y de la victoria, en lugar de "JUGADOR 1" y "JUGADOR 2". Sin nombre elegido se sigue viendo así.
+- Color del personaje: en la pantalla `PERSONAJE` se elige de una paleta de 8 (azul, rojo, verde, amarillo,
+  violeta, naranja, rosa y blanco) con clic o con las flechas, y la vista previa lo muestra. Se guarda con el
+  nombre (`PerfilJugador.PALETA`). Tiñe el cuerpo, las vidas, las balas del HUD, el nombre y los carteles. En
+  el modo de prueba el blanco usa el rojo, o el azul si elegiste el rojo. En red el cliente manda su color en
+  el `HELLO` y el anfitrión responde en la `BIENVENIDA` con el suyo y con el que le toca al cliente: si
+  eligieron el mismo, el cliente se queda con otro (`PerfilJugador.colorDistinto`). Un color fuera de la
+  paleta se descarta.
 - En red, el cliente manda su nombre en el `HELLO` y el anfitrión el suyo en la `BIENVENIDA`. Lo que llega
   se limpia igual que lo que se escribe, así un paquete armado a mano no puede meter cualquier texto. El
   protocolo pasa a la versión 14.

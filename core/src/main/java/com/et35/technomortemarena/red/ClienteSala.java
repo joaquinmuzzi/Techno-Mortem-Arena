@@ -1,5 +1,6 @@
 package com.et35.technomortemarena.red;
 
+import com.et35.technomortemarena.PerfilJugador;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entrada.EntradaJugador;
 import com.et35.technomortemarena.mundo.Arena;
@@ -32,6 +33,9 @@ public final class ClienteSala implements AutoCloseable {
     private String[] filas;
     private String nombre = "";
     private String nombreAnfitrion = "";
+    private int color = PerfilJugador.COLOR_UNO;
+    private int colorAnfitrion = PerfilJugador.COLOR_UNO;
+    private int colorPropio = PerfilJugador.COLOR_DOS;
 
     private final EstadoJugador[] estados = {new EstadoJugador(), new EstadoJugador()};
     private final EstadoPartida estadoPartida = new EstadoPartida();
@@ -69,6 +73,18 @@ public final class ClienteSala implements AutoCloseable {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+
+    public void setColor(int color) {
+        this.color = PerfilJugador.colorValido(color, PerfilJugador.COLOR_UNO);
+    }
+
+    public int getColorAnfitrion() {
+        return colorAnfitrion;
+    }
+
+    public int getColorPropio() {
+        return colorPropio;
     }
 
     public String getNombreAnfitrion() {
@@ -144,6 +160,8 @@ public final class ClienteSala implements AutoCloseable {
             idJugador = id;
             filas = new String[cantidad];
             nombreAnfitrion = Protocolo.leerNombre(paquete);
+            colorAnfitrion = Protocolo.leerColor(paquete, PerfilJugador.COLOR_UNO);
+            colorPropio = PerfilJugador.colorDistinto(Protocolo.leerColor(paquete, PerfilJugador.COLOR_DOS), colorAnfitrion);
         } else if (recibido != token || cantidad != filas.length) {
             return;
         }
@@ -257,6 +275,7 @@ public final class ClienteSala implements AutoCloseable {
         hello.putLong(faltantesBajas);
         hello.putLong(faltantesAltas);
         Protocolo.escribirNombre(hello, nombre);
+        hello.put((byte) color);
         Protocolo.enviar(canal, hello, servidor);
     }
 

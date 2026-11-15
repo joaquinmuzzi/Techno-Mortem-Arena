@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import com.et35.technomortemarena.PerfilJugador;
 import com.et35.technomortemarena.RecursosGraficos;
 import com.et35.technomortemarena.entidades.armas.Arma;
 import com.et35.technomortemarena.entidades.armas.Armas;
@@ -23,8 +24,8 @@ import com.et35.technomortemarena.mundo.Bloque;
 public class Jugador {
     private static final float ESCALA = Arena.ESCALA;
 
-    public static final Color TINTE_UNO = new Color(0.42f, 0.78f, 1f, 1f);
-    public static final Color TINTE_DOS = new Color(1f, 0.48f, 0.42f, 1f);
+    public static final Color TINTE_UNO = PerfilJugador.PALETA[PerfilJugador.COLOR_UNO];
+    public static final Color TINTE_DOS = PerfilJugador.PALETA[PerfilJugador.COLOR_DOS];
 
     public static final float ANCHO = 48f * ESCALA;
 

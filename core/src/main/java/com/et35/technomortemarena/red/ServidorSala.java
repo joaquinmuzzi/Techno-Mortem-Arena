@@ -1,5 +1,6 @@
 package com.et35.technomortemarena.red;
 
+import com.et35.technomortemarena.PerfilJugador;
 import com.et35.technomortemarena.entidades.EstadoJugador;
 import com.et35.technomortemarena.entrada.FuenteEntrada;
 import com.et35.technomortemarena.mundo.Arena;
@@ -32,6 +33,8 @@ public final class ServidorSala implements AutoCloseable {
     private int secuenciaEstado;
     private String nombreAnfitrion = "";
     private String nombreCliente = "";
+    private int colorAnfitrion = PerfilJugador.COLOR_UNO;
+    private int colorCliente = PerfilJugador.COLOR_DOS;
 
     private ServidorSala(DatagramChannel canal, byte[][] filasCodificadas, LongSupplier reloj) {
         this.canal = canal;
@@ -71,6 +74,14 @@ public final class ServidorSala implements AutoCloseable {
 
     public void setNombreAnfitrion(String nombre) {
         nombreAnfitrion = nombre;
+    }
+
+    public void setColorAnfitrion(int color) {
+        colorAnfitrion = PerfilJugador.colorValido(color, PerfilJugador.COLOR_UNO);
+    }
+
+    public int getColorCliente() {
+        return colorCliente;
     }
 
     public String getNombreCliente() {
@@ -134,6 +145,8 @@ public final class ServidorSala implements AutoCloseable {
             entrada = new EntradaRemota();
             secuenciaEstado = 0;
             nombreCliente = Protocolo.leerNombre(paquete);
+            colorCliente = PerfilJugador.colorDistinto(
+                Protocolo.leerColor(paquete, PerfilJugador.COLOR_DOS), colorAnfitrion);
         } else if (!cliente.equals(origen)) {
             Protocolo.enviar(canal, Protocolo.nuevo(Protocolo.SALA_LLENA), origen);
             return;
@@ -149,6 +162,8 @@ public final class ServidorSala implements AutoCloseable {
         bienvenida.putInt(token);
         bienvenida.put((byte) filasCodificadas.length);
         Protocolo.escribirNombre(bienvenida, nombreAnfitrion);
+        bienvenida.put((byte) colorAnfitrion);
+        bienvenida.put((byte) colorCliente);
         Protocolo.enviar(canal, bienvenida, origen);
         for (int i = 0; i < filasCodificadas.length; i++) {
             boolean falta = i < 64 ? (faltantesBajas & (1L << i)) != 0 : (faltantesAltas & (1L << (i - 64))) != 0;

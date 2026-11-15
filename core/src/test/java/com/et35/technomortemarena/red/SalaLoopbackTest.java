@@ -102,6 +102,46 @@ class SalaLoopbackTest {
     }
 
     @Test
+    void losColoresViajanEnElSaludo() throws Exception {
+        servidor.setColorAnfitrion(3);
+        cliente = nuevoCliente();
+        cliente.setColor(6);
+        girarHasta(() -> cliente.getFase() == ClienteSala.Fase.JUGANDO);
+
+        assertEquals(3, cliente.getColorAnfitrion());
+        assertEquals(6, cliente.getColorPropio());
+        assertEquals(6, servidor.getColorCliente());
+    }
+
+    @Test
+    void siEligenElMismoColorElClienteSeQuedaConOtro() throws Exception {
+        servidor.setColorAnfitrion(4);
+        cliente = nuevoCliente();
+        cliente.setColor(4);
+        girarHasta(() -> cliente.getFase() == ClienteSala.Fase.JUGANDO);
+
+        assertEquals(4, cliente.getColorAnfitrion());
+        assertEquals(1, cliente.getColorPropio());
+        assertEquals(1, servidor.getColorCliente());
+    }
+
+    @Test
+    void sinColoresElegidosSonElAzulYElRojo() throws Exception {
+        conectarCliente();
+
+        assertEquals(0, cliente.getColorAnfitrion());
+        assertEquals(1, cliente.getColorPropio());
+    }
+
+    @Test
+    void unColorFueraDeLaPaletaSeDescarta() {
+        assertEquals(1, Protocolo.leerColor(ByteBuffer.wrap(new byte[] {42}), 1));
+        assertEquals(1, Protocolo.leerColor(ByteBuffer.wrap(new byte[] {-3}), 1));
+        assertEquals(0, Protocolo.leerColor(ByteBuffer.allocate(0), 0));
+        assertEquals(7, Protocolo.leerColor(ByteBuffer.wrap(new byte[] {7}), 0));
+    }
+
+    @Test
     void sinNombreElegidoLlegaVacio() throws Exception {
         conectarCliente();
 

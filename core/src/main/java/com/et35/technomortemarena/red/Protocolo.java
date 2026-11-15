@@ -85,6 +85,13 @@ public final class Protocolo {
         return PerfilJugador.limpiar(new String(bytes, StandardCharsets.UTF_8));
     }
 
+    static int leerColor(ByteBuffer buffer, int porDefecto) {
+        if (buffer.remaining() < 1) {
+            return porDefecto;
+        }
+        return PerfilJugador.colorValido(buffer.get(), porDefecto);
+    }
+
     static boolean esMasNueva(int nueva, int vieja) {
         return (nueva - vieja) > 0;
     }

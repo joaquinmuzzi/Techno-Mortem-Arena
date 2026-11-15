@@ -17,6 +17,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
+import com.et35.technomortemarena.TechnoMortemArena;
 import com.et35.technomortemarena.red.ClienteSala;
 import com.et35.technomortemarena.red.Protocolo;
 import com.et35.technomortemarena.red.ServidorSala;
@@ -132,6 +133,7 @@ public class PantallaMultijugador extends ScreenAdapter {
             arena -> {
                 try {
                     ServidorSala sala = ServidorSala.abrir(puerto, arena.getFilas(), Protocolo.RELOJ_SISTEMA);
+                    sala.setNombreAnfitrion(TechnoMortemArena.getPerfil().getNombre());
                     return new PantallaArena(recursos, audio, arena, sala);
                 } catch (IOException | RuntimeException e) {
                     return new PantallaMultijugador(recursos, audio,
@@ -161,6 +163,7 @@ public class PantallaMultijugador extends ScreenAdapter {
         }
         try {
             cliente = ClienteSala.conectar(new InetSocketAddress(host, puerto), Protocolo.RELOJ_SISTEMA);
+            cliente.setNombre(TechnoMortemArena.getPerfil().getNombre());
             destinoTexto = host + ":" + puerto;
             aviso = "";
         } catch (IOException | RuntimeException e) {

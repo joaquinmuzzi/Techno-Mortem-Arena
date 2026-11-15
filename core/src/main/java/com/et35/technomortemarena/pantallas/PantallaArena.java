@@ -21,8 +21,10 @@ import java.util.Random;
 import java.util.function.Supplier;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import com.et35.technomortemarena.PerfilJugador;
 import com.et35.technomortemarena.RecursosAudio;
 import com.et35.technomortemarena.RecursosGraficos;
+import com.et35.technomortemarena.TechnoMortemArena;
 import com.et35.technomortemarena.entidades.ArmasEnJuego;
 import com.et35.technomortemarena.entidades.EstadoArmas;
 import com.et35.technomortemarena.entidades.Jugador;
@@ -102,6 +104,9 @@ public class PantallaArena extends ScreenAdapter {
     private static final float TAMANO_VIDA = 20f;
     private static final float SEPARACION_VIDA = 8f;
     private static final float SEPARACION_VIDAS_DEL_CENTRO = 70f;
+    private static final float ESCALA_NOMBRE_HUD = 1f;
+    private static final float ESCALA_NOMBRE_CABEZA = 0.9f;
+    private static final float ALTURA_NOMBRE_CABEZA = 16f;
     private static final Color COLOR_VIDA_PERDIDA = new Color(0.25f, 0.25f, 0.28f, 1f);
     private static final float ANCHO_CUADRO_ARMA = 120f;
     private static final float ALTO_CUADRO_ARMA = 44f;
@@ -160,6 +165,9 @@ public class PantallaArena extends ScreenAdapter {
     private int celdasRotasAplicadas;
     private RondasPartida.Fase faseAnterior = RondasPartida.Fase.RONDA;
     private final Vector2 punteroEdicion = new Vector2();
+    private final Vector2 cabezaEnLaInterfaz = new Vector2();
+    private String nombreUno;
+    private String nombreDos;
     private final CamaraDuelo camara = new CamaraDuelo();
     private ArmasEnJuego armas;
     private final EstadoArmas estadoArmas = new EstadoArmas();
@@ -219,6 +227,10 @@ public class PantallaArena extends ScreenAdapter {
         this.armas = new ArmasEnJuego(new Random(), zonasProhibidas);
         this.edicion = servidor != null && filasOriginales.length > 0
             ? new EdicionNivel(filasOriginales, zonasProhibidas, new Random()) : null;
+        this.nombreUno = PerfilJugador.mostrar(
+            cliente != null ? cliente.getNombreAnfitrion() : TechnoMortemArena.getPerfil().getNombre(), "JUGADOR 1");
+        this.nombreDos = PerfilJugador.mostrar(
+            cliente != null ? TechnoMortemArena.getPerfil().getNombre() : "", "JUGADOR 2");
         armarJugadores();
     }
 
@@ -371,6 +383,7 @@ public class PantallaArena extends ScreenAdapter {
             reiniciarRondasYNivel();
             jugadorUno.reiniciar(spawnUno.x, spawnUno.y, true);
             jugadorDos = new Jugador(servidor.getEntradaRemota(), spawnDos.x, spawnDos.y, false, TINTE_DOS, VIDAS_INICIALES);
+            nombreDos = PerfilJugador.mostrar(servidor.getNombreCliente(), "JUGADOR 2");
         }
         boolean enRonda = rondas.getFase() == RondasPartida.Fase.RONDA;
         entradaLocal.setActiva(!pausado && enRonda);
@@ -660,6 +673,7 @@ public class PantallaArena extends ScreenAdapter {
         armas.dibujar(batch, recursos);
         batch.end();
 
+        dibujarNombres();
         dibujarAyudaControles();
         dibujarHud();
         dibujarEstadoRed();
@@ -699,15 +713,48 @@ public class PantallaArena extends ScreenAdapter {
         batch.begin();
         float centro = ANCHO_UI / 2f;
         dibujarVidas(jugadorUno, TINTE_UNO, centro - SEPARACION_VIDAS_DEL_CENTRO, true);
+        dibujarNombreHud(nombreUno, TINTE_UNO, centro - SEPARACION_VIDAS_DEL_CENTRO, true);
         dibujarArma(jugadorUno, TINTE_UNO, true);
         if (jugadorDos != null) {
             dibujarVidas(jugadorDos, TINTE_DOS, centro + SEPARACION_VIDAS_DEL_CENTRO, false);
+            dibujarNombreHud(nombreDos, TINTE_DOS, centro + SEPARACION_VIDAS_DEL_CENTRO, false);
             dibujarArma(jugadorDos, TINTE_DOS, false);
             dibujarTextoCentrado("RONDA " + rondas.getNumeroRonda(), ESCALA_RONDA_HUD, ALTO_UI - MARGEN_HUD, Color.WHITE);
             String marcadorTexto = rondas.getRondasGanadasUno() + " - " + rondas.getRondasGanadasDos();
             dibujarTextoCentrado(marcadorTexto, ESCALA_MARCADOR_HUD, ALTO_UI - MARGEN_HUD - 20f, Color.WHITE);
         }
         batch.end();
+    }
+
+    private void dibujarNombres() {
+        viewportUi.apply();
+        batch.setProjectionMatrix(viewportUi.getCamera().combined);
+        batch.begin();
+        dibujarNombreArriba(jugadorUno, nombreUno, TINTE_UNO);
+        if (jugadorDos != null) {
+            dibujarNombreArriba(jugadorDos, nombreDos, TINTE_DOS);
+        }
+        batch.end();
+    }
+
+    private void dibujarNombreArriba(Jugador jugador, String nombre, Color tinte) {
+        if (!jugador.isVivo()) {
+            return;
+        }
+        cabezaEnLaInterfaz.set(jugador.getPosicion().x + Jugador.ANCHO / 2f, jugador.getPosicion().y + Jugador.ALTO);
+        viewport.project(cabezaEnLaInterfaz);
+        cabezaEnLaInterfaz.y = Gdx.graphics.getHeight() - cabezaEnLaInterfaz.y;
+        viewportUi.unproject(cabezaEnLaInterfaz);
+        float x = cabezaEnLaInterfaz.x - ui.anchoTexto(nombre, ESCALA_NOMBRE_CABEZA) / 2f;
+        float y = cabezaEnLaInterfaz.y + ALTURA_NOMBRE_CABEZA;
+        ui.texto(batch, nombre, x + 1f, y - 1f, ESCALA_NOMBRE_CABEZA, Color.BLACK);
+        ui.texto(batch, nombre, x, y, ESCALA_NOMBRE_CABEZA, tinte);
+    }
+
+    private void dibujarNombreHud(String nombre, Color tinte, float xAncla, boolean haciaLaIzquierda) {
+        float ancho = ui.anchoTexto(nombre, ESCALA_NOMBRE_HUD);
+        float x = haciaLaIzquierda ? xAncla - ancho : xAncla;
+        ui.texto(batch, nombre, x, ALTO_UI - MARGEN_HUD - TAMANO_VIDA - 8f, ESCALA_NOMBRE_HUD, tinte);
     }
 
     private void dibujarVidas(Jugador jugador, Color tinte, float xAncla, boolean haciaLaIzquierda) {
@@ -802,7 +849,7 @@ public class PantallaArena extends ScreenAdapter {
             dibujarTextoCentrado("LA RONDA SE VUELVE A JUGAR", 1.4f, 350f, Color.LIGHT_GRAY);
         } else {
             boolean ganoElUno = ganador == 0;
-            dibujarTextoCentrado(ganoElUno ? "JUGADOR 1" : "JUGADOR 2", 3f, 400f,
+            dibujarTextoCentrado(ganoElUno ? nombreUno : nombreDos, 3f, 400f,
                 ganoElUno ? TINTE_UNO : TINTE_DOS);
             dibujarTextoCentrado("GANA LA RONDA " + rondas.getNumeroRonda(), 1.4f, 350f, Color.WHITE);
         }
@@ -818,7 +865,7 @@ public class PantallaArena extends ScreenAdapter {
         batch.begin();
         ui.rectangulo(batch, rectAux.set(0f, 0f, ANCHO_UI, ALTO_UI), VELO_PAUSA);
         dibujarTextoCentrado("GANADOR DE LA PARTIDA", 1.6f, 440f, Color.WHITE);
-        dibujarTextoCentrado(ganoElUno ? "JUGADOR 1" : "JUGADOR 2", 3f, 380f,
+        dibujarTextoCentrado(ganoElUno ? nombreUno : nombreDos, 3f, 380f,
             ganoElUno ? TINTE_UNO : TINTE_DOS);
         dibujarTextoCentrado(rondas.getRondasGanadasUno() + " - " + rondas.getRondasGanadasDos(),
             1.6f, 325f, Color.WHITE);
@@ -848,10 +895,10 @@ public class PantallaArena extends ScreenAdapter {
         String titulo;
         Color color;
         if (enRed()) {
-            titulo = cliente != null ? "VOS: JUGADOR 2" : "VOS: JUGADOR 1 (ANFITRION)";
+            titulo = cliente != null ? "VOS: " + nombreDos : "VOS: " + nombreUno + " (ANFITRION)";
             color = cliente != null ? TINTE_DOS : TINTE_UNO;
         } else {
-            titulo = controlaAlDos ? "MODO DE PRUEBA: JUGADOR 2" : "MODO DE PRUEBA: JUGADOR 1";
+            titulo = "MODO DE PRUEBA: " + (controlaAlDos ? nombreDos : nombreUno);
             color = controlaAlDos ? TINTE_DOS : TINTE_UNO;
         }
         dibujarPanelAyuda(titulo, lineasAyuda(), color, false, alfa);
